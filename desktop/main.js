@@ -1,0 +1,299 @@
+const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu } = require("electron");
+const path = require("node:path");
+const fs = require("node:fs");
+const { PROVIDERS } = require("./src/providers");
+
+let win = null;
+let reqSeq = 0;
+const streams = new Map(); // reqId -> AbortController
+
+// ---------- stockage des clés (chiffré via safeStorage) ----------
+const keysPath = () => path.join(app.getPath("userData"), "keys.json");
+
+function loadKeys() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(keysPath(), "utf8"));
+    const out = {};
+    for (const [id, v] of Object.entries(raw)) {
+      if (v && v.enc && safeStorage.isEncryptionAvailable()) {
+        out[id] = safeStorage.decryptString(Buffer.from(v.data));
+      } else {
+        out[id] = v.plain ?? "";
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveKeys(keys) {
+  const payload = {};
+  const canEncrypt = safeStorage.isEncryptionAvailable();
+  for (const [id, value] of Object.entries(keys)) {
+    if (!value) continue;
+    payload[id] = canEncrypt
+      ? { enc: true, data: Array.from(safeStorage.encryptString(value)) }
+      : { plain: value };
+  }
+  fs.mkdirSync(path.dirname(keysPath()), { recursive: true });
+  fs.writeFileSync(keysPath(), JSON.stringify(payload, null, 2));
+}
+
+let KEYS = null;
+
+function getKey(id) {
+  if (!KEYS) KEYS = loadKeys();
+  return KEYS[id] || "";
+}
+
+function setKey(id, value) {
+  if (!KEYS) KEYS = loadKeys();
+  if (value) KEYS[id] = value;
+  else delete KEYS[id];
+  saveKeys(KEYS);
+}
+
+// ---------- helpers providers ----------
+const findProvider = (id) => PROVIDERS.find((p) => p.id === id);
+
+function headersFor(provider) {
+  const h = { "content-type": "application/json" };
+  const key = getKey(provider.id);
+  if (provider.needsKey && key) {
+    h.authorization = `Bearer ${key}`;
+    // OpenRouter apprécie ces en-têtes d'identification d'app
+    if (provider.id === "openrouter") {
+      h["http-referer"] = "https://castor.app";
+      h["x-title"] = "Castor Desktop";
+    }
+  }
+  return h;
+}
+
+function resolveBaseURL(provider, override) {
+  const base = (override || "").trim() || provider.baseURL;
+  return base.replace(/\/+$/, "");
+}
+
+// ---------- IPC ----------
+ipcMain.handle("app:info", () => ({
+  version: app.getVersion(),
+  platform: process.platform,
+}));
+
+ipcMain.handle("providers:list", () =>
+  PROVIDERS.map((p) => ({
+    id: p.id,
+    label: p.label,
+    baseURL: p.baseURL,
+    needsKey: p.needsKey,
+    keyUrl: p.keyUrl || null,
+    defaultModel: p.defaultModel,
+    models: p.models,
+    hint: p.hint,
+    configured: !p.needsKey || Boolean(getKey(p.id)),
+  }))
+);
+
+ipcMain.handle("key:set", (_e, id, value) => {
+  setKey(id, String(value || "").trim());
+  return true;
+});
+
+// ---------- store persistant (compétences, mémoire, usage) ----------
+const storePath = () => path.join(app.getPath("userData"), "store.json");
+
+function readStore() {
+  try {
+    return JSON.parse(fs.readFileSync(storePath(), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeStore(data) {
+  fs.mkdirSync(path.dirname(storePath()), { recursive: true });
+  fs.writeFileSync(storePath(), JSON.stringify(data, null, 2));
+}
+
+ipcMain.handle("store:get", (_e, key) => readStore()[key] ?? null);
+ipcMain.handle("store:set", (_e, key, value) => {
+  const data = readStore();
+  data[key] = value;
+  writeStore(data);
+  return true;
+});
+
+ipcMain.handle("models:refresh", async (_e, providerId, baseURLOverride) => {
+  const provider = findProvider(providerId);
+  if (!provider) return { ok: false, models: [], error: "provider inconnu" };
+  try {
+    const res = await net.fetch(`${resolveBaseURL(provider, baseURLOverride)}/models`, {
+      headers: headersFor(provider),
+    });
+    if (!res.ok) return { ok: false, models: [], error: `HTTP ${res.status}` };
+    const json = await res.json();
+    const models = (json.data || [])
+      .map((m) => m.id)
+      .filter(Boolean)
+      .sort();
+    return { ok: true, models };
+  } catch (err) {
+    return { ok: false, models: [], error: err.message };
+  }
+});
+
+ipcMain.handle("chat:test", async (_e, providerId, baseURLOverride) => {
+  const provider = findProvider(providerId);
+  if (!provider) return { ok: false, error: "provider inconnu" };
+  if (provider.needsKey && !getKey(provider.id))
+    return { ok: false, error: "clé API manquante" };
+  try {
+    const res = await net.fetch(
+      `${resolveBaseURL(provider, baseURLOverride)}/models`,
+      { headers: headersFor(provider), signal: AbortSignal.timeout(6000) }
+    );
+    return { ok: res.ok, error: res.ok ? null : `HTTP ${res.status}` };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("chat:stream", async (_e, payload) => {
+  const { providerId, baseURLOverride, model, messages } = payload;
+  const provider = findProvider(providerId);
+  if (!provider) return { ok: false, reqId: 0, error: "provider inconnu" };
+  if (provider.needsKey && !getKey(provider.id)) {
+    win.webContents.send("chat:error", {
+      reqId: 0,
+      message: `Ajoute ta clé ${provider.label} dans la barre latérale.`,
+    });
+    return { ok: false, reqId: 0, error: "no-key" };
+  }
+
+  const reqId = ++reqSeq;
+  const ac = new AbortController();
+  streams.set(reqId, ac);
+  const t0 = Date.now();
+
+  try {
+    const res = await net.fetch(
+      `${resolveBaseURL(provider, baseURLOverride)}/chat/completions`,
+      {
+        method: "POST",
+        headers: headersFor(provider),
+        signal: ac.signal,
+        body: JSON.stringify({ model, messages, stream: true }),
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      win.webContents.send("chat:end", {
+        reqId,
+        ms: Date.now() - t0,
+        error: `HTTP ${res.status} — ${text.slice(0, 300)}`,
+      });
+      return { ok: false, reqId, error: `HTTP ${res.status}` };
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      const events = buf.split(/\n\n/);
+      buf = events.pop() ?? "";
+
+      for (const evt of events) {
+        for (const line of evt.split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") {
+            win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
+            streams.delete(reqId);
+            return { ok: true, reqId };
+          }
+          try {
+            const json = JSON.parse(data);
+            const delta =
+              json.choices?.[0]?.delta?.content ??
+              json.choices?.[0]?.text ??
+              "";
+            if (delta)
+              win.webContents.send("chat:chunk", { reqId, delta });
+          } catch {
+            // fragment JSON incomplet : on ignore
+          }
+        }
+      }
+    }
+
+    win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
+    return { ok: true, reqId };
+  } catch (err) {
+    if (ac.signal.aborted) {
+      win.webContents.send("chat:end", {
+        reqId,
+        ms: Date.now() - t0,
+        cancelled: true,
+      });
+    } else {
+      win.webContents.send("chat:error", { reqId, message: err.message });
+    }
+    streams.delete(reqId);
+    return { ok: false, reqId, error: err.message };
+  }
+});
+
+ipcMain.handle("chat:cancel", (_e, reqId) => {
+  streams.get(reqId)?.abort();
+});
+
+// ---------- fenêtre ----------
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1120,
+    height: 740,
+    minWidth: 880,
+    minHeight: 560,
+    backgroundColor: "#0a0e07",
+    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
+    trafficLightPosition: process.platform === "darwin" ? { x: 14, y: 16 } : undefined,
+    autoHideMenuBar: process.platform !== "darwin",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  win.loadFile(path.join(__dirname, "renderer", "index.html"));
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+
+  win.on("closed", () => (win = null));
+}
+
+Menu.setApplicationMenu(null);
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});

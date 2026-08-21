@@ -1,0 +1,31 @@
+{
+  "name": "castor-desktop",
+  "productName": "Castor",
+  "version": "0.1.0",
+  "description": "Castor — agent de code multi-providers : OpenRouter, Groq, OpenCode Zen et modèles locaux. Alternative optimisée à la CLI.",
+  "main": "main.js",
+  "author": "Castor",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist:dir": "electron-builder --dir",
+    "dist": "electron-builder --mwl"
+  },
+  "build": {
+    "appId": "app.castor.desktop",
+    "productName": "Castor",
+    "directories": { "output": "release" },
+    "files": ["main.js", "preload.js", "src/**/*", "renderer/**/*"],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns"
+    },
+    "win": { "target": ["nsis"], "icon": "build/icon.png" },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development", "icon": "build/icon.png" }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

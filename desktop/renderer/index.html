@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com"
+    />
+    <title>Castor</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <span class="logo__tile">🦫</span>
+          <div>
+            <strong>castor</strong>
+            <small id="app-version"></small>
+          </div>
+        </div>
+
+        <div class="sidebar__section-title">Providers</div>
+        <ul id="provider-list" class="provider-list"></ul>
+
+        <div id="provider-settings" class="provider-settings hidden">
+          <label>
+            Modèle
+            <input id="model-input" list="model-options" spellcheck="false" />
+            <datalist id="model-options"></datalist>
+          </label>
+          <button id="refresh-models" class="btn-ghost btn-mini">
+            ↻ Rafraîchir les modèles
+          </button>
+          <label id="key-row" class="hidden">
+            Clé API
+            <input id="key-input" type="password" placeholder="sk-…" />
+          </label>
+          <button id="save-key" class="btn-primary btn-mini hidden">
+            Enregistrer la clé
+          </button>
+          <label>
+            Endpoint (optionnel)
+            <input id="baseurl-input" placeholder="https://…" spellcheck="false" />
+          </label>
+          <button id="test-conn" class="btn-ghost btn-mini">
+            Tester la connexion
+          </button>
+          <span id="test-result" class="test-result"></span>
+        </div>
+
+        <div class="sidebar__section-title">Compétences <span class="hint">/ dans le champ</span></div>
+        <ul id="skill-list" class="skill-list"></ul>
+        <div id="skill-editor" class="mini-editor hidden">
+          <input id="skill-name" placeholder="nom — ex : review" spellcheck="false" />
+          <textarea id="skill-body" rows="4" placeholder="Instructions injectées quand la compétence est active…" spellcheck="false"></textarea>
+          <div class="mini-editor__row">
+            <button id="save-skill" class="btn-primary btn-mini">Enregistrer</button>
+            <button id="cancel-skill" class="btn-ghost btn-mini">Annuler</button>
+          </div>
+        </div>
+        <button id="add-skill" class="btn-ghost btn-mini">＋ Nouvelle compétence</button>
+
+        <div class="sidebar__section-title">
+          Mémoire persistante <span id="memory-count" class="count-badge">0</span>
+        </div>
+        <form id="memory-form" class="memory-form">
+          <input id="memory-input" placeholder="Un fait à retenir pour toujours…" />
+          <button type="submit" class="btn-ghost btn-mini">＋</button>
+        </form>
+        <ul id="memory-list" class="memory-list"></ul>
+
+        <div class="sidebar__section-title">Contexte & utilisation</div>
+        <div class="usage">
+          <div class="usage__row"><span>Session</span><strong id="u-session">0 tok</strong></div>
+          <div class="usage__row"><span>Total cumulé</span><strong id="u-total">0 tok</strong></div>
+          <div class="usage__row"><span>Requêtes</span><strong id="u-req">0</strong></div>
+          <div class="gauge" title="Remplissage estimé de la fenêtre de contexte">
+            <div id="gauge-fill" class="gauge__fill"></div>
+          </div>
+          <small id="gauge-label">contexte ~0 % · fenêtre 128k</small>
+        </div>
+
+        <div class="sidebar__spacer"></div>
+        <button id="new-chat" class="btn-primary btn-wide">＋ Nouvelle conversation</button>
+      </aside>
+
+      <main class="chat">
+        <header class="chat__header">
+          <h1 id="chat-title">Nouvelle conversation</h1>
+          <span id="active-skill-chip" class="skill-chip hidden">
+            <em>compétence :</em> <b id="skill-chip-name"></b>
+            <button id="clear-skill" title="Retirer">×</button>
+          </span>
+          <span id="stats" class="stats"></span>
+        </header>
+
+        <div id="messages" class="messages">
+          <div class="welcome">
+            <span class="welcome__logo">🦫</span>
+            <h2>Salut, je suis Castor.</h2>
+            <p>
+              Choisis un provider, tape <code>/</code> pour tes compétences,
+              et donne-moi un chantier. Ce que je fais s'affiche en liste.
+            </p>
+            <div class="welcome__hints">
+              <code>/review ce composant</code>
+              <code>/tests pour ma fonction parse()</code>
+              <code>refactore ce fichier en TypeScript</code>
+            </div>
+          </div>
+        </div>
+
+        <section id="todo-panel" class="todo-panel hidden">
+          <button id="todo-toggle" class="todo-panel__head">
+            <span>☑️ Plan de la tâche</span>
+            <span class="todo-progress">
+              <i class="todo-bar"><b id="todo-bar"></b></i>
+              <strong id="todo-count">0/0</strong>
+            </span>
+            <em id="todo-chevron">▾</em>
+          </button>
+          <ul id="todo-list" class="todo-list"></ul>
+        </section>
+
+        <footer class="composer">
+          <div id="slash-menu" class="slash-menu hidden"></div>
+          <textarea
+            id="input"
+            rows="1"
+            placeholder="Demande quelque chose au castor…  (/ compétences · Entrée envoyer · Échap arrêter)"
+          ></textarea>
+          <button id="send" class="btn-primary">Envoyer</button>
+        </footer>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
