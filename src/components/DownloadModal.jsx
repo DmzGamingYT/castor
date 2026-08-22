@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 
+/* Les binaires sont servis depuis la dernière Release GitHub
+   (public/downloads/ reste un cache local ignoré par git). */
+const RELEASE_BASE =
+  "https://github.com/DmzGamingYT/castor/releases/latest/download";
+
 const BUILDS = [
   {
     id: "mac",
@@ -140,7 +145,7 @@ export default function DownloadModal({ open, onClose }) {
               <a
                 key={b.id}
                 className={`os-row ${detected === b.id ? "os-row--rec" : ""}`}
-                href={`/downloads/${b.file}`}
+                href={`${RELEASE_BASE}/${b.file}`}
                 download
                 onClick={() => setStarted(b.id)}
               >

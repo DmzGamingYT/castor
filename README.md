@@ -143,9 +143,10 @@ castor/
 
 ## Notes de packaging
 
-- Binaires produits en **arm64** (machine de build Apple Silicon) — ajouter les cibles x64 dans `desktop/package.json` si besoin
+- Binaires **arm64** construits et attachés automatiquement à la Release GitHub à chaque tag `v*` (workflow `.github/workflows/release.yml`) — ajouter les cibles x64 dans `desktop/package.json` si besoin
+- Archives **portables** (zip / tar.gz), cibles DMG / NSIS / AppImage désactivées — réactivables dans `desktop/package.json`
 - macOS : builds **non notarisés** (compte Developer requis) — premier lancement via *Réglages → Confidentialité et sécurité → Ouvrir même ainsi*, ou `xattr -cr /Applications/Castor.app`
-- Le dossier `public/downloads/` (binaires du modal) est généré et ignoré par git
+- La modale de téléchargement pointe vers `releases/latest/download` ; le dossier local `public/downloads/` sert uniquement de cache en dev
 
 ## Roadmap
 

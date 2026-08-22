@@ -17,12 +17,22 @@
     "directories": { "output": "release" },
     "files": ["main.js", "preload.js", "src/**/*", "renderer/**/*"],
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": ["zip"],
       "category": "public.app-category.developer-tools",
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "artifactName": "Castor-macOS-${arch}.${ext}"
     },
-    "win": { "target": ["nsis"], "icon": "build/icon.png" },
-    "linux": { "target": ["AppImage", "deb"], "category": "Development", "icon": "build/icon.png" }
+    "win": {
+      "target": ["zip"],
+      "icon": "build/icon.png",
+      "artifactName": "Castor-Windows-${arch}-portable.${ext}"
+    },
+    "linux": {
+      "target": ["tar.gz"],
+      "category": "Development",
+      "icon": "build/icon.png",
+      "artifactName": "Castor-Linux-${arch}.${ext}"
+    }
   },
   "devDependencies": {
     "electron": "^33.2.0",
