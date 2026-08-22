@@ -1,0 +1,22 @@
+{
+  "name": "castor-cli",
+  "version": "0.1.0",
+  "description": "Castor CLI — l'agent de code gratuit dans ton terminal. Multi-providers : OpenRouter, Groq, OpenCode Zen, Ollama, LM Studio.",
+  "license": "MIT",
+  "author": "DmzGamingYT",
+  "bin": { "castor": "bin/castor.js" },
+  "files": ["bin", "lib"],
+  "engines": { "node": ">=18" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DmzGamingYT/castor.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/DmzGamingYT/castor#readme",
+  "bugs": "https://github.com/DmzGamingYT/castor/issues",
+  "keywords": ["cli", "ai", "agent", "code", "openrouter", "groq", "ollama", "terminal"],
+  "scripts": {
+    "start": "node bin/castor.js",
+    "test": "cd .. && npm test"
+  }
+}
