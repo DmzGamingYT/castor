@@ -28,6 +28,15 @@
           Conversations
           <span id="conv-count" class="count-badge">0</span>
         </div>
+        <input id="conv-search" class="conv-search" placeholder="Rechercher…" spellcheck="false" />
+        <div class="conv-tabs" role="group">
+          <button id="conv-tab-active" class="conv-tab active">
+            Actives <span id="conv-nb-active" class="count-badge">0</span>
+          </button>
+          <button id="conv-tab-archived" class="conv-tab">
+            Archivées <span id="conv-nb-archived" class="count-badge">0</span>
+          </button>
+        </div>
         <ul id="conv-list" class="conv-list"></ul>
 
         <div class="sidebar__section-title">Providers</div>
@@ -117,6 +126,7 @@
             <button id="clear-skill" title="Retirer">×</button>
           </span>
           <span id="stats" class="stats"></span>
+          <button id="panel-toggle" class="icon-btn" title="Panneau Changes / Terminal / Notes">▤</button>
         </header>
 
         <div id="messages" class="messages">
@@ -149,10 +159,11 @@
 
         <footer class="composer">
           <div id="slash-menu" class="slash-menu hidden"></div>
-          <label class="agent-toggle" title="Donne au modèle des outils : lire, écrire (avec validation) et lancer des commandes dans le dossier ouvert">
-            <input type="checkbox" id="agent-mode" checked />
-            🔧 mode agent
-          </label>
+          <div id="queue-zone" class="queue-zone hidden" title="Envoyés dès que le castor a fini"></div>
+          <div class="mode-toggle" role="group" title="Build : l'agent peut lire, écrire et lancer des commandes · Plan : lecture seule">
+            <button id="mode-build" class="mode-btn active">Build</button>
+            <button id="mode-plan" class="mode-btn">Plan</button>
+          </div>
           <textarea
             id="input"
             rows="1"
@@ -161,6 +172,43 @@
           <button id="send" class="btn-primary">Envoyer</button>
         </footer>
       </main>
+
+      <aside id="side-panel" class="side-panel">
+        <header class="sp-head">
+          <button class="sp-tab active" data-tab="changes">
+            Changes <span id="chg-badge" class="count-badge hidden">0</span>
+          </button>
+          <button class="sp-tab" data-tab="terminal">Terminal</button>
+          <button class="sp-tab" data-tab="notes">Notes</button>
+          <span class="sp-spacer"></span>
+          <button id="term-clear" class="icon-btn hidden" title="Vider l'historique">⌫</button>
+          <button id="sp-refresh" class="icon-btn" title="Rafraîchir">↻</button>
+          <button id="sp-close" class="icon-btn" title="Fermer le panneau">✕</button>
+        </header>
+
+        <section id="sp-view-changes" class="sp-view">
+          <div id="changes-empty" class="empty-note big">
+            Ouvre un chantier pour suivre les fichiers modifiés par le castor.
+          </div>
+          <ul id="changes-list" class="changes-list"></ul>
+          <pre id="changes-diff" class="code-pre hidden"></pre>
+        </section>
+
+        <section id="sp-view-terminal" class="sp-view hidden">
+          <div id="terminal-empty" class="empty-note big">
+            Les commandes lancées par le castor et leur sortie apparaîtront ici.
+          </div>
+          <div id="terminal-log" class="terminal-log"></div>
+        </section>
+
+        <section id="sp-view-notes" class="sp-view hidden">
+          <textarea
+            id="notes-area"
+            placeholder="Notes liées au chantier — sauvegardées automatiquement…"
+            spellcheck="false"
+          ></textarea>
+        </section>
+      </aside>
     </div>
 
     <div id="diff-modal" class="diff-modal hidden">

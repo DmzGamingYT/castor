@@ -30,6 +30,14 @@ const state = {
   wsPath: null,
   conversations: [],
   activeConvId: null,
+
+  chatMode: "build", // build : outils actifs · plan : lecture seule
+  queue: [], // messages en attente pendant un stream
+  convTab: "active",
+  convSearch: "",
+  panelOpen: false,
+  panelTab: "changes",
+  notesTimer: null,
 };
 
 /* ---------- persistance (store.json côté main) ---------- */
@@ -167,6 +175,8 @@ function applyWorkspace(info) {
   $("#ws-name").title = info.path;
   $("#ws-chip-name").textContent = info.name;
   $("#ws-chip").classList.remove("hidden");
+  loadNotes();
+  if (state.panelOpen && state.panelTab === "changes") refreshChanges();
 }
 
 function clearWorkspaceView() {
@@ -176,6 +186,8 @@ function clearWorkspaceView() {
   $("#ws-active").classList.add("hidden");
   $("#ws-chip").classList.add("hidden");
   $("#file-tree").innerHTML = "";
+  loadNotes();
+  refreshChanges();
 }
 
 async function refreshFileTree() {
@@ -233,14 +245,168 @@ window.castor.onToolStart(({ reqId, callId, icon, label }) => {
   scrollDown();
 });
 
-window.castor.onToolResult(({ reqId, callId }) => {
-  if (reqId !== state.reqId) return;
-  const line = state.currentTrace?.querySelector(`[data-call-id="${callId}"]`);
-  if (line) {
-    line.classList.remove("running");
-    line.classList.add("done");
+window.castor.onToolResult(({ reqId, callId, meta }) => {
+  if (reqId === state.reqId) {
+    const line = state.currentTrace?.querySelector(`[data-call-id="${callId}"]`);
+    if (line) {
+      line.classList.remove("running");
+      line.classList.add("done");
+    }
+  }
+  if (meta?.kind === "command") pushTerminal(meta);
+  if (state.panelOpen && (meta?.kind === "write" || meta?.kind === "command")) {
+    refreshChanges();
+    $("#chg-badge").classList.remove("hidden");
   }
 });
+
+/* ---------- panneau droit : Changes · Terminal · Notes ---------- */
+function setPanel(open) {
+  state.panelOpen = open;
+  document.querySelector(".layout").classList.toggle("panel-open", open);
+  persist({ panelOpen: open });
+  if (open && state.panelTab === "changes") refreshChanges();
+}
+
+function setPanelTab(tab) {
+  state.panelTab = tab;
+  document.querySelectorAll(".sp-tab").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === tab)
+  );
+  ["changes", "terminal", "notes"].forEach((t) =>
+    $("#sp-view-" + t).classList.toggle("hidden", t !== tab)
+  );
+  if (tab === "changes" && state.panelOpen) refreshChanges();
+  if (tab === "notes" && state.wsPath) $("#notes-area").focus();
+}
+
+const CHG_CLASS = { M: "mod", A: "add", D: "del", R: "ren", "?": "new" };
+
+async function refreshChanges() {
+  const list = $("#changes-list");
+  const empty = $("#changes-empty");
+  const badge = $("#chg-badge");
+  const pre = $("#changes-diff");
+  pre.classList.add("hidden");
+  list.innerHTML = "";
+
+  if (!state.wsPath) {
+    empty.textContent = "Ouvre un chantier pour suivre les fichiers modifiés par le castor.";
+    empty.classList.remove("hidden");
+    badge.classList.add("hidden");
+    return;
+  }
+  const res = await window.castor.workspaceChanges();
+  if (!res.ok) {
+    empty.textContent = res.error || "Impossible de lire l'état git.";
+    empty.classList.remove("hidden");
+    badge.classList.add("hidden");
+    return;
+  }
+  if (!res.repo) {
+    empty.textContent = "Ce chantier n'est pas un dépôt git — pas de suivi des changements.";
+    empty.classList.remove("hidden");
+    badge.classList.add("hidden");
+    return;
+  }
+  badge.classList.toggle("hidden", !res.files.length);
+  badge.textContent = String(res.files.length);
+  if (res.clean) {
+    empty.textContent = "Chantier propre — aucun changement en cours ✓";
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  for (const f of res.files) {
+    const li = document.createElement("li");
+    li.className = "changes-row";
+    const code = document.createElement("span");
+    code.className = "chg-code " + (CHG_CLASS[f.code[0]] || CHG_CLASS[f.code[1]] || "ren");
+    code.textContent = f.code;
+    const p = document.createElement("span");
+    p.className = "path";
+    p.textContent = f.path;
+    p.title = "Voir le diff";
+    li.append(code, p);
+    li.addEventListener("click", () => showFileDiff(f));
+    list.appendChild(li);
+  }
+}
+
+async function showFileDiff(f) {
+  const pre = $("#changes-diff");
+  const res = await window.castor.workspaceFileDiff(f.path);
+  pre.classList.remove("hidden");
+  if (!res.ok) {
+    pre.innerHTML = escapeHtml(res.error || "Erreur");
+    return;
+  }
+  pre.innerHTML = res.untracked
+    ? colorizeDiff(
+        "(nouveau fichier — aperçu)\n" +
+          res.content.split("\n").map((l) => "+ " + l).join("\n")
+      )
+    : colorizeDiff(res.content);
+}
+
+function pushTerminal({ command, code, output }) {
+  $("#terminal-empty").classList.add("hidden");
+  const box = $("#terminal-log");
+  const entry = document.createElement("div");
+  entry.className = "term-entry";
+  const cmd = document.createElement("div");
+  cmd.className = "term-cmd";
+  cmd.textContent = "$ " + command;
+  const out = document.createElement("pre");
+  out.className = "term-out";
+  out.textContent = (output || "(aucune sortie)").slice(0, 1500);
+  const cod = document.createElement("div");
+  cod.className = "term-code" + (code === 0 ? "" : " ko");
+  cod.textContent = "exit " + code;
+  entry.append(cmd, out, cod);
+  box.appendChild(entry);
+  while (box.children.length > 80) box.firstChild.remove();
+  box.scrollTop = box.scrollHeight;
+}
+
+async function loadNotes() {
+  const area = $("#notes-area");
+  area.disabled = !state.wsPath;
+  area.value = state.wsPath
+    ? (await window.castor.storeGet("notes:" + state.wsPath)) || ""
+    : "";
+}
+
+$("#notes-area").addEventListener("input", () => {
+  if (!state.wsPath) return;
+  clearTimeout(state.notesTimer);
+  state.notesTimer = setTimeout(() => {
+    window.castor.storeSet("notes:" + state.wsPath, $("#notes-area").value);
+  }, 500);
+});
+
+$("#panel-toggle").addEventListener("click", () => setPanel(!state.panelOpen));
+$("#sp-close").addEventListener("click", () => setPanel(false));
+document.querySelectorAll(".sp-tab").forEach((btn) =>
+  btn.addEventListener("click", () => setPanelTab(btn.dataset.tab))
+);
+$("#sp-refresh").addEventListener("click", () => {
+  if (state.panelTab === "changes") refreshChanges();
+});
+$("#term-clear").addEventListener("click", () => {
+  $("#terminal-log").innerHTML = "";
+  $("#terminal-empty").classList.remove("hidden");
+});
+
+/* ---------- modes build / plan ---------- */
+function setChatMode(mode) {
+  state.chatMode = mode;
+  $("#mode-build").classList.toggle("active", mode === "build");
+  $("#mode-plan").classList.toggle("active", mode === "plan");
+  persist({ chatMode: mode });
+}
+$("#mode-build").addEventListener("click", () => setChatMode("build"));
+$("#mode-plan").addEventListener("click", () => setChatMode("plan"));
 
 /* ---------- approbation (diff / commande) ---------- */
 let pendingApproval = null;
@@ -545,14 +711,21 @@ function buildSystemMessage() {
     "Si la tâche comporte plusieurs étapes, commence ta réponse par une liste de cases à cocher " +
     'au format "- [ ] étape", puis reprends la même liste plus bas en cochée "- [x]" quand une étape est faite.';
 
-  const agentOn = $("#agent-mode").checked && Boolean(state.wsPath);
-  if (agentOn) {
-    s +=
-      "\n\n# Espace de travail\n" +
-      `Dossier ouvert : ${state.wsName} (${state.wsPath})\n` +
-      "Tu disposes d'outils : list_dir, read_file, write_file, run_command.\n" +
-      "Explore le projet avant de modifier. Pour écrire, fournis toujours le contenu complet du fichier — " +
-      "l'utilisateur validera chaque écriture et chaque commande.";
+  if (state.wsPath) {
+    if (state.chatMode === "build") {
+      s +=
+        "\n\n# Espace de travail\n" +
+        `Dossier ouvert : ${state.wsName} (${state.wsPath})\n` +
+        "Tu disposes d'outils : list_dir, read_file, write_file, run_command.\n" +
+        "Explore le projet avant de modifier. Pour écrire, fournis toujours le contenu complet du fichier — " +
+        "l'utilisateur validera chaque écriture et chaque commande.";
+    } else {
+      s +=
+        "\n\n# Espace de travail (mode plan)\n" +
+        `Dossier ouvert : ${state.wsName} (${state.wsPath})\n` +
+        "L'utilisateur est en mode plan : explore et analyse le code autant que nécessaire, " +
+        "mais ne modifie aucun fichier et n'exécute rien. Propose un plan d'action détaillé.";
+    }
   }
 
   const skill = state.pendingSkill;
@@ -580,8 +753,47 @@ function addMessageEl(role) {
   return bubble;
 }
 
+/* ---------- file d'attente (messages pendant un stream) ---------- */
+function renderQueue() {
+  const zone = $("#queue-zone");
+  zone.innerHTML = "";
+  if (!state.queue.length) {
+    zone.classList.add("hidden");
+    return;
+  }
+  zone.classList.remove("hidden");
+  state.queue.forEach((t, i) => {
+    const chip = document.createElement("span");
+    chip.className = "queue-chip";
+    const txt = document.createElement("span");
+    txt.textContent = t.length > 70 ? t.slice(0, 70) + "…" : t;
+    txt.title = t;
+    const x = document.createElement("button");
+    x.textContent = "✕";
+    x.title = "Retirer de la file";
+    x.addEventListener("click", () => {
+      state.queue.splice(i, 1);
+      renderQueue();
+    });
+    chip.append(txt, x);
+    zone.appendChild(chip);
+  });
+}
+
+function pumpQueue() {
+  if (state.streaming || !state.queue.length) return;
+  const next = state.queue.shift();
+  renderQueue();
+  send(next);
+}
+
 async function send(text) {
-  if (state.streaming || !text.trim()) return;
+  if (!text.trim()) return;
+  if (state.streaming) {
+    state.queue.push(text.trim());
+    renderQueue();
+    return;
+  }
 
   const provider = currentProvider();
   const model = $("#model-input").value.trim() || provider.defaultModel;
@@ -629,7 +841,7 @@ async function send(text) {
     baseURLOverride: baseURL,
     model,
     messages: payloadMessages,
-    agent: $("#agent-mode").checked && Boolean(state.wsPath),
+    agent: state.chatMode === "build" && Boolean(state.wsPath),
   });
   state.reqId = res.reqId;
 
@@ -708,6 +920,7 @@ async function send(text) {
     }
     state.pendingSkill = null;
     $("#active-skill-chip").classList.add("hidden");
+    pumpQueue();
   }
 
   const chunkOff = window.castor.onChunk(onChunk);
@@ -865,19 +1078,43 @@ function loadConversations() {
   );
 }
 
+function relTime(ts) {
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return "à l'instant";
+  if (s < 3600) return Math.floor(s / 60) + " min";
+  if (s < 86400) return Math.floor(s / 3600) + " h";
+  if (s < 86400 * 30) return Math.floor(s / 86400) + " j";
+  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
 function renderConvList() {
   const ul = $("#conv-list");
   ul.innerHTML = "";
+  const nbActive = state.conversations.filter((c) => !c.archived).length;
+  const nbArchived = state.conversations.length - nbActive;
   $("#conv-count").textContent = String(state.conversations.length);
-  if (!state.conversations.length) {
+  $("#conv-nb-active").textContent = String(nbActive);
+  $("#conv-nb-archived").textContent = String(nbArchived);
+
+  const q = state.convSearch.toLowerCase();
+  const visible = state.conversations
+    .filter((c) => Boolean(c.archived) === (state.convTab === "archived"))
+    .filter((c) => !q || c.title.toLowerCase().includes(q))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+
+  if (!visible.length) {
     const li = document.createElement("li");
     li.className = "empty-note";
-    li.textContent = "Tes conversations apparaîtront ici.";
+    li.textContent = q
+      ? "Aucun résultat."
+      : state.convTab === "archived"
+        ? "Rien d'archivé."
+        : "Tes conversations apparaîtront ici.";
     ul.appendChild(li);
     return;
   }
-  const sorted = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt);
-  for (const c of sorted) {
+
+  for (const c of visible) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "conv-btn" + (c.id === state.activeConvId ? " active" : "");
@@ -890,6 +1127,23 @@ function renderConvList() {
       e.stopPropagation();
       startConvRename(c, title);
     });
+    const when = document.createElement("span");
+    when.className = "when";
+    when.textContent = relTime(c.updatedAt);
+    when.title = new Date(c.updatedAt).toLocaleString("fr-FR");
+    const arch = document.createElement("button");
+    arch.className = "arch";
+    arch.textContent = c.archived ? "↩" : "📦";
+    arch.title = c.archived ? "Désarchiver" : "Archiver";
+    arch.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      c.archived = !c.archived;
+      await window.castor.storeSet("conversations", state.conversations);
+      if (!c.archived) c.updatedAt = Date.now();
+      if (state.convTab === "archived" && state.activeConvId === c.id && c.archived)
+        resetChatView();
+      renderConvList();
+    });
     const del = document.createElement("button");
     del.className = "del";
     del.title = "Supprimer";
@@ -901,12 +1155,29 @@ function renderConvList() {
       if (state.activeConvId === c.id) resetChatView();
       renderConvList();
     });
-    btn.append(title, del);
+    btn.append(title, when, arch, del);
     btn.addEventListener("click", () => openConversation(c.id));
     li.appendChild(btn);
     ul.appendChild(li);
   }
 }
+
+$("#conv-tab-active").addEventListener("click", () => {
+  state.convTab = "active";
+  $("#conv-tab-active").classList.add("active");
+  $("#conv-tab-archived").classList.remove("active");
+  renderConvList();
+});
+$("#conv-tab-archived").addEventListener("click", () => {
+  state.convTab = "archived";
+  $("#conv-tab-archived").classList.add("active");
+  $("#conv-tab-active").classList.remove("active");
+  renderConvList();
+});
+$("#conv-search").addEventListener("input", (e) => {
+  state.convSearch = e.target.value.trim();
+  renderConvList();
+});
 
 function startConvRename(conv, titleEl) {
   const input = document.createElement("input");
@@ -960,6 +1231,7 @@ async function saveActiveConversation() {  const firstUser = state.messages.find
       title,
       messages: snapshot,
       updatedAt: Date.now(),
+      archived: false,
     });
   }
   await window.castor.storeSet("conversations", state.conversations);
@@ -1049,6 +1321,13 @@ $("#messages").addEventListener("click", (e) => {
   if (ws.ok) {
     applyWorkspace(ws);
     refreshFileTree();
+  }
+
+  const prefs2 = await loadPersisted();
+  setChatMode(prefs2.chatMode === "plan" ? "plan" : "build");
+  if (prefs2.panelOpen) {
+    setPanel(true);
+    setPanelTab(state.panelTab);
   }
 
   renderConvList();

@@ -329,6 +329,7 @@ async function executeTool(call, reqId) {
     return "ERREUR : arguments JSON invalides.";
   }
   const name = call.function.name;
+  let meta = null; // infos pour le renderer (terminal, changes)
   win.webContents.send("tool:start", {
     reqId,
     callId: call.id,
@@ -375,6 +376,7 @@ async function executeTool(call, reqId) {
       if (!approved)
         return "REFUSÉ par l'utilisateur. Ne réessaie pas ce changement sans sa validation explicite.";
       applyWrite(WORKSPACE, args.path, args.content);
+      meta = { kind: "write", path: args.path };
       return `Écrit : ${args.path} (${args.content.split("\n").length} lignes)`;
     }
 
@@ -386,6 +388,7 @@ async function executeTool(call, reqId) {
       });
       if (!approved) return "REFUSÉ par l'utilisateur.";
       const r = await runCommand(args.command, WORKSPACE);
+      meta = { kind: "command", command: String(args.command || ""), code: r.code, output: r.output };
       return `Code de sortie : ${r.code}\n${r.output}`;
     }
 
@@ -393,9 +396,61 @@ async function executeTool(call, reqId) {
   } catch (err) {
     return `ERREUR (${name}) : ${err.message}`;
   } finally {
-    win.webContents.send("tool:result", { reqId, callId: call.id });
+    win.webContents.send("tool:result", { reqId, callId: call.id, meta });
   }
 }
+
+// ---------- suivi des changements git du chantier ----------
+ipcMain.handle("workspace:changes", async () => {
+  if (!WORKSPACE) return { ok: false, error: "aucun dossier ouvert" };
+  try {
+    const st = await runCommand(
+      "git --no-optional-locks status --porcelain=v1",
+      WORKSPACE,
+      15_000
+    );
+    if (/not a git repository|fatal/i.test(st.output))
+      return { ok: true, repo: false };
+    const ss = await runCommand("git --no-optional-locks diff --stat", WORKSPACE, 15_000);
+    const files = st.output
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((line) => ({ code: line.slice(0, 2).trim(), path: line.slice(3).trim() }));
+    return { ok: true, repo: true, files, stat: ss.output.trim(), clean: !files.length };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("workspace:fileDiff", async (_e, rel) => {
+  if (!WORKSPACE) return { ok: false, error: "aucun dossier ouvert" };
+  try {
+    const abs = safeResolve(WORKSPACE, rel);
+    const relSafe = path.relative(WORKSPACE, abs);
+    const quoted = JSON.stringify(relSafe);
+    const st = await runCommand(
+      `git --no-optional-locks status --porcelain=v1 -- ${quoted}`,
+      WORKSPACE,
+      10_000
+    );
+    if (st.output.trim().startsWith("??")) {
+      const r = readFileCapped(WORKSPACE, relSafe);
+      return {
+        ok: true,
+        untracked: true,
+        content: r.content.split("\n").slice(0, 160).join("\n"),
+      };
+    }
+    const d = await runCommand(
+      `git --no-optional-locks diff -- ${quoted}`,
+      WORKSPACE,
+      15_000
+    );
+    return { ok: true, content: d.output.trim() || "(aucun changement)" };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
 
 ipcMain.handle("chat:test", async (_e, providerId, baseURLOverride) => {
   const provider = findProvider(providerId);
