@@ -5,6 +5,13 @@
   "description": "Castor — le castor qui code pour toi : site vitrine, studio web et app Desktop multi-providers. Gratuit pour toujours.",
   "license": "MIT",
   "author": "DmzGamingYT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DmzGamingYT/castor.git"
+  },
+  "homepage": "https://github.com/DmzGamingYT/castor#readme",
+  "bugs": "https://github.com/DmzGamingYT/castor/issues",
+  "engines": { "node": ">=18" },
   "type": "module",
   "scripts": {
     "dev": "vite",
