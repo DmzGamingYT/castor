@@ -25,6 +25,11 @@ const state = {
   usage: { totalTokens: 0, requests: 0 },
   sessionTokens: 0,
   pendingSkill: null,
+
+  wsName: null,
+  wsPath: null,
+  conversations: [],
+  activeConvId: null,
 };
 
 /* ---------- persistance (store.json côté main) ---------- */
@@ -150,6 +155,189 @@ $("#test-conn").addEventListener("click", async () => {
   );
   note.className = res.ok ? "test-result ok" : "test-result ko";
   note.textContent = res.ok ? "Connecté ✓" : res.error;
+});
+
+/* ---------- espace de travail (atelier) ---------- */
+function applyWorkspace(info) {
+  state.wsName = info.name;
+  state.wsPath = info.path;
+  $("#ws-box").classList.add("hidden");
+  $("#ws-active").classList.remove("hidden");
+  $("#ws-name").textContent = info.name;
+  $("#ws-name").title = info.path;
+  $("#ws-chip-name").textContent = info.name;
+  $("#ws-chip").classList.remove("hidden");
+}
+
+function clearWorkspaceView() {
+  state.wsName = null;
+  state.wsPath = null;
+  $("#ws-box").classList.remove("hidden");
+  $("#ws-active").classList.add("hidden");
+  $("#ws-chip").classList.add("hidden");
+  $("#file-tree").innerHTML = "";
+}
+
+async function refreshFileTree() {
+  const res = await window.castor.workspaceTree();
+  if (!res.ok) return;
+  $("#file-tree").replaceChildren(fileTreeNode(res.tree, 1));
+}
+
+function fileTreeNode(node, depth) {
+  const frag = document.createDocumentFragment();
+  for (const child of node.children || []) {
+    if (child.type === "dir") {
+      const details = document.createElement("details");
+      if (depth < 2) details.open = true;
+      const summary = document.createElement("summary");
+      summary.textContent = "📁 " + child.name;
+      details.appendChild(summary);
+      if (child.children?.length) details.appendChild(fileTreeNode(child, depth + 1));
+      frag.appendChild(details);
+    } else {
+      const file = document.createElement("div");
+      file.className = "ft-file";
+      file.textContent = "📄 " + child.name;
+      frag.appendChild(file);
+    }
+  }
+  return frag;
+}
+
+$("#open-workspace").addEventListener("click", async () => {
+  const res = await window.castor.openWorkspace();
+  if (!res.ok) return;
+  applyWorkspace(res);
+  refreshFileTree();
+});
+
+$("#close-workspace").addEventListener("click", async () => {
+  await window.castor.closeWorkspace();
+  clearWorkspaceView();
+});
+
+/* ---------- outils : trace dans le chat ---------- */
+window.castor.onToolStart(({ reqId, callId, icon, label }) => {
+  if (reqId !== state.reqId || !state.currentTrace) return;
+  const line = document.createElement("div");
+  line.className = "tool-line running";
+  line.dataset.callId = callId;
+  const ic = document.createElement("i");
+  ic.className = "icon";
+  ic.textContent = icon;
+  const lb = document.createElement("span");
+  lb.textContent = label;
+  line.append(ic, lb);
+  state.currentTrace.appendChild(line);
+  scrollDown();
+});
+
+window.castor.onToolResult(({ reqId, callId }) => {
+  if (reqId !== state.reqId) return;
+  const line = state.currentTrace?.querySelector(`[data-call-id="${callId}"]`);
+  if (line) {
+    line.classList.remove("running");
+    line.classList.add("done");
+  }
+});
+
+/* ---------- approbation (diff / commande) ---------- */
+let pendingApproval = null;
+
+function colorizeDiff(diff) {
+  return escapeHtml(diff)
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("@@")) return `<span class="d-hunk">${line}</span>`;
+      if (line.startsWith("+")) return `<span class="d-add">${line}</span>`;
+      if (line.startsWith("-")) return `<span class="d-del">${line}</span>`;
+      return line;
+    })
+    .join("\n");
+}
+
+function showApproval(p) {
+  pendingApproval = p.callId;
+  if (p.kind === "command") {
+    $("#diff-icon").textContent = "⚙️";
+    $("#diff-title").textContent = "Commande shell";
+    $("#diff-path").textContent = `dans ${state.wsName || "le projet"} — ${p.command}`;
+    $("#diff-body").innerHTML = escapeHtml("$ " + p.command);
+  } else {
+    $("#diff-icon").textContent = p.isNew ? "✨" : "✏️";
+    $("#diff-title").textContent = p.isNew ? "Nouveau fichier" : "Écriture de fichier";
+    $("#diff-path").textContent = p.path;
+    $("#diff-body").innerHTML = colorizeDiff(p.diff || "");
+  }
+  $("#diff-modal").classList.remove("hidden");
+  $("#diff-reject").focus();
+}
+
+function answerApproval(approved) {
+  if (!pendingApproval) return;
+  window.castor.respondApproval(pendingApproval, approved);
+  pendingApproval = null;
+  $("#diff-modal").classList.add("hidden");
+  $("#input").focus();
+}
+
+window.castor.onApprovalRequest(showApproval);
+$("#diff-approve").addEventListener("click", () => answerApproval(true));
+$("#diff-reject").addEventListener("click", () => answerApproval(false));
+$("#diff-modal").addEventListener("click", (e) => {
+  if (e.target.classList.contains("diff-modal__backdrop")) answerApproval(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (pendingApproval == null) return;
+  if (e.key === "Escape") answerApproval(false);
+  if (e.key === "Enter") {
+    e.preventDefault();
+    answerApproval(true);
+  }
+});
+
+/* ---------- glisser-déposer un dossier ---------- */
+let dragDepth = 0;
+const dropHasFiles = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+
+document.addEventListener("dragenter", (e) => {
+  if (!dropHasFiles(e)) return;
+  e.preventDefault();
+  dragDepth++;
+  document.body.classList.add("ws-dropping");
+});
+document.addEventListener("dragleave", () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) document.body.classList.remove("ws-dropping");
+});
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove("ws-dropping");
+  const file = e.dataTransfer?.files?.[0];
+  if (!file || state.streaming) return;
+  const p = window.castor.pathForFile(file);
+  if (!p) return;
+  const res = await window.castor.openWorkspacePath(p);
+  if (!res.ok) return;
+  applyWorkspace(res);
+  refreshFileTree();
+});
+
+/* ---------- raccourcis clavier ---------- */
+document.addEventListener("keydown", (e) => {
+  if (!(e.metaKey || e.ctrlKey) || pendingApproval != null) return;
+  const k = e.key.toLowerCase();
+  if (k === "n") {
+    e.preventDefault();
+    if (!state.streaming) resetChatView();
+  }
+  if (k === "o") {
+    e.preventDefault();
+    $("#open-workspace").click();
+  }
 });
 
 /* ---------- compétences ---------- */
@@ -357,6 +545,16 @@ function buildSystemMessage() {
     "Si la tâche comporte plusieurs étapes, commence ta réponse par une liste de cases à cocher " +
     'au format "- [ ] étape", puis reprends la même liste plus bas en cochée "- [x]" quand une étape est faite.';
 
+  const agentOn = $("#agent-mode").checked && Boolean(state.wsPath);
+  if (agentOn) {
+    s +=
+      "\n\n# Espace de travail\n" +
+      `Dossier ouvert : ${state.wsName} (${state.wsPath})\n` +
+      "Tu disposes d'outils : list_dir, read_file, write_file, run_command.\n" +
+      "Explore le projet avant de modifier. Pour écrire, fournis toujours le contenu complet du fichier — " +
+      "l'utilisateur validera chaque écriture et chaque commande.";
+  }
+
   const skill = state.pendingSkill;
   if (skill) s += `\n\n# Compétence activée : ${skill.name}\n${skill.body}`;
 
@@ -410,7 +608,10 @@ async function send(text) {
   state.firstTokenMs = null;
   let chars = 0;
   const inTokens = estTok(systemPromptChars + text.length + state.sessionTokens * 0); // approx via conversation
-  $("#send").disabled = true;
+  const sendBtn = $("#send");
+  sendBtn.textContent = "⏹";
+  sendBtn.title = "Arrêter la génération";
+  sendBtn.classList.add("stop");
   scrollDown();
 
   const payloadMessages = [
@@ -418,11 +619,17 @@ async function send(text) {
     ...state.messages.slice(0, -1),
   ];
 
+  const trace = document.createElement("div");
+  trace.className = "tools-trace";
+  $("#messages").appendChild(trace);
+  state.currentTrace = trace;
+
   const res = await window.castor.stream({
     providerId: provider.id,
     baseURLOverride: baseURL,
     model,
     messages: payloadMessages,
+    agent: $("#agent-mode").checked && Boolean(state.wsPath),
   });
   state.reqId = res.reqId;
 
@@ -443,6 +650,7 @@ async function send(text) {
   function onEnd({ ms, cancelled }) {
     cleanup();
     thinking.remove();
+    if (!trace.children.length) trace.remove();
     const content = state.messages[state.messages.length - 1]?.content || "";
 
     // usage
@@ -477,12 +685,17 @@ async function send(text) {
     bubble.innerHTML = `<span style="color:var(--danger)">⚠ ${escapeHtml(message)}</span>`;
     renderUsage();
     finish();
+    saveActiveConversation();
   }
 
   function cleanup() {
     state.streaming = false;
     state.reqId = null;
-    $("#send").disabled = false;
+    state.currentTrace = null;
+    const sendBtn = $("#send");
+    sendBtn.textContent = "Envoyer";
+    sendBtn.title = "";
+    sendBtn.classList.remove("stop");
     chunkOff();
     endOff();
     errOff();
@@ -625,7 +838,13 @@ function submitInput() {
   send(text);
 }
 
-$("#send").addEventListener("click", submitInput);
+$("#send").addEventListener("click", () => {
+  if (state.streaming) {
+    if (state.reqId != null) window.castor.cancel(state.reqId);
+    return;
+  }
+  submitInput();
+});
 
 function autoresize(el) {
   el.style.height = "auto";
@@ -639,13 +858,153 @@ $("#input").addEventListener("blur", () =>
   setTimeout(() => $("#slash-menu").classList.add("hidden"), 150)
 );
 
-$("#new-chat").addEventListener("click", () => {
+/* ---------- conversations persistantes ---------- */
+function loadConversations() {
+  return window.castor.storeGet("conversations").then(
+    (list) => (state.conversations = list || [])
+  );
+}
+
+function renderConvList() {
+  const ul = $("#conv-list");
+  ul.innerHTML = "";
+  $("#conv-count").textContent = String(state.conversations.length);
+  if (!state.conversations.length) {
+    const li = document.createElement("li");
+    li.className = "empty-note";
+    li.textContent = "Tes conversations apparaîtront ici.";
+    ul.appendChild(li);
+    return;
+  }
+  const sorted = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt);
+  for (const c of sorted) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "conv-btn" + (c.id === state.activeConvId ? " active" : "");
+    btn.dataset.convId = c.id;
+    const title = document.createElement("span");
+    title.className = "title";
+    title.textContent = c.title;
+    title.title = c.title + " — double-clic pour renommer";
+    title.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      startConvRename(c, title);
+    });
+    const del = document.createElement("button");
+    del.className = "del";
+    del.title = "Supprimer";
+    del.textContent = "✕";
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      state.conversations = state.conversations.filter((x) => x.id !== c.id);
+      await window.castor.storeSet("conversations", state.conversations);
+      if (state.activeConvId === c.id) resetChatView();
+      renderConvList();
+    });
+    btn.append(title, del);
+    btn.addEventListener("click", () => openConversation(c.id));
+    li.appendChild(btn);
+    ul.appendChild(li);
+  }
+}
+
+function startConvRename(conv, titleEl) {
+  const input = document.createElement("input");
+  input.className = "conv-rename";
+  input.value = conv.title;
+  input.spellcheck = false;
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let done = false;
+  const commit = async () => {
+    if (done) return;
+    done = true;
+    const v = input.value.trim();
+    if (v && v !== conv.title) {
+      conv.title = v;
+      await window.castor.storeSet("conversations", state.conversations);
+      if (state.activeConvId === conv.id) $("#chat-title").textContent = v;
+    }
+    renderConvList();
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Enter") input.blur();
+    if (ev.key === "Escape") {
+      done = true;
+      renderConvList();
+    }
+  });
+}
+
+async function saveActiveConversation() {  const firstUser = state.messages.find((m) => m.role === "user");
+  if (!firstUser || !firstUser.content.trim()) return;
+
+  if (state.activeConvId == null) state.activeConvId = Date.now();
+  const snapshot = state.messages.map((m) => ({ role: m.role, content: m.content }));
+  const title =
+    firstUser.content.trim().slice(0, 60) +
+    (firstUser.content.trim().length > 60 ? "…" : "");
+
+  const existing = state.conversations.find((c) => c.id === state.activeConvId);
+  if (existing) {
+    existing.title = title;
+    existing.messages = snapshot;
+    existing.updatedAt = Date.now();
+  } else {
+    state.conversations.push({
+      id: state.activeConvId,
+      title,
+      messages: snapshot,
+      updatedAt: Date.now(),
+    });
+  }
+  await window.castor.storeSet("conversations", state.conversations);
+  renderConvList();
+}
+
+function openConversation(id) {
+  if (state.streaming) return;
+  const conv = state.conversations.find((c) => c.id === id);
+  if (!conv) return;
+
+  state.activeConvId = id;
+  state.messages = conv.messages.map((m) => ({ ...m }));
+
+  const box = $("#messages");
+  box.innerHTML = "";
+  for (const m of state.messages) {
+    const bubble = addMessageEl(m.role);
+    bubble.innerHTML = m.content ? renderMarkdown(m.content) : "";
+  }
+  const lastAssistant = [...state.messages].reverse().find((m) => m.role === "assistant");
+  renderTodos(parseTodos(lastAssistant?.content || ""));
+
+  $("#stats").textContent = "";
+  $("#chat-title").textContent = conv.title;
+  $("#conv-list")
+    .querySelectorAll(".conv-btn")
+    .forEach((b) => b.classList.toggle("active", b.dataset.convId === String(id)));
+  renderUsage();
+  scrollDown();
+}
+
+function resetChatView() {
+  state.activeConvId = null;
   state.messages = [];
   $("#messages").innerHTML = welcomeHTML();
   $("#stats").textContent = "";
+  const p = currentProvider();
+  $("#chat-title").textContent = p ? `Castor · ${p.label}` : "Nouvelle conversation";
   renderTodos([]);
+  renderConvList();
   renderUsage();
-});
+}
+
+$("#new-chat").addEventListener("click", resetChatView);
 
 function welcomeHTML() {
   return `
@@ -685,6 +1044,14 @@ $("#messages").addEventListener("click", (e) => {
     requests: 0,
   };
 
+  await loadConversations();
+  const ws = await window.castor.restoreWorkspace();
+  if (ws.ok) {
+    applyWorkspace(ws);
+    refreshFileTree();
+  }
+
+  renderConvList();
   renderSkills();
   renderMemory();
   renderUsage();

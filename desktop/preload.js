@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("castor", {
   // providers
@@ -14,7 +14,20 @@ contextBridge.exposeInMainWorld("castor", {
   onError: (cb) => ipcRenderer.on("chat:error", (_e, d) => cb(d)),
   onEnd: (cb) => ipcRenderer.on("chat:end", (_e, d) => cb(d)),
 
-  // stockage persistant (compétences, mémoire, usage)
+  // atelier (espace de travail + outils)
+  openWorkspace: () => ipcRenderer.invoke("workspace:open"),
+  openWorkspacePath: (p) => ipcRenderer.invoke("workspace:openPath", p),
+  restoreWorkspace: () => ipcRenderer.invoke("workspace:restore"),
+  closeWorkspace: () => ipcRenderer.invoke("workspace:close"),
+  workspaceTree: () => ipcRenderer.invoke("workspace:tree"),
+  pathForFile: (file) => webUtils.getPathForFile(file),
+  respondApproval: (callId, approved) =>
+    ipcRenderer.invoke("approval:respond", callId, approved),
+  onToolStart: (cb) => ipcRenderer.on("tool:start", (_e, d) => cb(d)),
+  onToolResult: (cb) => ipcRenderer.on("tool:result", (_e, d) => cb(d)),
+  onApprovalRequest: (cb) => ipcRenderer.on("approval:request", (_e, d) => cb(d)),
+
+  // stockage persistant (compétences, mémoire, usage, conversations)
   storeGet: (key) => ipcRenderer.invoke("store:get", key),
   storeSet: (key, value) => ipcRenderer.invoke("store:set", key, value),
 });

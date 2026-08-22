@@ -518,6 +518,11 @@ textarea { resize: vertical; font-family: var(--font-body); font-size: 0.8rem; l
 
 #send { padding: 0.62rem 1.3rem; }
 #send:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+#send.stop {
+  background: linear-gradient(135deg, #dd8a72, var(--danger));
+  color: #fffdf6;
+  box-shadow: 0 4px 14px rgba(194, 91, 69, 0.3);
+}
 
 .slash-menu {
   position: absolute;
@@ -563,3 +568,266 @@ textarea { resize: vertical; font-family: var(--font-body); font-size: 0.8rem; l
   .layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
 }
+
+/* ---------- conversations ---------- */
+.conv-list {
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+.conv-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.42rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.conv-btn:hover { background: rgba(226, 149, 42, 0.07); color: var(--text); }
+.conv-btn.active {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+.conv-btn .title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conv-btn .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.conv-btn .del:hover { color: var(--danger); opacity: 1; }
+
+.conv-btn input.conv-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.74rem;
+  border-radius: 6px;
+}
+
+/* ---------- glisser-déposer d'un dossier ---------- */
+body.ws-dropping #ws-box,
+body.ws-dropping #ws-active {
+  outline: 2px dashed var(--accent-dim);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+body.ws-dropping .sidebar { background: rgba(226, 149, 42, 0.10); }
+
+/* ---------- espace de travail (atelier) ---------- */
+.ws-box {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+}
+
+.ws-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  padding: 0.15rem 0.2rem;
+}
+.ws-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+.ws-head .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.ws-head .del:hover { color: var(--danger); }
+
+.file-tree {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 0.35rem 0.4rem;
+  margin-top: 0.35rem;
+}
+.file-tree::-webkit-scrollbar { width: 6px; }
+.file-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.file-tree details { margin-left: 0; }
+.file-tree details details { margin-left: 0.85rem; }
+.file-tree summary {
+  cursor: pointer;
+  color: var(--text);
+  list-style: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.file-tree summary::before { content: "▸ "; color: var(--muted); }
+.file-tree details[open] > summary::before { content: "▾ "; }
+.file-tree summary:hover { color: var(--accent-deep); }
+.ft-file {
+  color: var(--muted);
+  white-space: nowrap;
+  padding-left: 1.15rem;
+}
+.ft-more { color: var(--muted); opacity: 0.7; padding-left: 0.6rem; font-style: italic; }
+
+/* ---------- chip workspace dans le header ---------- */
+.ws-chip {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  max-width: 220px;
+}
+.ws-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- toggle mode agent ---------- */
+.agent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  padding-bottom: 0.65rem;
+  user-select: none;
+}
+.agent-toggle input { width: auto; accent-color: var(--accent); cursor: pointer; }
+.agent-toggle:hover { color: var(--text); }
+
+/* ---------- trace des outils dans le chat ---------- */
+.tools-trace {
+  display: grid;
+  gap: 0.25rem;
+  justify-self: start;
+  width: 100%;
+  max-width: 46rem;
+}
+.tool-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 0.22rem 0.55rem;
+  animation: toolIn 0.25s ease both;
+}
+@keyframes toolIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tool-line.running::after {
+  content: "…";
+  animation: think 1.2s ease-in-out infinite;
+}
+.tool-line.done { opacity: 0.75; }
+.tool-line.done .icon { filter: saturate(0.4); }
+.tool-line .icon { font-style: normal; }
+
+/* ---------- modale d'approbation (diff / commande) ---------- */
+.diff-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+}
+.diff-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(46, 51, 32, 0.35);
+  backdrop-filter: blur(2px);
+}
+.diff-modal__card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.8rem;
+  width: min(720px, calc(100vw - 3rem));
+  max-height: min(80vh, 640px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(96, 82, 34, 0.28);
+  padding: 1.1rem 1.2rem;
+}
+.diff-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+}
+.diff-modal__head code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  word-break: break-all;
+}
+.diff-modal__body {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  overflow: auto;
+  white-space: pre;
+  margin: 0;
+}
+.diff-modal__body .d-add { color: #9ecf6a; background: rgba(147, 168, 98, 0.12); display: block; }
+.diff-modal__body .d-del { color: #e08a76; background: rgba(194, 91, 69, 0.12); display: block; }
+.diff-modal__body .d-hunk { color: var(--river); opacity: 0.85; display: block; margin: 0.2rem 0; }
+
+.diff-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.diff-modal__actions .btn-primary,
+.diff-modal__actions .btn-ghost { padding: 0.5rem 1.2rem; }

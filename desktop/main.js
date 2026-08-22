@@ -1,7 +1,16 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu, dialog, net } =
+  require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { PROVIDERS } = require("./src/providers");
+const {
+  safeResolve,
+  buildTree,
+  readFileCapped,
+  previewWrite,
+  applyWrite,
+  runCommand,
+} = require("./src/tools");
 
 let win = null;
 let reqSeq = 0;
@@ -144,6 +153,250 @@ ipcMain.handle("models:refresh", async (_e, providerId, baseURLOverride) => {
   }
 });
 
+// ---------- espace de travail (atelier) ----------
+let WORKSPACE = null;
+
+ipcMain.handle("workspace:open", async () => {
+  const r = await dialog.showOpenDialog(win, {
+    properties: ["openDirectory"],
+    title: "Choisis le dossier du projet",
+  });
+  if (r.canceled || !r.filePaths[0]) return { ok: false };
+  WORKSPACE = r.filePaths[0];
+  const store = readStore();
+  store.workspace = WORKSPACE;
+  writeStore(store);
+  return { ok: true, path: WORKSPACE, name: path.basename(WORKSPACE) };
+});
+
+ipcMain.handle("workspace:restore", () => {
+  const saved = readStore().workspace;
+  if (saved && fs.existsSync(saved)) {
+    WORKSPACE = saved;
+    return { ok: true, path: WORKSPACE, name: path.basename(WORKSPACE) };
+  }
+  return { ok: false };
+});
+
+ipcMain.handle("workspace:openPath", (_e, p) => {
+  try {
+    const abs = path.resolve(String(p || ""));
+    if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) return { ok: false };
+    WORKSPACE = abs;
+    const store = readStore();
+    store.workspace = WORKSPACE;
+    writeStore(store);
+    return { ok: true, path: WORKSPACE, name: path.basename(WORKSPACE) };
+  } catch {
+    return { ok: false };
+  }
+});
+
+ipcMain.handle("workspace:close", () => {
+  WORKSPACE = null;
+  const store = readStore();
+  delete store.workspace;
+  writeStore(store);
+  return true;
+});
+
+ipcMain.handle("workspace:tree", () => {
+  if (!WORKSPACE) return { ok: false, error: "aucun dossier ouvert" };
+  try {
+    return { ok: true, path: WORKSPACE, name: path.basename(WORKSPACE), tree: buildTree(WORKSPACE) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// ---------- approbation des actions sensibles ----------
+const approvals = new Map(); // callId -> resolve
+let bounceId = null;
+
+function requestApproval(payload) {
+  return new Promise((resolve) => {
+    approvals.set(payload.callId, resolve);
+    win.webContents.send("approval:request", payload);
+    if (!win.isFocused()) {
+      if (process.platform === "darwin" && app.dock) bounceId = app.dock.bounce();
+      win.flashFrame(true);
+    }
+  });
+}
+
+function clearAttention() {
+  if (bounceId != null && process.platform === "darwin" && app.dock) {
+    app.dock.cancelBounce(bounceId);
+    bounceId = null;
+  }
+  win.flashFrame(false);
+}
+
+ipcMain.handle("approval:respond", (_e, callId, approved) => {
+  clearAttention();
+  const resolve = approvals.get(callId);
+  if (resolve) {
+    approvals.delete(callId);
+    resolve(Boolean(approved));
+  }
+  return true;
+});
+
+// ---------- outils exposés au modèle ----------
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "list_dir",
+      description:
+        "Liste le contenu d'un dossier de l'espace de travail (chemins relatifs à la racine).",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Chemin relatif, '.' pour la racine" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_file",
+      description: "Lit un fichier (200 ko max) et renvoie son contenu texte.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Chemin relatif du fichier" },
+        },
+        required: ["path"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "write_file",
+      description:
+        "Écrit un fichier complet (création ou remplacement). Une validation humaine du diff est demandée avant application.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Chemin relatif du fichier" },
+          content: { type: "string", description: "Contenu complet du fichier" },
+        },
+        required: ["path", "content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "run_command",
+      description:
+        "Lance une commande shell dans la racine du projet (npm, git…). Validation humaine demandée. 60 s max.",
+      parameters: {
+        type: "object",
+        properties: {
+          command: { type: "string", description: "La commande à exécuter" },
+        },
+        required: ["command"],
+      },
+    },
+  },
+];
+
+function toolLabel(name, args) {
+  switch (name) {
+    case "list_dir":
+      return `Explore ${args.path || "."}`;
+    case "read_file":
+      return `Lit ${args.path}`;
+    case "write_file":
+      return `Écrit ${args.path}`;
+    case "run_command":
+      return `Lance « ${String(args.command).slice(0, 60)} »`;
+    default:
+      return name;
+  }
+}
+
+async function executeTool(call, reqId) {
+  let args = {};
+  try {
+    args = JSON.parse(call.function.arguments || "{}");
+  } catch {
+    return "ERREUR : arguments JSON invalides.";
+  }
+  const name = call.function.name;
+  win.webContents.send("tool:start", {
+    reqId,
+    callId: call.id,
+    icon: name === "run_command" ? "⚙️" : name === "write_file" ? "✏️" : "🔎",
+    label: toolLabel(name, args),
+  });
+
+  try {
+    if (!WORKSPACE)
+      return "ERREUR : aucun dossier ouvert. Demande à l'utilisateur d'ouvrir un espace de travail.";
+
+    if (name === "list_dir") {
+      const abs = safeResolve(WORKSPACE, args.path || ".");
+      const st = fs.statSync(abs);
+      if (!st.isDirectory()) return `Ce n'est pas un dossier : ${args.path}`;
+      const entries = fs
+        .readdirSync(abs, { withFileTypes: true })
+        .filter((e) => !/^(node_modules|\.git|dist|build|release)$/.test(e.name))
+        .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name))
+        .map((e) => (e.isDirectory() ? `${e.name}/` : e.name));
+      return entries.length ? entries.join("\n") : "(dossier vide)";
+    }
+
+    if (name === "read_file") {
+      const r = readFileCapped(WORKSPACE, args.path);
+      return (
+        (r.truncated
+          ? `FICHIER TRONQUÉ (${Math.round(r.bytes / 1024)} ko au total)\n`
+          : "") + r.content
+      );
+    }
+
+    if (name === "write_file") {
+      if (typeof args.content !== "string")
+        return "ERREUR : contenu manquant.";
+      const prev = previewWrite(WORKSPACE, args.path, args.content);
+      const approved = await requestApproval({
+        callId: call.id,
+        kind: "write",
+        path: args.path,
+        isNew: prev.isNew,
+        diff: prev.diff ?? "(contenu identique)",
+      });
+      if (!approved)
+        return "REFUSÉ par l'utilisateur. Ne réessaie pas ce changement sans sa validation explicite.";
+      applyWrite(WORKSPACE, args.path, args.content);
+      return `Écrit : ${args.path} (${args.content.split("\n").length} lignes)`;
+    }
+
+    if (name === "run_command") {
+      const approved = await requestApproval({
+        callId: call.id,
+        kind: "command",
+        command: String(args.command || ""),
+      });
+      if (!approved) return "REFUSÉ par l'utilisateur.";
+      const r = await runCommand(args.command, WORKSPACE);
+      return `Code de sortie : ${r.code}\n${r.output}`;
+    }
+
+    return `ERREUR : outil inconnu « ${name} ».`;
+  } catch (err) {
+    return `ERREUR (${name}) : ${err.message}`;
+  } finally {
+    win.webContents.send("tool:result", { reqId, callId: call.id });
+  }
+}
+
 ipcMain.handle("chat:test", async (_e, providerId, baseURLOverride) => {
   const provider = findProvider(providerId);
   if (!provider) return { ok: false, error: "provider inconnu" };
@@ -160,8 +413,10 @@ ipcMain.handle("chat:test", async (_e, providerId, baseURLOverride) => {
   }
 });
 
+const MAX_TOOL_ROUNDS = 12;
+
 ipcMain.handle("chat:stream", async (_e, payload) => {
-  const { providerId, baseURLOverride, model, messages } = payload;
+  const { providerId, baseURLOverride, model, messages, agent } = payload;
   const provider = findProvider(providerId);
   if (!provider) return { ok: false, reqId: 0, error: "provider inconnu" };
   if (provider.needsKey && !getKey(provider.id)) {
@@ -176,62 +431,130 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
   const ac = new AbortController();
   streams.set(reqId, ac);
   const t0 = Date.now();
+  const convo = [...messages]; // copie mutée à chaque tour d'outils
 
   try {
-    const res = await net.fetch(
-      `${resolveBaseURL(provider, baseURLOverride)}/chat/completions`,
-      {
-        method: "POST",
-        headers: headersFor(provider),
-        signal: ac.signal,
-        body: JSON.stringify({ model, messages, stream: true }),
+    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+      const pendingTools = new Map(); // index -> {id, name, arguments}
+      let textAccum = "";
+      let finishReason = null;
+
+      const res = await net.fetch(
+        `${resolveBaseURL(provider, baseURLOverride)}/chat/completions`,
+        {
+          method: "POST",
+          headers: headersFor(provider),
+          signal: ac.signal,
+          body: JSON.stringify({
+            model,
+            messages: convo,
+            stream: true,
+            ...(agent ? { tools: TOOLS } : {}),
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        win.webContents.send("chat:end", {
+          reqId,
+          ms: Date.now() - t0,
+          error: `HTTP ${res.status} — ${text.slice(0, 300)}`,
+        });
+        return { ok: false, reqId, error: `HTTP ${res.status}` };
       }
-    );
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      win.webContents.send("chat:end", {
-        reqId,
-        ms: Date.now() - t0,
-        error: `HTTP ${res.status} — ${text.slice(0, 300)}`,
-      });
-      return { ok: false, reqId, error: `HTTP ${res.status}` };
-    }
+      // --- lecture du flux SSE ---
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
+      readLoop: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
+        const events = buf.split(/\n\n/);
+        buf = events.pop() ?? "";
 
-      const events = buf.split(/\n\n/);
-      buf = events.pop() ?? "";
+        for (const evt of events) {
+          for (const line of evt.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const data = trimmed.slice(5).trim();
+            if (data === "[DONE]") break readLoop;
+            try {
+              const json = JSON.parse(data);
+              const choice = json.choices?.[0];
+              if (choice?.finish_reason) finishReason = choice.finish_reason;
 
-      for (const evt of events) {
-        for (const line of evt.split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (data === "[DONE]") {
-            win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
-            streams.delete(reqId);
-            return { ok: true, reqId };
-          }
-          try {
-            const json = JSON.parse(data);
-            const delta =
-              json.choices?.[0]?.delta?.content ??
-              json.choices?.[0]?.text ??
-              "";
-            if (delta)
-              win.webContents.send("chat:chunk", { reqId, delta });
-          } catch {
-            // fragment JSON incomplet : on ignore
+              const delta = choice?.delta;
+              if (delta?.content) {
+                textAccum += delta.content;
+                win.webContents.send("chat:chunk", { reqId, delta: delta.content });
+              }
+              if (Array.isArray(delta?.tool_calls)) {
+                for (const tc of delta.tool_calls) {
+                  const cur =
+                    pendingTools.get(tc.index) ?? { id: "", name: "", arguments: "" };
+                  if (tc.id) cur.id = tc.id;
+                  if (!cur.name && tc.function?.name) cur.name = tc.function.name;
+                  if (tc.function?.arguments)
+                    cur.arguments += tc.function.arguments;
+                  pendingTools.set(tc.index, cur);
+                }
+              }
+            } catch {
+              // fragment JSON incomplet : on ignore
+            }
           }
         }
+      }
+
+      const toolCalls = [...pendingTools.values()].filter((t) => t.id && t.name);
+
+      // --- pas d'outils appelés : fin normale ---
+      if (!toolCalls.length || !agent) {
+        win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
+        return { ok: true, reqId };
+      }
+
+      // --- tour d'outils : on rejoue avec les résultats ---
+      convo.push({
+        role: "assistant",
+        content: textAccum || null,
+        tool_calls: toolCalls.map((t) => ({
+          id: t.id,
+          type: "function",
+          function: { name: t.name, arguments: t.arguments || "{}" },
+        })),
+      });
+
+      for (const call of toolCalls) {
+        if (ac.signal.aborted) break;
+        const result = await executeTool(call, reqId);
+        convo.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: result.slice(0, 16_000),
+        });
+      }
+
+      if (ac.signal.aborted) {
+        win.webContents.send("chat:end", {
+          reqId,
+          ms: Date.now() - t0,
+          cancelled: true,
+        });
+        return { ok: true, reqId };
+      }
+
+      if (round === MAX_TOOL_ROUNDS) {
+        convo.push({
+          role: "system",
+          content:
+            "Nombre maximum de tours d'outils atteint. Résume l'état et rends la main.",
+        });
       }
     }
 

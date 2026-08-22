@@ -24,6 +24,12 @@
           </div>
         </div>
 
+        <div class="sidebar__section-title">
+          Conversations
+          <span id="conv-count" class="count-badge">0</span>
+        </div>
+        <ul id="conv-list" class="conv-list"></ul>
+
         <div class="sidebar__section-title">Providers</div>
         <ul id="provider-list" class="provider-list"></ul>
 
@@ -51,6 +57,19 @@
             Tester la connexion
           </button>
           <span id="test-result" class="test-result"></span>
+        </div>
+
+        <div class="sidebar__section-title">Espace de travail</div>
+        <div id="ws-box" class="ws-box">
+          <button id="open-workspace" class="btn-ghost btn-mini">📁 Ouvrir un dossier…</button>
+          <span id="ws-hint" class="empty-note">Aucun dossier — le castor ne peut pas coder sans chantier.</span>
+        </div>
+        <div id="ws-active" class="hidden">
+          <div class="ws-head">
+            <strong id="ws-name" title=""></strong>
+            <button id="close-workspace" class="del" title="Fermer l'espace de travail">✕</button>
+          </div>
+          <div id="file-tree" class="file-tree"></div>
         </div>
 
         <div class="sidebar__section-title">Compétences <span class="hint">/ dans le champ</span></div>
@@ -92,6 +111,7 @@
       <main class="chat">
         <header class="chat__header">
           <h1 id="chat-title">Nouvelle conversation</h1>
+          <span id="ws-chip" class="ws-chip hidden" title="Espace de travail ouvert">📁 <span id="ws-chip-name"></span></span>
           <span id="active-skill-chip" class="skill-chip hidden">
             <em>compétence :</em> <b id="skill-chip-name"></b>
             <button id="clear-skill" title="Retirer">×</button>
@@ -129,6 +149,10 @@
 
         <footer class="composer">
           <div id="slash-menu" class="slash-menu hidden"></div>
+          <label class="agent-toggle" title="Donne au modèle des outils : lire, écrire (avec validation) et lancer des commandes dans le dossier ouvert">
+            <input type="checkbox" id="agent-mode" checked />
+            🔧 mode agent
+          </label>
           <textarea
             id="input"
             rows="1"
@@ -137,6 +161,24 @@
           <button id="send" class="btn-primary">Envoyer</button>
         </footer>
       </main>
+    </div>
+
+    <div id="diff-modal" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <div class="diff-modal__card">
+        <header class="diff-modal__head">
+          <span id="diff-icon">✏️</span>
+          <div>
+            <strong id="diff-title">Écriture de fichier</strong>
+            <code id="diff-path"></code>
+          </div>
+        </header>
+        <pre id="diff-body" class="diff-modal__body"></pre>
+        <footer class="diff-modal__actions">
+          <button id="diff-reject" class="btn-ghost">Refuser</button>
+          <button id="diff-approve" class="btn-primary">Approuver</button>
+        </footer>
+      </div>
     </div>
 
     <script src="app.js"></script>
