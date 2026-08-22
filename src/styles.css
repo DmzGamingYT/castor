@@ -2193,6 +2193,8 @@ main:focus { outline: none; }
   display: grid;
   gap: 0.75rem;
   align-content: start;
+  min-width: 0; /* empêche le bloc code de débordere la colonne */
+  text-align: left; /* .section centre tout — on repasse à gauche dans les cartes */
 }
 
 .install-method--reco { border-color: var(--accent-dim); }
@@ -2256,6 +2258,7 @@ main:focus { outline: none; }
   margin: 0;
   overflow-x: auto;
   white-space: pre;
+  text-align: left;
   scrollbar-width: thin;
   font-family: var(--font-mono);
   font-size: 0.76rem;
@@ -2293,6 +2296,8 @@ main:focus { outline: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.1rem 1.25rem;
+  min-width: 0;
+  text-align: left;
 }
 
 .cli-install__start strong {
