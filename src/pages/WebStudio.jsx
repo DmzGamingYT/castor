@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
-import Icon from "../components/Icon.jsx";
+import ModelSelect from "../components/ModelSelect.jsx";
 import {
   generateSite,
   generateWithAI,
-  fetchFreeModels,
   titleFromHtml,
   THEME_LIST,
 } from "../lib/generator.js";
+import { fetchFreeModels } from "../lib/openrouter.js";
+import { useApiKey } from "../lib/useApiKey.js";
+import {
+  DEFAULT_MODEL,
+  shortName,
+  sortModelsByPreference,
+  slugify,
+} from "../lib/utils.js";
 
 const SUGGESTIONS = [
   "Le portfolio d'un photographe animalier",
@@ -26,8 +33,6 @@ const BUILD_LOG = [
 ];
 
 const STORE_KEY = "castor-web-projects";
-const OR_KEY_STORE = "castor-or-key";
-const DEFAULT_MODEL = "stealth/ox-alpha";
 
 function loadProjects() {
   try {
@@ -35,10 +40,6 @@ function loadProjects() {
   } catch {
     return [];
   }
-}
-
-function shortName(id, name) {
-  return (name || id).replace(/\s*\(free\)\s*$/i, "");
 }
 
 export default function WebStudio() {
@@ -53,13 +54,22 @@ export default function WebStudio() {
   // modèles OpenRouter
   const [models, setModels] = useState([]);
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(OR_KEY_STORE) || "");
   const [keyDraft, setKeyDraft] = useState("");
   const [keyOpen, setKeyOpen] = useState(false);
+  const [apiKey, saveKeyState] = useApiKey();
 
   const timers = useRef([]);
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const buildCtrl = useRef(null); // aborte la génération IA au démontage
+  const tabUrlRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout);
+      buildCtrl.current?.abort();
+      if (tabUrlRef.current) URL.revokeObjectURL(tabUrlRef.current);
+    },
+    []
+  );
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
   function flash(msg) {
@@ -69,53 +79,45 @@ export default function WebStudio() {
 
   // chargement des modèles gratuits au montage
   useEffect(() => {
+    let alive = true;
     fetchFreeModels()
-      .then((list) => {
-        // préférence : les modèles mis en avant en premier
-        const pref = [
-          "stealth/ox-alpha",
-          "nvidia/nemotron-3-ultra-550b-a55b:free",
-          "poolside/laguna-s-2.1:free",
-          "nvidia/nemotron-3.5-lightning:free",
-          "poolside/laguna-xs-2.1:free",
-        ];
-        list.sort((a, b) => {
-          const ia = pref.indexOf(a.id), ib = pref.indexOf(b.id);
-          if (ia !== -1 || ib !== -1)
-            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-          return (b.ctx || 0) - (a.ctx || 0);
-        });
-        setModels(list.slice(0, 14));
-      })
-      .catch(() => setModels([]));
+      .then((list) => alive && setModels(sortModelsByPreference(list).slice(0, 14)))
+      .catch(() => alive && setModels([]));
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const currentModel = models.find((m) => m.id === modelId);
   const aiReady = Boolean(apiKey.trim()) && Boolean(modelId);
 
   function saveKey() {
-    const v = keyDraft.trim();
-    setApiKey(v);
-    localStorage.setItem(OR_KEY_STORE, v);
+    saveKeyState(keyDraft);
     setKeyDraft("");
     setKeyOpen(false);
-    flash(v ? "Clé enregistrée — l'IA génère tes sites ✓" : "Clé effacée — retour aux gabarits locaux");
+    flash(keyDraft.trim() ? "Clé enregistrée — l'IA génère tes sites ✓" : "Clé effacée — retour aux gabarits locaux");
   }
 
-  async function buildWithAI(site) {
+  function clearKey() {
+    saveKeyState("");
+    flash("Clé effacée — retour aux gabarits locaux");
+  }
+
+  async function buildWithAI(site, signal) {
     setLogs((p) => [...p, `✔ appel OpenRouter · ${shortName(currentModel?.id, currentModel?.name)}`]);
     const html = await generateWithAI({
       prompt,
       model: modelId,
       apiKey: apiKey.trim(),
       themeName: theme,
+      signal,
     });
     const title = titleFromHtml(html, prompt);
     return {
       ...site,
       html,
       title,
-      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || "site-ia",
+      slug: slugify(title) || "site-ia",
       kindLabel: `IA · ${shortName(currentModel?.id, currentModel?.name).slice(0, 22)}`,
     };
   }
@@ -129,21 +131,30 @@ export default function WebStudio() {
     BUILD_LOG.forEach((line, i) => later(() => setLogs((p) => [...p, line]), 420 * (i + 1)));
 
     later(async () => {
+      const ctrl = new AbortController();
+      buildCtrl.current = ctrl;
       let site = null;
       if (aiReady) {
         try {
-          site = await buildWithAI({ theme });
+          site = await buildWithAI({ theme }, ctrl.signal);
         } catch (err) {
-          setLogs((p) => [...p, `⚠ IA indisponible (${String(err.message).slice(0, 60)}) — repli gabarits locaux`]);
+          if (err.name !== "AbortError") {
+            setLogs((p) => [
+              ...p,
+              `⚠ IA indisponible (${String(err.message || "erreur").slice(0, 60)}) — repli gabarits locaux`,
+            ]);
+          }
         }
       }
       if (!site) site = generateSite(prompt, theme);
 
+      const replaced = projects.some((p) => p.slug === site.slug);
       setResult(site);
       const next = [site, ...projects.filter((p) => p.slug !== site.slug)].slice(0, 12);
       setProjects(next);
       localStorage.setItem(STORE_KEY, JSON.stringify(next));
       setPhase("done");
+      if (replaced) flash("Un projet au même nom existait — il a été remplacé");
       later(
         () => document.getElementById("preview")?.scrollIntoView({ behavior: "smooth" }),
         80
@@ -170,23 +181,40 @@ export default function WebStudio() {
 
   function openTab() {
     if (!result) return;
-    const blob = new Blob([result.html], { type: "text/html" });
-    window.open(URL.createObjectURL(blob), "_blank");
+    // le HTML généré par l'IA ne doit jamais tourner same-origin :
+    // enfermé dans une iframe sandboxée (origine opaque), il ne peut ni lire
+    // la clé API du localStorage ni toucher à window.opener.
+    const escaped = result.html.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+    const wrapper =
+      '<!doctype html><html><head><meta charset="utf-8">' +
+      "<title>Aperçu Castor</title>" +
+      "<style>html,body{margin:0;height:100%}iframe{display:block;border:0;width:100%;height:100%}</style>" +
+      '</head><body><iframe sandbox="allow-scripts allow-forms allow-modals" ' +
+      `srcdoc="${escaped}"></iframe></body></html>`;
+    if (tabUrlRef.current) URL.revokeObjectURL(tabUrlRef.current);
+    const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
+    tabUrlRef.current = url;
+    window.open(url, "_blank", "noopener");
   }
 
-  function download() {
-    if (!result) return;
-    const blob = new Blob([result.html], { type: "text/html" });
+  function downloadHtml(site) {
+    const blob = new Blob([site.html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${result.slug}.html`;
+    a.href = url;
+    a.download = `${site.slug}.html`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function copyCode() {
     if (!result) return;
-    await navigator.clipboard?.writeText(result.html);
-    flash("Code copié dans le presse-papier ✓");
+    try {
+      await navigator.clipboard.writeText(result.html);
+      flash("Code copié dans le presse-papier ✓");
+    } catch {
+      flash("Copie impossible — accès au presse-papier refusé");
+    }
   }
 
   return (
@@ -211,6 +239,7 @@ export default function WebStudio() {
             rows={3}
             disabled={phase === "building"}
             spellCheck="false"
+            aria-label="Décris l'app à construire"
           />
 
           {keyOpen && (
@@ -223,12 +252,13 @@ export default function WebStudio() {
                 placeholder="sk-or-v1-… (reste dans ton navigateur)"
                 spellCheck="false"
                 autoFocus
+                aria-label="Clé API OpenRouter"
               />
               <button className="mini-btn mini-btn--primary" onClick={saveKey}>
                 Enregistrer
               </button>
               {apiKey && (
-                <button className="mini-btn" onClick={() => { setApiKey(""); localStorage.removeItem(OR_KEY_STORE); flash("Clé effacée"); }}>
+                <button className="mini-btn" onClick={clearKey}>
                   Effacer
                 </button>
               )}
@@ -243,44 +273,20 @@ export default function WebStudio() {
                   className={`dot-btn dot-btn--${name} ${theme === name ? "dot-btn--on" : ""}`}
                   onClick={() => setTheme(theme === name ? null : name)}
                   aria-label={`Thème ${name}`}
+                  aria-pressed={theme === name}
                 />
               ))}
               <em>{theme ? `thème ${theme}` : "thème auto"}</em>
             </div>
 
-            {/* sélecteur de modèle */}
-            <div className="model-select">
-              <button
-                className="model-select__btn"
-                onClick={() => setMenuOpen(!menuOpen)}
-                onBlur={() => setTimeout(() => setMenuOpen(false), 180)}
-              >
-                <span className={`engine-dot ${aiReady ? "engine-dot--on" : ""}`} />
-                {currentModel ? shortName(currentModel.id, currentModel.name) : "Chargement…"}
-                <em>▾</em>
-              </button>
-              {menuOpen && (
-                <ul className="model-menu">
-                  {models.length === 0 && (
-                    <li className="ms-empty">Gratuits OpenRouter indisponibles — gabarits locaux actifs.</li>
-                  )}
-                  {models.map((m) => (
-                    <li key={m.id}>
-                      <button
-                        className={`ms-item ${m.id === modelId ? "ms-item--on" : ""}`}
-                        onMouseDown={() => {
-                          setModelId(m.id);
-                          setMenuOpen(false);
-                        }}
-                      >
-                        <span>{shortName(m.id, m.name)}</span>
-                        <small>{m.ctx ? Math.round(m.ctx / 1024) + "k" : "—"}</small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <ModelSelect
+              models={models}
+              modelId={modelId}
+              onSelect={setModelId}
+              aiReady={aiReady}
+              emptyLabel="Gratuits OpenRouter indisponibles — gabarits locaux actifs."
+              loadingLabel="Chargement…"
+            />
 
             <button
               className={`mini-btn ${apiKey ? "mini-btn--ok" : ""}`}
@@ -331,7 +337,7 @@ export default function WebStudio() {
           {phase === "building" && (
             <pre className="dam__log studio__log">
               {logs.map((l, i) => (
-                <span key={i}>
+                <span key={`${i}-${l}`}>
                   {l.startsWith("›") ? (
                     <span className="t-accent">{l}</span>
                   ) : l.startsWith("⚠") ? (
@@ -349,16 +355,16 @@ export default function WebStudio() {
           {phase === "done" && result && (
             <>
               <div className="preview-bar">
-                <span className="preview-url">{result.slug}.castor.app</span>
+                <span className="preview-url">aperçu local · {result.slug}.html</span>
                 <span className="preview-kind">{result.kindLabel}</span>
                 <button onClick={openTab}>Nouvel onglet ↗</button>
-                <button onClick={download}>Télécharger .html</button>
+                <button onClick={() => downloadHtml(result)}>Télécharger .html</button>
                 <button onClick={copyCode}>Copier le code</button>
               </div>
               <div className="mockup studio__frame">
                 <div className="mockup__bar">
                   <span /> <span /> <span />
-                  <em>{result.slug}.castor.app</em>
+                  <em>{result.title}</em>
                 </div>
                 <iframe
                   title={`Aperçu ${result.title}`}
@@ -392,24 +398,21 @@ export default function WebStudio() {
                     {p.kindLabel}
                   </span>
                 </header>
-                <code>{p.slug}.castor.app</code>
+                <code>{p.slug}.html · fichier local</code>
                 <footer>
                   <button className="mini-btn mini-btn--primary" onClick={() => openProject(p)}>
                     Ouvrir
                   </button>
-                  <button
-                    className="mini-btn"
-                    onClick={() => {
-                      const blob = new Blob([p.html], { type: "text/html" });
-                      const a = document.createElement("a");
-                      a.href = URL.createObjectURL(blob);
-                      a.download = `${p.slug}.html`;
-                      a.click();
-                    }}
-                  >
+                  <button className="mini-btn" onClick={() => downloadHtml(p)} aria-label={`Télécharger ${p.title}`}>
                     ⬇
                   </button>
-                  <button className="mini-btn" onClick={() => removeProject(p.slug)}>✕</button>
+                  <button
+                    className="mini-btn"
+                    onClick={() => removeProject(p.slug)}
+                    aria-label={`Supprimer ${p.title}`}
+                  >
+                    ✕
+                  </button>
                 </footer>
               </article>
             ))}

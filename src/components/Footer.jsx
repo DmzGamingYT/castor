@@ -15,7 +15,7 @@ export default function Footer({ onDownload }) {
           <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
             Télécharger Castor Desktop
           </button>
-          <code className="footer__cmd">ou : npm i -g castor</code>
+          <code className="footer__cmd">ou : npm i -g castor-cli</code>
         </div>
       </div>
       <div className="footer__bottom">

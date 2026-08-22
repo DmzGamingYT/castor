@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
 import Icon from "../components/Icon.jsx";
+import { fetchFreeOpenRouter } from "../lib/openrouter.js";
 import {
   SNAPSHOT,
   SNAPSHOT_DATE,
   PROVIDERS,
   TYPES,
-  inferTypes,
   formatCtx,
 } from "../data/models.js";
 
@@ -19,41 +19,42 @@ const TYPE_CLASS = {
   outils: "tag--outils",
 };
 
-async function fetchLiveOpenRouter() {
-  const res = await fetch("https://openrouter.ai/api/v1/models");
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  const free = (json.data || []).filter((m) => m.pricing?.prompt === "0");
-  return free.map((m) => ({
-    id: m.id,
-    provider: "openrouter",
-    name: (m.name || m.id).replace(/\s*\(free\)\s*$/i, ""),
-    types: inferTypes(m),
-    ctx: m.context_length || null,
-    live: true,
-  }));
-}
+/* cache module : évite de re-fetch à chaque visite de la page */
+let liveCache = null; // { entries }
 
 export default function Models() {
-  const [entries, setEntries] = useState(SNAPSHOT);
-  const [status, setStatus] = useState({ loading: true, live: false, error: null, count: 0 });
+  const [entries, setEntries] = useState(liveCache ? liveCache.entries : SNAPSHOT);
+  const [status, setStatus] = useState(() =>
+    liveCache
+      ? { loading: false, live: true, error: null, count: liveCache.entries.filter((e) => e.live).length }
+      : { loading: true, live: false, error: null, count: 0 }
+  );
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
   const [activeTypes, setActiveTypes] = useState(new Set());
+  const reqRef = useRef(0);
+  const aliveRef = useRef(true);
 
   async function refresh() {
+    const myReq = ++reqRef.current;
     setStatus((s) => ({ ...s, loading: true, error: null }));
     try {
-      const live = await fetchLiveOpenRouter();
-      setEntries([...live, ...SNAPSHOT.filter((e) => e.provider !== "openrouter")]);
+      const live = await fetchFreeOpenRouter();
+      if (!aliveRef.current || reqRef.current !== myReq) return; // démontage ou requête plus récente
+      liveCache = { entries: [...live, ...SNAPSHOT.filter((e) => e.provider !== "openrouter")] };
+      setEntries(liveCache.entries);
       setStatus({ loading: false, live: true, error: null, count: live.length });
     } catch (err) {
+      if (!aliveRef.current || reqRef.current !== myReq) return;
       setStatus({ loading: false, live: false, error: err.message, count: 0 });
     }
   }
 
   useEffect(() => {
-    refresh();
+    if (!liveCache) refresh();
+    return () => {
+      aliveRef.current = false;
+    };
   }, []);
 
   const filtered = useMemo(() => {
@@ -62,11 +63,7 @@ export default function Models() {
       if (tab !== "all" && e.provider !== tab) return false;
       if (activeTypes.size && ![...activeTypes].some((t) => e.types.includes(t)))
         return false;
-      if (
-        query &&
-        !`${e.name} ${e.id}`.toLowerCase().includes(query)
-      )
-        return false;
+      if (query && !`${e.name} ${e.id}`.toLowerCase().includes(query)) return false;
       return true;
     });
   }, [entries, tab, q, activeTypes]);
@@ -102,14 +99,14 @@ export default function Models() {
             ↻ Actualiser
           </button>
           {status.loading ? (
-            <span>Actualisation…</span>
+            <span role="status">Actualisation…</span>
           ) : status.live ? (
-            <span className="ok">
+            <span className="ok" role="status">
               ● Live OpenRouter : {status.count} modèles gratuits · autres providers :
               vérifié le {SNAPSHOT_DATE}
             </span>
           ) : (
-            <span className={status.error ? "ko" : ""}>
+            <span className={status.error ? "ko" : ""} role="status">
               {status.error
                 ? `Live indisponible (${status.error}) — instantané du ${SNAPSHOT_DATE}`
                 : `Instantané du ${SNAPSHOT_DATE}`}
@@ -119,12 +116,14 @@ export default function Models() {
       </section>
 
       <section className="section section--tight models__controls">
-        <div className="tabs">
+        <div className="tabs" role="tablist" aria-label="Filtrer par provider">
           {["all", ...Object.keys(PROVIDERS)].map((key) => (
             <button
               key={key}
               className={`tab ${tab === key ? "tab--on" : ""}`}
               onClick={() => setTab(key)}
+              role="tab"
+              aria-selected={tab === key}
             >
               {key === "all" ? "Tous" : PROVIDERS[key].label}
             </button>
@@ -139,6 +138,7 @@ export default function Models() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="Rechercher un modèle…"
               spellCheck="false"
+              aria-label="Rechercher un modèle"
             />
           </label>
           <div className="type-filters">
@@ -149,6 +149,7 @@ export default function Models() {
                   activeTypes.has(key) ? "chip-btn--on" : ""
                 }`}
                 onClick={() => toggleType(key)}
+                aria-pressed={activeTypes.has(key)}
               >
                 {label}
               </button>
@@ -156,7 +157,7 @@ export default function Models() {
           </div>
         </div>
 
-        <p className="models__count">
+        <p className="models__count" role="status">
           {filtered.length} modèle{filtered.length > 1 ? "s" : ""}
         </p>
 
@@ -182,9 +183,7 @@ export default function Models() {
             </article>
           ))}
           {!filtered.length && (
-            <p className="empty-note">
-              Aucun modèle ne correspond — essaie un autre filtre.
-            </p>
+            <p className="empty-note">Aucun modèle ne correspond — essaie un autre filtre.</p>
           )}
         </div>
       </section>

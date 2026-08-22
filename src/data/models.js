@@ -1,7 +1,9 @@
 /* Catalogue des modèles gratuits, par provider.
    SNAPSHOT = état vérifié à la date indiquée ; la page Modèles tente
    une actualisation live depuis l'API publique d'OpenRouter (sans clé)
-   et retombe sur ce snapshot en cas d'échec réseau. */
+   et retombe sur ce snapshot en cas d'échec réseau.
+   Les listes Groq / Zen / Local sont des sélections curatées des
+   principaux modèles actifs (leurs catalogues exigent une clé). */
 
 export const SNAPSHOT_DATE = "21 août 2026";
 
@@ -21,35 +23,57 @@ export const TYPES = {
   outils: "Outils",
 };
 
-export const SNAPSHOT = [
-  // --- OpenRouter (suffixe :free) ---
-  { id: "deepseek/deepseek-chat-v3-0324:free", provider: "openrouter", name: "DeepSeek V3 0324", types: ["code", "outils"], ctx: 163840 },
-  { id: "deepseek/deepseek-r1-0528:free", provider: "openrouter", name: "DeepSeek R1", types: ["raisonnement", "code"], ctx: 163840 },
-  { id: "qwen/qwen3-coder:free", provider: "openrouter", name: "Qwen3 Coder", types: ["code", "outils"], ctx: 262144 },
-  { id: "meta-llama/llama-3.3-70b-instruct:free", provider: "openrouter", name: "Llama 3.3 70B", types: ["rapide"], ctx: 131072 },
-  { id: "google/gemma-3-27b-it:free", provider: "openrouter", name: "Gemma 3 27B", types: ["multimodal", "vision"], ctx: 131072 },
-  { id: "mistralai/mistral-small-3.2-24b-instruct:free", provider: "openrouter", name: "Mistral Small 3.2", types: ["rapide", "code"], ctx: 131072 },
-  { id: "moonshotai/kimi-k2:free", provider: "openrouter", name: "Kimi K2", types: ["outils", "code"], ctx: 131072 },
-  { id: "z-ai/glm-4.5-air:free", provider: "openrouter", name: "GLM 4.5 Air", types: ["raisonnement", "rapide"], ctx: 131072 },
+/* --- OpenRouter : liste réelle des gratuits au 21/08/2026 (hors
+       modèles de modération et previews musique) --- */
+const OPENROUTER_LIVE = [
+  { id: "stealth/ox-alpha", name: "Ox Alpha", types: ["raisonnement", "code", "outils"], ctx: 1048576 },
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra", types: ["raisonnement", "outils"], ctx: 1000000 },
+  { id: "nvidia/nemotron-3.5-lightning:free", name: "Nemotron 3.5 Lightning", types: ["rapide"], ctx: 1000000 },
+  { id: "poolside/laguna-s-2.1:free", name: "Laguna S 2.1", types: ["code", "outils"], ctx: 262144 },
+  { id: "poolside/laguna-xs-2.1:free", name: "Laguna XS 2.1", types: ["code", "rapide"], ctx: 262144 },
+  { id: "cohere/north-mini-code:free", name: "North Mini Code", types: ["code"], ctx: 256000 },
+  { id: "z-ai/glm-5.2:free", name: "GLM 5.2", types: ["raisonnement", "outils"], ctx: 256000 },
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "Nemotron 3 Super", types: ["raisonnement"], ctx: 262144 },
+  { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B", types: ["multimodal", "vision"], ctx: 262144 },
+  { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B A4B", types: ["multimodal", "vision", "rapide"], ctx: 262144 },
+  { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", name: "Nemotron 3 Nano Omni", types: ["multimodal", "raisonnement"], ctx: 256000 },
+  { id: "dots-studio/dots-3-note-preview:free", name: "Dots3 Note Preview", types: ["rapide"], ctx: 512000 },
+  { id: "openrouter/free", name: "Free Models Router", types: ["rapide", "outils"], ctx: 200000 },
+  { id: "nvidia/nemotron-nano-12b-v2-vl:free", name: "Nemotron Nano 12B VL", types: ["vision"], ctx: 128000 },
+  { id: "openai/gpt-oss-20b:free", name: "GPT-OSS 20B", types: ["raisonnement", "outils"], ctx: 131072 },
+  { id: "nvidia/nemotron-3-nano-30b-a3b:free", name: "Nemotron 3 Nano 30B", types: ["rapide"], ctx: 256000 },
+  { id: "nvidia/nemotron-nano-9b-v2:free", name: "Nemotron Nano 9B v2", types: ["rapide"], ctx: 128000 },
+  { id: "liquid/lfm-2.5-2.6b:free", name: "LFM 2.5 2.6B", types: ["rapide"], ctx: 65536 },
+].map((m) => ({ ...m, provider: "openrouter" }));
 
-  // --- Groq (tier gratuit) ---
+export const SNAPSHOT = [
+  ...OPENROUTER_LIVE,
+
+  // --- Groq (principaux actifs du tier gratuit) ---
   { id: "llama-3.3-70b-versatile", provider: "groq", name: "Llama 3.3 70B Versatile", types: ["rapide"], ctx: 131072 },
   { id: "llama-3.1-8b-instant", provider: "groq", name: "Llama 3.1 8B Instant", types: ["rapide"], ctx: 131072 },
-  { id: "qwen-2.5-coder-32b", provider: "groq", name: "Qwen 2.5 Coder 32B", types: ["code"], ctx: 131072 },
   { id: "meta-llama/llama-4-scout-17b-16e-instruct", provider: "groq", name: "Llama 4 Scout", types: ["multimodal", "vision", "rapide"], ctx: 131072 },
   { id: "openai/gpt-oss-120b", provider: "groq", name: "GPT-OSS 120B", types: ["raisonnement", "outils"], ctx: 131072 },
+  { id: "qwen/qwen3-32b", provider: "groq", name: "Qwen 3 32B", types: ["raisonnement", "code"], ctx: 131072 },
 
-  // --- OpenCode Zen ---
+  // --- OpenCode Zen (passerelle code) ---
   { id: "grok-code", provider: "zen", name: "Grok Code", types: ["code", "rapide"], ctx: 131072 },
   { id: "qwen3-coder", provider: "zen", name: "Qwen3 Coder", types: ["code"], ctx: 262144 },
-  { id: "kimi-k2", provider: "zen", name: "Kimi K2", types: ["outils"], ctx: 131072 },
+  { id: "kimi-k2", provider: "zen", name: "Kimi K2", types: ["outils", "code"], ctx: 131072 },
 
-  // --- Local (Ollama & co) ---
+  // --- Local (bibliothèque Ollama) ---
+  { id: "qwen3-coder:30b", provider: "local", name: "Qwen3 Coder 30B", types: ["code"], ctx: 262144 },
   { id: "qwen2.5-coder:7b", provider: "local", name: "Qwen 2.5 Coder 7B", types: ["code"], ctx: 32768 },
-  { id: "llama3.2:3b", provider: "local", name: "Llama 3.2 3B", types: ["rapide"], ctx: 131072 },
-  { id: "llava:7b", provider: "local", name: "LLaVA 7B", types: ["vision"], ctx: 32768 },
+  { id: "gemma3:4b", provider: "local", name: "Gemma 3 4B", types: ["multimodal", "vision", "rapide"], ctx: 131072 },
   { id: "deepseek-r1:8b", provider: "local", name: "DeepSeek R1 8B", types: ["raisonnement"], ctx: 131072 },
+  { id: "llava:7b", provider: "local", name: "LLaVA 7B", types: ["vision"], ctx: 32768 },
 ];
+
+/* Modèles présents dans l'API mais hors périmètre chat :
+   modération, génération musicale… */
+export function isChatModel(id) {
+  return !/content-safety|moderation|lyria/i.test(id || "");
+}
 
 /* Déduit des types depuis les métadonnées brutes d'OpenRouter */
 export function inferTypes(model) {

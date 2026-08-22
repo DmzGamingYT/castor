@@ -36,15 +36,60 @@
   --dark-accent: #eec36a;
   --dark-ok: #a9ce74;
 
+  /* collines décoratives */
+  --hill-1: #dde5c9;
+  --hill-2: #cfdab4;
+  --hill-3: #c1ce9e;
+
+  /* blocs de code */
+  --code-bg: #f2edd9;
+  --code-border: #e3dac0;
+  --code-text: #3a3527;
+
   --radius: 16px;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
+/* ============================================================
+   Thème sombre « nuit de chantier » — piloté par <html data-theme>
+   ============================================================ */
+[data-theme="dark"] {
+  --bg: #171b10;
+  --bg-soft: #1e2315;
+  --panel: #20261a;
+  --panel-2: #262d1e;
+  --border: #3a4229;
+  --border-soft: #2f3624;
+
+  --text: #e8e4d2;
+  --muted: #9aa087;
+
+  --accent: #e8a13c;
+  --accent-2: #f0bc63;
+  --accent-dim: #c98820;
+  --accent-deep: #f2c063;
+  --ink: #241a05;
+
+  --wood: #d99a3e;
+  --wood-deep: #e0ac57;
+  --river: #58b8d6;
+  --river-deep: #7ccde8;
+  --sage: #93a862;
+  --sage-deep: #aec47e;
+  --danger: #e07b62;
+
+  --hill-1: #232b18;
+  --hill-2: #1d2413;
+  --hill-3: #181e10;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 body {
   background:
@@ -70,6 +115,11 @@ body::before {
   mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 30%, transparent 75%);
   pointer-events: none;
 }
+[data-theme="dark"] body::before {
+  background-image:
+    linear-gradient(rgba(210, 214, 170, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(210, 214, 170, 0.05) 1px, transparent 1px);
+}
 
 ::selection { background: var(--accent); color: #fffdf6; }
 
@@ -78,10 +128,37 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; }
 
+main:focus { outline: none; }
+
+/* lien d'évitement — visible uniquement au focus clavier */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 200;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.skip-link:focus { top: 0.75rem; }
+
 :focus-visible {
   outline: 2px solid var(--accent-deep);
   outline-offset: 3px;
   border-radius: 6px;
+}
+
+/* ---------- animations : respecter prefers-reduced-motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ---------- header ---------- */
@@ -144,13 +221,45 @@ main { flex: 1; }
 }
 .nav a:hover, .nav__link--active { color: var(--text); }
 
+/* actions à droite du header : thème, CTA, burger */
+.header__actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.theme-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.theme-btn:hover { transform: translateY(-2px); border-color: var(--accent-dim); }
+
+.nav-burger {
+  display: none;
+  width: 40px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
 .pulse-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--accent);
   animation: pulse 1.8s ease-out infinite;
 }
-.pulse-dot--big { width: 10px; height: 10px; }
 
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(226, 149, 42, 0.45); }
@@ -1049,6 +1158,33 @@ main { flex: 1; }
   .m-line--2 { text-align: left; }
 }
 
+/* ---------- header responsive : menu burger ---------- */
+@media (max-width: 860px) {
+  .header { gap: 0.8rem; flex-wrap: wrap; padding: 0.7rem 1rem; }
+  .nav-burger { display: inline-grid; place-items: center; }
+
+  .nav {
+    display: none;
+    order: 3;
+    flex-basis: 100%;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.45rem 0.15rem 0.6rem;
+    margin-top: 0.35rem;
+    border-top: 1px solid var(--border-soft);
+  }
+  .nav--open { display: flex; }
+  .nav a {
+    padding: 0.6rem 0.5rem;
+    border-radius: 10px;
+    font-size: 1rem;
+  }
+  .nav a:hover,
+  .nav__link--active {
+    background: color-mix(in srgb, var(--panel) 75%, transparent);
+  }
+}
+
 /* ---------- modal de téléchargement ---------- */
 .dl-overlay {
   position: fixed;
@@ -1370,102 +1506,6 @@ main { flex: 1; }
   padding: 0.12rem 0.5rem;
 }
 
-/* ---------- vitrine Castor Web ---------- */
-.showcase__prompts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  text-align: left;
-}
-
-.prompt-card {
-  position: relative;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.3rem 1.2rem 1.1rem;
-  display: grid;
-  gap: 0.7rem;
-  align-content: start;
-  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
-}
-.prompt-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent-dim);
-  box-shadow: 0 14px 34px rgba(96, 82, 34, 0.13);
-}
-
-.prompt-card__mark {
-  position: absolute;
-  top: 1.05rem;
-  left: 1.15rem;
-  color: var(--accent-deep);
-  font-family: var(--font-mono);
-  font-weight: 700;
-}
-.prompt-card p {
-  padding-left: 1.1rem;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-.prompt-card code {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--river-deep);
-  background: #e8f4f9;
-  border-radius: 999px;
-  padding: 0.22rem 0.65rem;
-  justify-self: start;
-}
-
-.showcase__templates {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.9rem;
-  text-align: left;
-}
-
-.template-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.2rem;
-  transition: transform 0.18s, border-color 0.18s;
-}
-.template-card:hover { transform: translateY(-3px); border-color: var(--accent-dim); }
-.template-card__icon { color: var(--accent-deep); }
-.template-card h3 { font-size: 0.98rem; margin: 0.55rem 0 0.25rem; }
-.template-card p { color: var(--muted); font-size: 0.82rem; }
-
-.showcase__deliv {
-  max-width: 620px;
-  margin: 0 auto;
-  display: grid;
-  gap: 0.8rem;
-  text-align: left;
-}
-
-.deliv-row {
-  display: flex;
-  gap: 0.9rem;
-  align-items: flex-start;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 0.95rem 1.1rem;
-}
-.deliv-row__icon {
-  color: var(--accent-deep);
-  background: #fdf3dd;
-  border-radius: 10px;
-  padding: 0.45rem;
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.deliv-row strong { font-family: var(--font-display); font-size: 0.94rem; }
-.deliv-row p { color: var(--muted); font-size: 0.84rem; margin-top: 0.1rem; }
-
 /* icône dans les titres de pages produits */
 .h1-icon { vertical-align: -4px; margin-right: 0.2rem; color: var(--text); }
 .logo__tile svg { display: block; }
@@ -1531,16 +1571,6 @@ main { flex: 1; }
 .dot-btn--sauge { background: #93a862; }
 .dot-btn--bois { background: #b07a2e; }
 
-.model-chip {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--muted);
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-}
-
 .send-btn {
   width: 42px; height: 42px;
   border-radius: 50%;
@@ -1564,17 +1594,6 @@ main { flex: 1; }
   gap: 0.5rem;
   margin-top: 1.3rem;
 }
-
-.studio__git {
-  position: relative;
-  margin-top: 1.4rem;
-  font-size: 0.84rem;
-  color: var(--muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-.studio__git em { font-style: normal; opacity: 0.65; font-size: 0.78rem; }
 
 .studio__log {
   max-width: 480px;
@@ -1836,3 +1855,472 @@ main { flex: 1; }
   color: var(--muted);
   max-width: 34rem;
 }
+
+/* ---------- Castor Chat Studio ---------- */
+.chatapp {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  height: calc(100vh - 62px);
+  min-height: 0;
+}
+
+.chatapp__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem 0.9rem;
+  border-right: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-soft) 60%, transparent);
+  min-height: 0;
+}
+
+.newchat-btn {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.newchat-btn:hover {
+  border-color: var(--accent-dim);
+  box-shadow: 0 8px 22px rgba(96, 82, 34, 0.12);
+}
+
+.chatapp__list-label {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+.chatapp__list-label small { font-family: var(--font-mono); }
+
+.chatapp__list {
+  list-style: none;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+  flex: 1;
+}
+.chatapp__list::-webkit-scrollbar { width: 6px; }
+.chatapp__list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.chatapp__empty {
+  color: var(--muted);
+  opacity: 0.7;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.chatapp__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.84rem;
+  color: var(--muted);
+  text-align: left;
+  transition: all 0.13s;
+}
+.chatapp__item:hover { background: rgba(226, 149, 42, 0.07); color: var(--text); }
+.chatapp__item.on {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
+.chatapp__item .t {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chatapp__item .del {
+  opacity: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 0 0.2rem;
+}
+.chatapp__item:hover .del { opacity: 0.7; }
+.chatapp__item .del:hover { color: var(--danger); opacity: 1; }
+
+.chatapp__foot {
+  font-size: 0.74rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.7rem;
+}
+.chatapp__foot a { color: var(--accent-deep); text-decoration: none; }
+.chatapp__foot a:hover { text-decoration: underline; }
+
+/* zone principale */
+.chatapp__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.chatapp__topbar,
+.demo-note { flex: none; }
+.chatapp__main > .chatapp__welcome,
+.chatapp__main > .chatapp__thread { flex: 1 1 auto; }
+.chatapp__main > .composer-card { align-self: center; margin-bottom: 0.9rem; }
+
+.chatapp__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+  padding: 2rem;
+  overflow-y: auto;
+}
+.chatapp__welcome h1 {
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+  letter-spacing: -0.02em;
+}
+
+.cchat-composer { width: min(620px, 100%); }
+
+.chatapp__thread {
+  overflow-y: auto;
+  padding: 1.6rem 1.4rem;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+.chatapp__thread::-webkit-scrollbar { width: 8px; }
+.chatapp__thread::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.cmsg { display: grid; max-width: 46rem; }
+.cmsg--user { justify-self: end; }
+.cmsg--assistant { justify-self: start; width: 100%; }
+
+.cmsg__bubble {
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  line-height: 1.55;
+  font-size: 0.92rem;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.cmsg--user .cmsg__bubble {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.cmsg--assistant .cmsg__bubble {
+  background: #fdf6e7;
+  border: 1px solid #f0dcb4;
+}
+
+.cmsg--assistant code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+}
+
+.cmsg--assistant pre {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  overflow-x: auto;
+  margin: 0.45rem 0;
+  white-space: pre;
+}
+
+.cmsg--assistant h4 {
+  font-family: var(--font-display);
+  margin: 0.35rem 0;
+  font-size: 0.95rem;
+}
+
+.send-btn--stop {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: none;
+}
+
+/* barre du haut (mobile) : burger conversations + titre */
+.chatapp__topbar {
+  display: none;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+.chatapp__burger {
+  width: 38px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.chatapp__topbar-title {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+/* bandeau mode démo (pas de clé) */
+.demo-note {
+  margin: 0.6rem 1.2rem 0;
+  padding: 0.55rem 0.95rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* curseur de stream — ancré sous la dernière bulle, pas dans une bulle */
+.cursor--live { display: inline-block; animation: blink 1s steps(2) infinite; }
+
+@keyframes blink { 50% { opacity: 0; } }
+
+@media (max-width: 800px) {
+  .chatapp { grid-template-columns: 1fr; height: auto; }
+  .chatapp__main { min-height: 80vh; }
+  .chatapp__topbar { display: flex; }
+
+  /* la sidebar devient un panneau coulissant au-dessus du contenu */
+  .chatapp__side {
+    display: flex;
+    position: fixed;
+    inset: 0 30% 0 0;
+    z-index: 90;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: 14px 0 40px rgba(20, 24, 10, 0.25);
+  }
+  .chatapp--menu .chatapp__side { transform: translateX(0); }
+
+  .demo-note { margin: 0.6rem 0.8rem 0; }
+}
+
+/* ============================================================
+   Thème sombre — correctifs ciblés pour les couleurs claires
+   codées en dur (badges, tags, bulles, pastilles)
+   ============================================================ */
+[data-theme="dark"] {
+  --code-bg: #14180d;
+  --code-border: #39432a;
+  --code-text: #c9cdb8;
+}
+
+[data-theme="dark"] .os-row--rec { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+
+[data-theme="dark"] .chip-btn.tag--vision.chip-btn--on { background: #58b8d6; }
+[data-theme="dark"] .chip-btn.tag--outils.chip-btn--on { background: #8a9a6b; }
+
+[data-theme="dark"] .provider-badge--openrouter { background: rgba(96, 148, 214, 0.16); color: #9cc3ef; }
+[data-theme="dark"] .provider-badge--groq { background: rgba(224, 150, 66, 0.16); color: #f0bd85; }
+[data-theme="dark"] .provider-badge--zen { background: rgba(150, 110, 214, 0.18); color: #c8aef0; }
+[data-theme="dark"] .provider-badge--local { background: rgba(147, 168, 98, 0.16); color: var(--sage-deep); }
+[data-theme="dark"] .provider-badge--ciel { background: rgba(88, 184, 214, 0.16); color: var(--river-deep); }
+[data-theme="dark"] .provider-badge--sauge { background: rgba(147, 168, 98, 0.16); color: var(--sage-deep); }
+[data-theme="dark"] .provider-badge--bois { background: rgba(217, 154, 62, 0.16); color: var(--wood-deep); }
+[data-theme="dark"] .provider-badge--ambre { background: rgba(232, 161, 60, 0.16); color: var(--accent-deep); }
+
+[data-theme="dark"] .tag--multimodal,
+[data-theme="dark"] .tag--vision { background: rgba(88, 184, 214, 0.14); }
+[data-theme="dark"] .tag--raisonnement { background: rgba(217, 154, 62, 0.15); }
+[data-theme="dark"] .tag--code { background: rgba(147, 168, 98, 0.15); }
+[data-theme="dark"] .tag--rapide { background: rgba(232, 161, 60, 0.15); }
+
+[data-theme="dark"] .model-card__live { background: rgba(88, 184, 214, 0.16); }
+
+[data-theme="dark"] .preview-url { background: rgba(88, 184, 214, 0.14); }
+[data-theme="dark"] .preview-kind { background: rgba(232, 161, 60, 0.15); }
+
+[data-theme="dark"] .ms-item:hover,
+[data-theme="dark"] .ms-item--on { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+
+[data-theme="dark"] .mini-btn--ok { background: rgba(147, 168, 98, 0.15); }
+
+[data-theme="dark"] .cmsg--assistant .cmsg__bubble {
+  background: #242b1a;
+  border-color: #3d4629;
+}
+
+[data-theme="dark"] .chatapp__item:hover { background: rgba(232, 161, 60, 0.09); }
+
+[data-theme="dark"] .dl-overlay { background: rgba(8, 10, 4, 0.55); }
+
+[data-theme="dark"] .hero__glow--lime { opacity: 0.5; }
+[data-theme="dark"] .hero__glow--wood { opacity: 0.5; }
+[data-theme="dark"] .hero__glow--river { opacity: 0.45; }
+
+/* ---------- installation Castor CLI ---------- */
+.cli-install__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1.6rem;
+}
+
+.install-method {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.install-method--reco { border-color: var(--accent-dim); }
+
+.install-method header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.install-method h3 {
+  font-size: 0.98rem;
+  margin: 0;
+}
+.install-method em {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--accent-2);
+  border-radius: 999px;
+  padding: 0.14rem 0.55rem;
+}
+.install-method p {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.install-method code,
+.cli-install__steps code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+}
+
+.install-method__num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--accent-deep);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.copy-cmd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  background: var(--dark-bg);
+  border: 1px solid var(--dark-border);
+  border-radius: 12px;
+  padding: 0.7rem 0.95rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.copy-cmd code {
+  color: var(--dark-ok);
+  word-break: break-all;
+}
+.copy-cmd__btn {
+  flex-shrink: 0;
+  border: 1px solid var(--dark-border);
+  background: transparent;
+  color: var(--dark-accent);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.copy-cmd__btn:hover { border-color: var(--dark-accent); }
+
+.cli-install__start {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cli-install__steps,
+.cli-install__cmds {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+}
+.cli-install__steps h3,
+.cli-install__cmds h3 { font-size: 0.98rem; margin-bottom: 0.8rem; }
+
+.cli-install__steps ol {
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.cli-install__steps li::marker {
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+
+.cli-install__cmds table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.cli-install__cmds td {
+  padding: 0.45rem 0.4rem;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--muted);
+}
+.cli-install__cmds tr:last-child td { border-bottom: none; }
+.cli-install__cmds td:first-child {
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 1rem;
+}
+.cli-install__cmds td code { color: var(--text); }

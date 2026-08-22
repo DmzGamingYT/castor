@@ -2,6 +2,8 @@
    Analyse le prompt, choisit un gabarit original et un thème,
    renvoie une page HTML complète et autonome. */
 
+import { escapeHtml as esc, slugify } from "./utils.js";
+
 const THEMES = {
   ambre: { bg: "#faf6ec", ink: "#2e3320", muted: "#7c7860", accent: "#e2952a", soft: "#fdf3dd", border: "#eadfc6" },
   ciel: { bg: "#f4f9fc", ink: "#1f2d36", muted: "#6b7f8c", accent: "#2b8fb0", soft: "#e3f2f8", border: "#d3e5ee" },
@@ -19,10 +21,6 @@ function hash(s) {
   return [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7);
 }
 
-function esc(s) {
-  return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
 function extractTitle(prompt) {
   const words = prompt
     .toLowerCase()
@@ -32,16 +30,6 @@ function extractTitle(prompt) {
   const picked = words.slice(0, 4);
   if (!picked.length) return "Mon site";
   return picked.map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-}
-
-function slugify(s) {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase()
-    .slice(0, 28) || "mon-site";
 }
 
 function detectKind(p) {
@@ -256,16 +244,9 @@ export const THEME_LIST = Object.keys(THEMES);
 
 /* ---------- génération par IA (OpenRouter) ---------- */
 
-export async function fetchFreeModels() {
-  const res = await fetch("https://openrouter.ai/api/v1/models");
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  return (json.data || [])
-    .filter((m) => m.pricing?.prompt === "0")
-    .map((m) => ({ id: m.id, name: m.name || m.id, ctx: m.context_length || null }));
-}
+export { fetchFreeModels } from "./openrouter.js";
 
-export async function generateWithAI({ prompt, model, apiKey, themeName }) {
+export async function generateWithAI({ prompt, model, apiKey, themeName, signal }) {
   const t = THEMES[themeName] || THEMES.ambre;
   const system =
     "Tu es un générateur de pages web. Réponds UNIQUEMENT avec le code HTML complet " +
@@ -290,6 +271,7 @@ export async function generateWithAI({ prompt, model, apiKey, themeName }) {
         { role: "user", content: prompt },
       ],
     }),
+    signal,
   });
 
   if (!res.ok) {

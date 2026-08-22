@@ -23,6 +23,7 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - un **site vitrine** au thème « papier & encre » avec un hero interactif où le castor bâtit une app sous tes yeux,
 - une **page Modèles** qui recense les modèles IA **gratuits** de chaque provider (type, contexte, actualisation live),
 - un **studio Web fonctionnel** : tu décris une app, elle est générée, prévisualisée, téléchargeable — avec les modèles gratuits d'OpenRouter ou des gabarits 100 % locaux,
+- une **CLI zéro dépendance** : l'agent dans ton terminal — streaming, compétences `/`, mémoire persistante, plans de tâches,
 - une **app Desktop** (Windows / macOS / Linux) qui branche OpenRouter, Groq, OpenCode Zen et tes modèles locaux, avec compétences `/`, mémoire persistante, suivi d'usage et plan de tâches en direct.
 
 ## Aperçus
@@ -56,6 +57,25 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - **Jauge de contexte** : remplissage estimé de la fenêtre 128k en temps réel
 - Clés API **chiffrées** via `safeStorage` du système · icône et thème maison · packaging DMG / NSIS / AppImage
 
+### CLI
+
+```bash
+cd cli && npm link        # ou : node bin/castor.js
+castor                    # session interactive
+castor -p "explique ce fichier"   # one-shot
+```
+
+| Commande | Effet |
+| --- | --- |
+| `/provider [id]` · `/model [id]` | changer de provider / modèle (liste live des gratuits) |
+| `/key <clé>` | enregistrer la clé du provider courant |
+| `/skills` · `/skill <nom>` | prompts réutilisables, activables une demande |
+| `/remember <fait>` · `/forget <motif>` | mémoire persistante (`~/.castor/memory.json`) |
+| `/todo` · `/usage` | dernier plan · tokens cumulés |
+| `/demo` | rendu hors-ligne complet, **sans aucune clé** |
+
+Le prompt système injecte automatiquement mémoire, compétence active, date et contexte ; les plans multi-étapes (`- [ ]`) sont extraits et affichés en checklist.
+
 ## Démarrage rapide
 
 Prérequis : **Node 18+**
@@ -73,6 +93,11 @@ npm start              # lance Castor Desktop
 # empaqueter l'app (icônes incluses)
 npm run dist:dir       # build non signé local
 npm run dist           # DMG (mac) · NSIS (win) · AppImage/deb (linux)
+
+# la CLI
+cd cli
+npm link               # commande `castor` globale
+castor                 # session interactive · /demo pour essayer sans clé
 ```
 
 > Générer l'icône après modification : `npx electron scripts/make-icon.cjs`
@@ -105,6 +130,9 @@ castor/
 │   ├── data/                # produits, catalogue de modèles
 │   └── lib/generator.js     # gabarits locaux + appel OpenRouter
 ├── scripts/                 # capture.cjs (screenshots), audit
+├── cli/                     # Castor CLI — zéro dépendance, Node 18+
+│   ├── bin/castor.js        # REPL, one-shot -p, commandes slash
+│   └── lib/                 # providers, store (~/.castor), rendu ANSI
 └── desktop/
     ├── main.js              # fenêtre, IPC, streaming SSE, coffre à clés
     ├── preload.js           # pont sécurisé (contextIsolation)

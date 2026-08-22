@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { slugify } from "../lib/utils.js";
 
 const SUGGESTIONS = [
   "un blog de recettes végé",
@@ -14,16 +15,6 @@ const LOG_LINES = [
 ];
 
 const BLOCK_COUNT = 5;
-
-function slugify(s) {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase()
-    .slice(0, 26);
-}
 
 export default function DamScene() {
   const [phase, setPhase] = useState("idle"); // idle | work | done
@@ -57,14 +48,44 @@ export default function DamScene() {
     later(() => setPhase("done"), 500 + (BLOCK_COUNT + 1) * 380);
   };
 
-  // démo automatique au chargement
+  // démo automatique quand la scène entre dans le viewport (et pas si
+  // l'utilisateur préfère réduire les animations)
   useEffect(() => {
-    timers.current.push(setTimeout(() => start(SUGGESTIONS[0]), 900));
-    return () => clearTimers();
+    let started = false;
+    let timer = null;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const go = () => {
+      if (!started && !reduced) {
+        started = true;
+        start(SUGGESTIONS[0]);
+      }
+    };
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        ([e]) => {
+          if (e.isIntersecting) {
+            timer = setTimeout(go, 900);
+            io.disconnect();
+          }
+        },
+        { threshold: 0.3 }
+      );
+      io.observe(document.querySelector(".dam") ?? document.body);
+      return () => {
+        io.disconnect();
+        clearTimeout(timer);
+        clearTimers();
+      };
+    }
+    timer = setTimeout(go, 900);
+    return () => {
+      clearTimeout(timer);
+      clearTimers();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const url = `${slugify(project) || "mon-chantier"}.castor.app`;
+  const url = `${slugify(project) || "mon-chantier"}.html`;
   const working = phase === "work";
 
   return (
@@ -145,7 +166,7 @@ export default function DamScene() {
             </span>
           ))}
           {working && <span className="cursor">▊</span>}
-          {phase === "done" && <span className="t-dim">{"\nFait · prêt à visiter · "}</span>}
+          {phase === "done" && <span className="t-dim">{"\nFait · prêt à exporter · "}</span>}
           {phase === "done" && <span className="t-accent">0 € facturés</span>}
         </pre>
       </div>

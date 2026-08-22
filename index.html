@@ -3,7 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Castor — le castor qui construit tes projets web. Gratuit, multi-providers, cloud ou local." />
+    <meta name="description" content="Castor — le castor qui construit tes projets web. Agent de code gratuit : Desktop, CLI, studio Web et Chat. Multi-providers, cloud ou local." />
+    <meta name="theme-color" content="#faf6ec" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Castor" />
+    <meta property="og:title" content="Castor — le castor qui code pour toi" />
+    <meta property="og:description" content="Agent de code gratuit et multi-providers : Desktop, CLI, studio Web et Chat. Donne-lui un chantier, il construit." />
+    <meta property="og:url" content="https://dmzgamingyt.github.io/castor/" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Castor — le castor qui code pour toi" />
+    <meta name="twitter:description" content="Agent de code gratuit et multi-providers : Desktop, CLI, studio Web et Chat." />
+
+    <link rel="canonical" href="https://dmzgamingyt.github.io/castor/" />
+
+    <!-- Content Security Policy -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://openrouter.ai; frame-src 'self' blob:; object-src 'none'; base-uri 'self'"
+    />
+
+    <!-- applique le thème avant le premier rendu pour éviter le flash -->
+    <script>
+      try {
+        var t = localStorage.getItem("castor-theme");
+        if (t !== "dark" && t !== "light") {
+          t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+
     <title>Castor — le castor qui code pour toi</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f7c666'/%3E%3Cstop offset='1' stop-color='%23e2952a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Cg fill='%2333260a'%3E%3Cellipse cx='45' cy='42' rx='15' ry='8' transform='rotate(-20 45 42)'/%3E%3Ccircle cx='27' cy='30' r='17'/%3E%3Ccircle cx='14.5' cy='15' r='5.5'/%3E%3Ccircle cx='34.5' cy='11' r='5.5'/%3E%3C/g%3E%3Crect x='23.5' y='38' width='5' height='10' rx='2' fill='%23fffdf6'/%3E%3Ccircle cx='21' cy='27' r='2.4' fill='%23fffdf6'/%3E%3Ccircle cx='32.5' cy='25' r='2.4' fill='%23fffdf6'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
