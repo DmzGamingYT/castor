@@ -2180,10 +2180,14 @@ main:focus { outline: none; }
 /* ---------- installation Castor CLI ---------- */
 .cli-install__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+/* toute la chaîne doit pouvoir rétrécir : carte -> bloc code -> pre,
+   sinon le plus petit contenu non-wrap force le débordement */
+.install-method > * { min-width: 0; }
 
 .install-method {
   background: var(--panel);
@@ -2246,6 +2250,8 @@ main:focus { outline: none; }
   display: flex;
   align-items: stretch;
   gap: 0.55rem;
+  min-width: 0;
+  max-width: 100%;
   background: var(--dark-bg);
   border: 1px solid var(--dark-border);
   border-radius: 12px;
