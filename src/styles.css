@@ -2177,53 +2177,33 @@ main:focus { outline: none; }
 [data-theme="dark"] .hero__glow--lime { opacity: 0.5; }
 [data-theme="dark"] .hero__glow--wood { opacity: 0.5; }
 [data-theme="dark"] .hero__glow--river { opacity: 0.45; }
-
 /* ---------- installation Castor CLI ---------- */
 .cli-install__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
-  margin-top: 1.6rem;
+  margin-top: 1.5rem;
 }
 
 .install-method {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.25rem;
+  padding: 1.15rem;
   display: grid;
-  gap: 0.8rem;
+  gap: 0.75rem;
   align-content: start;
 }
 
 .install-method--reco { border-color: var(--accent-dim); }
 
-.install-method header {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.install-method h3 {
-  font-size: 0.98rem;
-  margin: 0;
-}
-.install-method em {
-  font-style: normal;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink);
-  background: var(--accent-2);
-  border-radius: 999px;
-  padding: 0.14rem 0.55rem;
-}
+.install-method header { display: flex; align-items: center; gap: 0.55rem; }
+.install-method h3 { font-size: 0.95rem; margin: 0; }
 .install-method p {
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
 }
-.install-method code,
-.cli-install__steps code {
+.install-method code {
   font-family: var(--font-mono);
   font-size: 0.82em;
   background: var(--panel-2);
@@ -2235,92 +2215,154 @@ main:focus { outline: none; }
 .install-method__num {
   display: inline-grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--bg-soft);
   border: 1px solid var(--border);
   color: var(--accent-deep);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   flex-shrink: 0;
+}
+
+.install-method em {
+  font-style: normal;
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--accent-2);
+  border-radius: 999px;
+  padding: 0.14rem 0.55rem;
 }
 
 .copy-cmd {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  align-items: stretch;
+  gap: 0.55rem;
   background: var(--dark-bg);
   border: 1px solid var(--dark-border);
   border-radius: 12px;
-  padding: 0.7rem 0.95rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.copy-cmd__code {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: thin;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-}
-.copy-cmd code {
+  font-size: 0.76rem;
+  line-height: 1.7;
   color: var(--dark-ok);
-  word-break: break-all;
+  align-self: center;
 }
+
 .copy-cmd__btn {
   flex-shrink: 0;
+  align-self: center;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--dark-border);
   background: transparent;
   color: var(--dark-accent);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  border-radius: 999px;
-  padding: 0.28rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 9px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 .copy-cmd__btn:hover { border-color: var(--dark-accent); }
 
-.cli-install__start {
+/* bandeau : premier lancement + commandes en pastilles */
+.cli-install__strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: minmax(260px, 1fr) minmax(300px, 1.4fr);
   gap: 1rem;
   margin-top: 1rem;
 }
 
-.cli-install__steps,
+.cli-install__start,
 .cli-install__cmds {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.3rem;
+  padding: 1.1rem 1.25rem;
 }
-.cli-install__steps h3,
-.cli-install__cmds h3 { font-size: 0.98rem; margin-bottom: 0.8rem; }
 
-.cli-install__steps ol {
-  padding-left: 1.2rem;
-  display: grid;
-  gap: 0.6rem;
-  color: var(--muted);
-  font-size: 0.88rem;
+.cli-install__start strong {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
 }
-.cli-install__steps li::marker {
+.cli-install__start ol {
+  list-style: none;
+  counter-reset: step;
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+}
+.cli-install__start li {
+  counter-increment: step;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.cli-install__start li::before {
+  content: counter(step);
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
   color: var(--accent-deep);
   font-weight: 700;
+  font-size: 0.68rem;
+  transform: translateY(2px);
+}
+.cli-install__start code,
+.cli-install .section-sub code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
 }
 
-.cli-install__cmds table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+.cli-install__cmds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-content: center;
 }
-.cli-install__cmds td {
-  padding: 0.45rem 0.4rem;
-  border-bottom: 1px solid var(--border-soft);
+.cmd-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.32rem 0.8rem;
+  font-size: 0.74rem;
   color: var(--muted);
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
 }
-.cli-install__cmds tr:last-child td { border-bottom: none; }
-.cli-install__cmds td:first-child {
-  white-space: nowrap;
-  width: 1%;
-  padding-right: 1rem;
+.cmd-pill code {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent-deep);
 }
-.cli-install__cmds td code { color: var(--text); }
+
+@media (max-width: 760px) {
+  .cli-install__strip { grid-template-columns: 1fr; }
+}
