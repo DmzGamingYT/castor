@@ -55,6 +55,7 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - **Mémoire persistante** : des faits injectés dans chaque requête, qui survivent aux redémarrages
 - **Plan de tâches live** : la checklist du modèle devient une todo avec barre de progression
 - **Jauge de contexte** : remplissage estimé de la fenêtre 128k en temps réel
+- **Fenêtre glissante** : sur les longues conversations, seuls les ~75 % récents de la fenêtre sont envoyés (les 2 derniers messages toujours conservés) — ça ne déborde jamais
 - Clés API **chiffrées** via `safeStorage` du système · icône et thème maison · packaging DMG / NSIS / AppImage
 
 ### CLI
@@ -141,11 +142,22 @@ castor/
     └── renderer/            # UI Desktop (même DA que le site)
 ```
 
+## Installer & désinstaller
+
+Chaque OS a un **installateur propre** (recommandé) et des **versions portables** :
+
+| OS | Installer (recommandé) | Portable | Désinstallation |
+| --- | --- | --- | --- |
+| Windows | `Castor-Windows-*-setup.exe` (NSIS : raccourcis, choix du dossier) | zip | **Paramètres → Applications → « Castor Desktop » → Désinstaller** (ou `scripts/uninstall-windows.ps1` pour le portable) |
+| macOS | `Castor-macOS-arm64.dmg` (glisser-déposer) | zip | `bash desktop/scripts/uninstall-macos.sh` (retire app + réglages + clés) |
+| Linux | `Castor-Linux-arm64.deb` | AppImage / tar.gz | `sudo apt remove castor-desktop` ou `bash desktop/scripts/uninstall-linux.sh` |
+
+Builds **arm64 + x64** attachées automatiquement à la Release GitHub à chaque tag `v*` (workflow `.github/workflows/release.yml`). La modale du site détecte ta plateforme et ton architecture pour présélectionner le bon fichier.
+
 ## Notes de packaging
 
-- Binaires **arm64** construits et attachés automatiquement à la Release GitHub à chaque tag `v*` (workflow `.github/workflows/release.yml`) — ajouter les cibles x64 dans `desktop/package.json` si besoin
-- Archives **portables** (zip / tar.gz), cibles DMG / NSIS / AppImage désactivées — réactivables dans `desktop/package.json`
-- macOS : builds **non notarisés** (compte Developer requis) — premier lancement via *Réglages → Confidentialité et sécurité → Ouvrir même ainsi*, ou `xattr -cr /Applications/Castor.app`
+- macOS : builds **non notarisées** (compte Developer requis) — premier lancement via *Réglages → Confidentialité et sécurité → Ouvrir même ainsi*, ou `xattr -cr /Applications/Castor.app`
+- Le désinstalleur NSIS retire aussi `%APPDATA%\castor-desktop` (réglages, mémoire, clés) ; sur macOS/Linux, les scripts font pareil
 - La modale de téléchargement pointe vers `releases/latest/download` ; le dossier local `public/downloads/` sert uniquement de cache en dev
 
 ## Roadmap

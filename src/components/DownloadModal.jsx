@@ -2,41 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 
 /* Les binaires sont servis depuis la dernière Release GitHub
-   (public/downloads/ reste un cache local ignoré par git). */
+   (public/downloads/ reste un cache local ignoré par git).
+   Chaque OS propose un installer recommandé + des versions portables. */
 const RELEASE_BASE =
   "https://github.com/DmzGamingYT/castor/releases/latest/download";
 
-const BUILDS = [
-  {
-    id: "mac",
-    icon: "apple",
-    label: "macOS",
-    sub: "Apple Silicon · zip",
-    file: "Castor-macOS-arm64.zip",
-    size: "94 Mo",
-  },
-  {
-    id: "win",
-    icon: "windows",
-    label: "Windows",
-    sub: "arm64 · portable zip",
-    file: "Castor-Windows-arm64-portable.zip",
-    size: "115 Mo",
-  },
-  {
-    id: "linux",
-    icon: "linux",
-    label: "Linux",
-    sub: "arm64 · tar.gz portable",
-    file: "Castor-Linux-arm64.tar.gz",
-    size: "106 Mo",
-  },
-];
-
 const HINTS = {
-  mac: "Ouvre le zip et glisse Castor.app dans tes Applications. Si macOS bloque au premier lancement (app non notarisée) : Réglages → Confidentialité et sécurité → « Ouvrir même ainsi », ou dans un terminal : xattr -cr /Applications/Castor.app",
-  win: "Dézippe l'archive puis lance Castor.exe — rien à installer.",
-  linux: "Extrais l'archive puis lance le binaire Castor.",
+  mac: "Ouvre le .dmg et glisse Castor.app dans tes Applications. Si macOS bloque au premier lancement (app non notarisée) : Réglages → Confidentialité et sécurité → « Ouvrir même ainsi », ou dans un terminal : xattr -cr /Applications/Castor.app",
+  win: "Lance l'installateur, choisis ton dossier : Castor s'installe avec un raccourci bureau et menu démarrer.",
+  linux: "Deb : sudo apt install ./Castor-Linux-arm64.deb (ou gdebi). AppImage : chmod +x puis double-clic.",
+};
+
+const UNINSTALL = {
+  mac: "Désinstallation complète : scripts/uninstall-macos.sh du dépôt (retire l'app, les réglages et les données locales).",
+  win: "Désinstallation propre : Paramètres → Applications → « Castor Desktop » → Désinstaller (le raccourci et les réglages sont retirés avec).",
+  linux:
+    "Désinstallation : sudo apt remove castor-desktop (pour le .deb) — l'AppImage se supprime en supprimant le fichier, puis ~/.config/castor-desktop.",
 };
 
 function detectOS() {
@@ -46,6 +27,41 @@ function detectOS() {
   if (/Win/i.test(ua)) return "win";
   if (/Linux|X11/i.test(ua)) return "linux";
   return null;
+}
+
+/* lie le nom de fichier à l'architecture détectée (win) ou par défaut (arm64) */
+function buildFiles(os, arch) {
+  const a = os === "win" && arch === "x86" ? "x64" : "arm64";
+  switch (os) {
+    case "mac":
+      return {
+        installer: { file: `Castor-macOS-arm64.dmg`, sub: "Apple Silicon · glisser-déposer", size: "~96 Mo" },
+        alts: [
+          { file: `Castor-macOS-arm64.zip`, label: "Version portable (zip, sans installation)" },
+          { file: `Castor-macOS-x64.dmg`, label: "Mac Intel (x64) — installateur" },
+        ],
+      };
+    case "win":
+      return {
+        installer: { file: `Castor-Windows-${a}-setup.exe`, sub: `${a === "x64" ? "Intel/AMD (x64)" : "ARM"} · installateur`, size: "~115 Mo" },
+        alts: [
+          { file: `Castor-Windows-${a}-portable.zip`, label: "Version portable (zip, sans installation)" },
+          a === "arm64"
+            ? { file: `Castor-Windows-x64-setup.exe`, label: "PC Intel/AMD (x64) — installateur" }
+            : { file: `Castor-Windows-arm64-setup.exe`, label: "PC ARM — installateur" },
+        ],
+      };
+    case "linux":
+      return {
+        installer: { file: `Castor-Linux-arm64.deb`, sub: "Debian / Ubuntu · paquet .deb", size: "~95 Mo" },
+        alts: [
+          { file: `Castor-Linux-arm64.AppImage`, label: "AppImage portable (toutes distros)" },
+          { file: `Castor-Linux-arm64.tar.gz`, label: "Archive tar.gz portable" },
+        ],
+      };
+    default:
+      return null;
+  }
 }
 
 export default function DownloadModal({ open, onClose }) {
@@ -133,7 +149,7 @@ export default function DownloadModal({ open, onClose }) {
         <h3>Télécharger Castor Desktop</h3>
         <p className="dl-sub">
           {detected && detected !== "ios"
-            ? "Ta plateforme est présélectionnée — un clic et c'est parti."
+            ? "Ta plateforme est présélectionnée — installateur ou portable, un clic et c'est parti."
             : detected === "ios"
               ? "Castor Desktop n'existe pas sur iOS — sur Mac, ouvre castor depuis Safari :"
               : "Choisis ta plateforme :"}
@@ -141,45 +157,64 @@ export default function DownloadModal({ open, onClose }) {
 
         {detected !== "ios" && (
           <div className="dl-list">
-            {BUILDS.map((b) => (
-              <a
-                key={b.id}
-                className={`os-row ${detected === b.id ? "os-row--rec" : ""}`}
-                href={`${RELEASE_BASE}/${b.file}`}
-                download
-                onClick={() => setStarted(b.id)}
-              >
-                <span className="os-row__icon" aria-hidden="true">
-                  <Icon name={b.icon} size={24} />
-                </span>
-                <span className="os-row__meta">
-                  <strong>
-                    {b.label}
-                    {detected === b.id &&
-                      (arch === "x86" ? (
-                        <em className="os-row__badge">⚠ build arm64 — ton appareil semble x86</em>
-                      ) : (
-                        <em className="os-row__badge">recommandé pour toi</em>
-                      ))}
-                  </strong>
-                  <small>{b.sub} · {b.size}</small>
-                </span>
-                <span className="os-row__action" aria-hidden="true">⬇</span>
-              </a>
-            ))}
+            {["mac", "win", "linux"].map((os) => {
+              const files = buildFiles(os, arch);
+              if (!files) return null;
+              const rec = detected === os;
+              return (
+                <div key={os} className="dl-os">
+                  <a
+                    className={`os-row ${rec ? "os-row--rec" : ""}`}
+                    href={`${RELEASE_BASE}/${files.installer.file}`}
+                    download
+                    onClick={() => setStarted(os)}
+                  >
+                    <span className="os-row__icon" aria-hidden="true">
+                      <Icon name={os === "mac" ? "apple" : os} size={24} />
+                    </span>
+                    <span className="os-row__meta">
+                      <strong>
+                        {os === "mac" ? "macOS" : os === "win" ? "Windows" : "Linux"}
+                        {rec && (
+                          <em className="os-row__badge">
+                            {os === "win" && arch === "x86"
+                              ? "x64 — adapté à ton appareil"
+                              : "installateur recommandé"}
+                          </em>
+                        )}
+                      </strong>
+                      <small>
+                        {files.installer.sub} · {files.installer.size}
+                      </small>
+                    </span>
+                    <span className="os-row__action" aria-hidden="true">⬇</span>
+                  </a>
+                  <div className="os-row__alts">
+                    {files.alts.map((alt) => (
+                      <a
+                        key={alt.file}
+                        href={`${RELEASE_BASE}/${alt.file}`}
+                        download
+                        onClick={() => setStarted(os)}
+                      >
+                        {alt.label}
+                      </a>
+                    ))}
+                  </div>
+                  {started === os && (
+                    <p className="dl-note" role="status">
+                      <strong>Téléchargement lancé ✓</strong> {HINTS[os]}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-
-        {arch === "x86" && detected !== "ios" && (
-          <p className="dl-note" role="status">
-            <strong>⚠ Ton appareil semble x86_64.</strong> Seules des builds arm64 sont
-            disponibles pour l'instant — le fichier risque de ne pas fonctionner sur ta machine.
-          </p>
         )}
 
         {started && (
           <p className="dl-note" role="status">
-            <strong>Téléchargement lancé ✓</strong> {HINTS[started]}
+            <strong>Pour désinstaller plus tard :</strong> {UNINSTALL[started]}
           </p>
         )}
 

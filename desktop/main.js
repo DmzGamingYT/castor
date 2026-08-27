@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu, dialog, net } =
   require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
 const fs = require("node:fs");
 const { PROVIDERS } = require("./src/providers");
@@ -91,6 +92,66 @@ ipcMain.handle("app:info", () => ({
   platform: process.platform,
 }));
 
+// ---------- mises à jour automatiques (electron-updater) ----------
+const UPDATE_RELEASES_URL = "https://github.com/DmzGamingYT/castor/releases/latest";
+const updateState = { state: "idle", version: null, percent: null };
+
+function pushUpdateStatus(patch) {
+  Object.assign(updateState, patch);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("updates:status", { ...updateState });
+  }
+}
+
+function setupAutoUpdater() {
+  // en dev, pas de app-update.yml : on ne vérifie que dans l'app empaquetée
+  if (!app.isPackaged) return;
+  // macOS non signé : l'installation auto exige une signature → simple notification
+  // avec lien vers la page Releases (win NSIS et linux AppImage s'installent tout seuls)
+  autoUpdater.autoDownload = process.platform !== "darwin";
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on("checking-for-update", () => pushUpdateStatus({ state: "checking" }));
+  autoUpdater.on("update-available", (it) =>
+    pushUpdateStatus({ state: "available", version: it?.version || null, percent: null })
+  );
+  autoUpdater.on("update-not-available", () => pushUpdateStatus({ state: "none" }));
+  autoUpdater.on("download-progress", (p) =>
+    pushUpdateStatus({ state: "available", percent: Math.round(p?.percent || 0) })
+  );
+  autoUpdater.on("update-downloaded", (it) =>
+    pushUpdateStatus({ state: "downloaded", version: it?.version || null })
+  );
+  autoUpdater.on("error", (err) =>
+    pushUpdateStatus({ state: "error", message: String(err?.message || err) })
+  );
+  // petite temporisation pour laisser l'UI s'installer au lancement
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000);
+}
+
+ipcMain.handle("updates:check", async () => {
+  if (app.isPackaged) {
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (err) {
+      pushUpdateStatus({ state: "error", message: String(err?.message || err) });
+    }
+  }
+  return { ...updateState };
+});
+
+ipcMain.handle("updates:install", () => {
+  // macOS non signé : ouvrir la page Releases pour récupérer le DMG
+  if (process.platform === "darwin") {
+    if (updateState.state === "available" || updateState.state === "downloaded") {
+      shell.openExternal(UPDATE_RELEASES_URL);
+    }
+    return false;
+  }
+  if (updateState.state !== "downloaded") return false;
+  autoUpdater.quitAndInstall(false, true);
+  return true;
+});
+
 ipcMain.handle("providers:list", () =>
   PROVIDERS.map((p) => ({
     id: p.id,
@@ -143,10 +204,17 @@ ipcMain.handle("models:refresh", async (_e, providerId, baseURLOverride) => {
     });
     if (!res.ok) return { ok: false, models: [], error: `HTTP ${res.status}` };
     const json = await res.json();
+    // objets riches quand l'API les fournit (OpenRouter) : gratuité + contexte
     const models = (json.data || [])
-      .map((m) => m.id)
-      .filter(Boolean)
-      .sort();
+      .map((m) => ({
+        id: m.id,
+        free: m.pricing
+          ? Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0
+          : undefined,
+        context: m.context_length || m.top_provider?.context_size || null,
+      }))
+      .filter((m) => m.id)
+      .sort((a, b) => a.id.localeCompare(b.id));
     return { ok: true, models };
   } catch (err) {
     return { ok: false, models: [], error: err.message };
@@ -335,6 +403,7 @@ async function executeTool(call, reqId) {
     callId: call.id,
     icon: name === "run_command" ? "⚙️" : name === "write_file" ? "✏️" : "🔎",
     label: toolLabel(name, args),
+    kind: name === "run_command" ? "command" : name === "write_file" ? "write" : "read",
   });
 
   try {
@@ -487,6 +556,9 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
   streams.set(reqId, ac);
   const t0 = Date.now();
   const convo = [...messages]; // copie mutée à chaque tour d'outils
+  // compteurs cumulés sur tous les tours d'outils (fournis par l'API si elle le permet)
+  let usageAcc = { prompt_tokens: 0, completion_tokens: 0, prompt_tokens_details: null };
+  const hasUsage = () => usageAcc.prompt_tokens || usageAcc.completion_tokens;
 
   try {
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
@@ -504,6 +576,8 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
             model,
             messages: convo,
             stream: true,
+            // certains providers renvoient les compteurs réels dans le dernier chunk
+            ...(provider.includeUsage ? { stream_options: { include_usage: true } } : {}),
             ...(agent ? { tools: TOOLS } : {}),
           }),
         }
@@ -540,6 +614,13 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
             if (data === "[DONE]") break readLoop;
             try {
               const json = JSON.parse(data);
+              // dernier chunk : compteurs réels (OpenAI-compatible)
+              if (json.usage) {
+                usageAcc.prompt_tokens += json.usage.prompt_tokens || 0;
+                usageAcc.completion_tokens += json.usage.completion_tokens || 0;
+                usageAcc.prompt_tokens_details =
+                  json.usage.prompt_tokens_details || usageAcc.prompt_tokens_details;
+              }
               const choice = json.choices?.[0];
               if (choice?.finish_reason) finishReason = choice.finish_reason;
 
@@ -570,7 +651,11 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
 
       // --- pas d'outils appelés : fin normale ---
       if (!toolCalls.length || !agent) {
-        win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
+        win.webContents.send("chat:end", {
+          reqId,
+          ms: Date.now() - t0,
+          usage: hasUsage() ? usageAcc : null,
+        });
         return { ok: true, reqId };
       }
 
@@ -613,7 +698,11 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
       }
     }
 
-    win.webContents.send("chat:end", { reqId, ms: Date.now() - t0 });
+    win.webContents.send("chat:end", {
+      reqId,
+      ms: Date.now() - t0,
+      usage: hasUsage() ? usageAcc : null,
+    });
     return { ok: true, reqId };
   } catch (err) {
     if (ac.signal.aborted) {
@@ -641,7 +730,7 @@ function createWindow() {
     height: 740,
     minWidth: 880,
     minHeight: 560,
-    backgroundColor: "#0a0e07",
+    backgroundColor: "#faf6ec",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     trafficLightPosition: process.platform === "darwin" ? { x: 14, y: 16 } : undefined,
     autoHideMenuBar: process.platform !== "darwin",
@@ -667,6 +756,7 @@ Menu.setApplicationMenu(null);
 
 app.whenReady().then(() => {
   createWindow();
+  setupAutoUpdater();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

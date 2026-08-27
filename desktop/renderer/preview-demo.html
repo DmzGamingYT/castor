@@ -1,3 +1,2487 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- CSP retirée pour la démo hors-Electron -->
+<title>Castor — démo ergonomie (simulateur)</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+/* ============================================================
+   Castor Desktop — thème clair « papier & encre »
+   Même DA que le site : crème · encre olive · ambré · ciel doux
+   ============================================================ */
+
+:root {
+  --bg: #faf6ec;
+  --bg-soft: #f2ecda;
+  --panel: #fffdf6;
+  --panel-2: #f7f1e0;
+  --border: #e3dac0;
+  --border-soft: #ece4cd;
+  --text: #2e3320;
+  --muted: #7c7860;
+
+  --accent: #e2952a;
+  --accent-2: #efb65a;
+  --accent-dim: #c98820;
+  --accent-deep: #a06509;
+  --ink: #33260a;
+
+  --wood: #d99a3e;
+  --river: #58b8d6;
+  --river-deep: #1f7d9e;
+  --sage: #93a862;
+  --sage-deep: #66773d;
+  --danger: #c25b45;
+
+  /* contexte sombre : blocs de code uniquement */
+  --code-bg: #21271a;
+  --code-border: #39432a;
+  --code-text: #d8e2c8;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+/* ---------- thème nuit « nuit de chantier » — aligné sur la palette du site
+   (mêmes variables que src/styles.css pour une DA strictement identique) ---------- */
+[data-theme="dark"] {
+  --bg: #171b10;
+  --bg-soft: #1e2315;
+  --panel: #20261a;
+  --panel-2: #262d1e;
+  --border: #3a4229;
+  --border-soft: #2f3624;
+  --text: #e8e4d2;
+  --muted: #9aa087;
+
+  --accent: #e8a13c;
+  --accent-2: #f0bc63;
+  --accent-dim: #c98820;
+  --accent-deep: #f2c063;
+  --ink: #241a05;
+
+  --wood: #d99a3e;
+  --river: #58b8d6;
+  --river-deep: #7ccde8;
+  --sage: #93a862;
+  --sage-deep: #aec47e;
+  --danger: #e07b62;
+
+  --code-bg: #0f110c;
+  --code-border: #33371f;
+  --code-text: #cfe0c0;
+}
+
+/* couleurs « dures » épinglées dans le CSS : on les re-teinte en nuit */
+[data-theme="dark"] body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(232, 163, 60, 0.10), transparent 60%),
+    var(--bg);
+}
+
+[data-theme="dark"] ::selection { color: var(--ink); }
+
+[data-theme="dark"] .skill-chip,
+[data-theme="dark"] .welcome__hints code:hover,
+[data-theme="dark"] .chg-code.mod { background: #2a2414; }
+
+[data-theme="dark"] .msg--assistant .msg__bubble {
+  background: #211d12;
+  border-color: #3a2f1c;
+}
+
+[data-theme="dark"] .msg--user .msg__bubble {
+  background: var(--panel-2);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .slash-item.sel,
+[data-theme="dark"] .slash-item:hover { background: #2a2414; }
+
+[data-theme="dark"] .diff-modal__backdrop { background: rgba(0, 0, 0, 0.55); }
+
+[data-theme="dark"] .slash-menu,
+[data-theme="dark"] .diff-modal__card {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .conv-btn input.conv-rename { color: var(--text); }
+
+/* coche / aperçus du diff restent lisibles en nuit */
+[data-theme="dark"] .diff-modal__body .d-add,
+[data-theme="dark"] .code-pre .d-add { color: #a5d17a; }
+[data-theme="dark"] .diff-modal__body .d-del,
+[data-theme="dark"] .code-pre .d-del { color: #ee9883; }
+
+[data-theme="dark"] .chg-code.add { background: rgba(147, 168, 98, 0.22); }
+[data-theme="dark"] .chg-code.del { background: rgba(224, 122, 95, 0.2); }
+[data-theme="dark"] .chg-code.ren { background: rgba(79, 182, 216, 0.2); }
+[data-theme="dark"] .logo__tile {
+  box-shadow: 0 4px 16px rgba(232, 163, 60, 0.45);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(226, 149, 42, 0.10), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+::selection { background: var(--accent); color: #fffdf6; }
+
+:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w, 280px) 6px minmax(0, 1fr);
+  height: 100vh;
+}
+
+/* poignées de redimensionnement */
+.resizer {
+  cursor: col-resize;
+  position: relative;
+  z-index: 5;
+  background: transparent;
+}
+.resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.resizer:hover::after,
+.resizer.dragging::after {
+  background: var(--accent-2);
+}
+.resizer--left { grid-column: 2; }
+.resizer--right { grid-column: 4; }
+
+body.no-select { user-select: none; cursor: col-resize; }
+
+/* ---------- sidebar ---------- */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  padding-top: calc(0.9rem + env(titlebar-area-height, 28px));
+  background: color-mix(in srgb, var(--bg-soft) 72%, transparent);
+  border-right: 1px solid var(--border-soft);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-right: 2px;
+}
+.sidebar__scroll::-webkit-scrollbar { width: 8px; }
+.sidebar__scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.sidebar__footer {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  -webkit-app-region: drag;
+}
+.sidebar__brand strong { font-size: 1.05rem; letter-spacing: -0.02em; }
+.sidebar__brand small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.sidebar__brand small:hover { color: var(--text); }
+
+/* ---------- pastille de mise à jour ---------- */
+.update-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px dashed var(--accent-dim);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.update-pill:hover { border-color: var(--accent); background: rgba(226, 149, 42, 0.08); }
+.update-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--river);
+  animation: think 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+#update-pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-pill.ready {
+  border-style: solid;
+  border-color: var(--sage-deep);
+  background: rgba(147, 168, 98, 0.12);
+}
+.update-pill.ready .update-pill__dot {
+  background: var(--sage-deep);
+  animation: none;
+}
+
+/* nouvelle conversation : action principale, tout en haut */
+.sidebar__new { width: 100%; text-align: center; }
+
+.logo__tile {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(226, 149, 42, 0.35);
+}
+
+.sb-section { display: grid; gap: 0.45rem; }
+
+.sb-section__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+}
+.sb-section__head:hover { color: var(--text); }
+.sb-section__head .hint {
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+  font-size: 0.9em;
+  font-weight: 400;
+}
+.sb-section__title { flex-shrink: 0; }
+
+.sb-chevron {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 0.72rem;
+  opacity: 0.7;
+  transition: transform 0.15s ease;
+}
+.sb-section.collapsed .sb-chevron { transform: rotate(-90deg); }
+.sb-section.collapsed .sb-section__body { display: none; }
+
+.count-badge {
+  font-family: var(--font-mono);
+  background: var(--accent);
+  color: var(--ink);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  padding: 0.05rem 0.4rem;
+}
+
+/* ---------- listes providers / compétences / mémoire ---------- */
+.provider-list, .skill-list, .memory-list {
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.provider-btn, .skill-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.86rem;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.provider-btn:hover, .skill-btn:hover,
+.memory-row:hover {
+  background: rgba(226, 149, 42, 0.07);
+  color: var(--text);
+}
+.provider-btn.active {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot--on { background: var(--accent); box-shadow: 0 0 8px rgba(226, 149, 42, 0.5); }
+.dot--off { background: var(--border); }
+.dot--local { background: var(--sage); }
+
+.provider-hint { font-size: 0.68rem; opacity: 0.75; margin-left: 0.35rem; font-weight: 400; }
+
+.provider-btn .gear {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  opacity: 0.65;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.1rem;
+  border-radius: 6px;
+}
+.provider-btn .gear:hover {
+  opacity: 1;
+  color: var(--accent-deep);
+  background: rgba(226, 149, 42, 0.12);
+}
+
+.skill-btn .slash { color: var(--accent-deep); font-family: var(--font-mono); font-weight: 600; }
+.skill-btn .del, .memory-row .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.skill-btn .del:hover, .memory-row .del:hover { color: var(--danger); opacity: 1; }
+
+.memory-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+}
+.memory-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.empty-note { color: var(--muted); opacity: 0.65; font-size: 0.76rem; padding: 0.15rem 0.5rem; }
+
+/* ---------- formulaires ---------- */
+.mini-editor {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: var(--panel);
+}
+
+.pm-body {
+  display: grid;
+  gap: 0.6rem;
+}
+.pm-card { width: min(440px, calc(100vw - 3rem)); }
+
+.hidden { display: none !important; }
+
+.pm-body label, .mini-editor label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ---------- picker de modèles (recherche + badges gratuits/contexte) ---------- */
+.model-picker { display: grid; gap: 0.35rem; }
+.model-list {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg);
+  display: grid;
+  gap: 1px;
+  padding: 2px;
+}
+.model-list::-webkit-scrollbar { width: 6px; }
+.model-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.model-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0.34rem 0.5rem;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text);
+  text-align: left;
+}
+.model-row:hover { background: rgba(226, 149, 42, 0.09); }
+.model-row.sel {
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--accent-dim);
+}
+
+/* favoris : étoile SVG, révélée au survol sauf si active */
+.model-row__star {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.1rem;
+  line-height: 0;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.15s;
+}
+.model-row:hover .model-row__star,
+.model-row:focus-within .model-row__star,
+.model-row__star.on { opacity: 1; }
+.model-row__star:hover { color: var(--accent-deep); }
+.model-row__star.on { color: var(--accent); }
+.star-ico {
+  width: 13px;
+  height: 13px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.model-row__star.on .star-ico { fill: currentColor; }
+.model-list__sep {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 2px 4px;
+}
+.model-row__id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.model-row__badges {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.m-badge {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  border-radius: 999px;
+  padding: 0.06rem 0.42rem;
+}
+.m-badge.free { background: rgba(147, 168, 98, 0.22); color: var(--sage-deep); font-weight: 700; }
+.m-badge.ctx { background: var(--panel-2); color: var(--muted); }
+.model-list__note {
+  font-size: 0.66rem;
+  color: var(--muted);
+  padding: 0.32rem 0.5rem;
+}
+
+input, textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.45rem 0.6rem;
+  outline: none;
+  width: 100%;
+}
+input:focus, textarea:focus { border-color: var(--accent-dim); }
+textarea { resize: vertical; font-family: var(--font-body); font-size: 0.8rem; line-height: 1.45; }
+
+.mini-editor__row { display: flex; gap: 0.45rem; }
+
+.btn-primary, .btn-ghost {
+  border-radius: 999px;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.12s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgba(226, 149, 42, 0.25);
+}
+.btn-primary:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--accent-dim); }
+
+.btn-mini { padding: 0.38rem 0.75rem; justify-self: start; font-size: 0.74rem; }
+.btn-wide { padding: 0.6rem 1rem; }
+
+/* ---------- bascule jour / nuit (icône SVG maison) ---------- */
+#theme-toggle {
+  -webkit-app-region: no-drag;
+  display: inline-grid;
+  place-items: center;
+}
+.theme-ico {
+  display: block;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.theme-ico .ico-sun { display: none; }
+.theme-ico .ico-star { stroke-width: 1.3; }
+[data-theme="dark"] .theme-ico .ico-moon { display: none; }
+[data-theme="dark"] .theme-ico .ico-sun { display: block; }
+#theme-toggle:hover .theme-ico { stroke: var(--accent-deep); }
+
+
+.memory-form { display: flex; gap: 0.45rem; align-items: center; }
+
+.test-result { font-size: 0.72rem; font-family: var(--font-mono); min-height: 1em; }
+.test-result.ok { color: var(--sage-deep); }
+.test-result.ko { color: var(--danger); }
+
+.key-link {
+  width: fit-content;
+  font-size: 0.74rem;
+  color: var(--accent-deep);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-dim);
+}
+.key-link:hover { color: var(--accent-dim); }
+
+
+/* ---------- usage / contexte (jauge cliquable + popover détaillé) ---------- */
+.usage-wrap { position: relative; }
+
+.usage {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.usage:hover {
+  border-color: var(--accent-dim);
+  background: color-mix(in srgb, var(--panel) 80%, rgba(226, 149, 42, 0.08));
+}
+
+.usage-popover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 60;
+  display: grid;
+  gap: 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(96, 82, 34, 0.22);
+  padding: 0.75rem 0.85rem;
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
+}
+
+.up-section { display: grid; gap: 0.28rem; }
+.up-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  opacity: 0.85;
+}
+.up-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+}
+.up-row span { color: var(--muted); }
+.up-row b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.68rem;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.up-gauge {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-soft);
+  overflow: hidden;
+  margin-top: 0.15rem;
+}
+.up-gauge i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.up-warn {
+  font-size: 0.64rem;
+  color: var(--accent-deep);
+  line-height: 1.4;
+}
+.up-estim {
+  font-size: 0.62rem;
+  color: var(--muted);
+  opacity: 0.8;
+  font-family: var(--font-mono);
+}
+.up-last { display: grid; gap: 0.22rem; }
+
+.up-history {
+  list-style: none;
+  display: grid;
+  gap: 0.15rem;
+  max-height: 132px;
+  overflow-y: auto;
+}
+.up-history::-webkit-scrollbar { width: 5px; }
+.up-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.up-hist-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+.up-hist-model {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.up-hist-io { flex-shrink: 0; }
+.up-hist-empty { font-size: 0.66rem; color: var(--muted); opacity: 0.6; }
+
+.gauge {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--border-soft);
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+.gauge__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sage), var(--accent));
+  transition: width 0.4s ease;
+}
+.usage small { color: var(--muted); font-family: var(--font-mono); font-size: 0.64rem; }
+
+/* ---------- colonne chat ---------- */
+.chat {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat__header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid var(--border-soft);
+  -webkit-app-region: drag;
+  flex-wrap: wrap;
+}
+/* boutons et puces cliquables dans la zone de drag de la fenêtre */
+.chat__header .icon-btn,
+.chat__header .model-switcher { -webkit-app-region: no-drag; }
+.chat__header h1 { font-size: 0.95rem; font-weight: 600; }
+
+/* sélecteur provider / modèle (titre cliquable) */
+.model-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0.25rem 0.55rem;
+  margin-left: -0.55rem;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.model-switcher:hover { background: rgba(226, 149, 42, 0.09); }
+.model-switcher h1 { font-size: 0.95rem; font-weight: 600; }
+.model-switcher .chev { color: var(--muted); font-size: 0.62rem; }
+.model-switcher code {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  -webkit-app-region: no-drag;
+}
+
+.skill-chip {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--accent-dim);
+  background: #fdf3dd;
+  color: var(--accent-deep);
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+}
+.skill-chip em { font-style: normal; opacity: 0.7; }
+.skill-chip button {
+  border: none; background: none; color: inherit;
+  cursor: pointer; font-size: 0.9rem; line-height: 1;
+}
+
+/* ---------- messages ---------- */
+.messages {
+  overflow-y: auto;
+  padding: 1.4rem;
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+.messages::-webkit-scrollbar { width: 8px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.welcome { text-align: center; margin: auto; display: grid; gap: 0.6rem; max-width: 27rem; }
+.welcome__logo { font-size: 2.6rem; }
+.welcome h2 { font-size: 1.3rem; }
+.welcome p { color: var(--muted); font-size: 0.88rem; }
+.welcome code {
+  font-family: var(--font-mono);
+  background: var(--panel-2);
+  border-radius: 6px;
+  padding: 0.08em 0.35em;
+}
+
+.welcome__hints { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center; margin-top: 0.6rem; }
+.welcome__hints code {
+  font-size: 0.72rem;
+  color: var(--accent-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  background: none;
+}
+.welcome__hints code:hover { border-color: var(--accent-dim); background: #fdf3dd; }
+
+.welcome__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.welcome__keys kbd {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0.05rem 0.3rem;
+  background: var(--panel);
+}
+
+.msg { display: grid; gap: 0.35rem; max-width: 46rem; }
+.msg--user { justify-self: end; }
+.msg--assistant { justify-self: start; width: 100%; }
+
+.msg__bubble {
+  border-radius: 14px;
+  padding: 0.7rem 0.95rem;
+  line-height: 1.55;
+  font-size: 0.9rem;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.msg--user .msg__bubble {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.msg--assistant .msg__bubble {
+  background: #fdf6e7;
+  border: 1px solid #f0dcb4;
+}
+
+.msg--assistant code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+}
+
+.msg--assistant pre {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  overflow-x: auto;
+  margin: 0.45rem 0;
+  white-space: pre;
+}
+
+.msg__meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  opacity: 0.75;
+}
+
+.thinking { color: var(--muted); font-size: 0.84rem; animation: think 1.2s ease-in-out infinite; }
+@keyframes think { 50% { opacity: 0.4; } }
+
+/* ---------- onglet Plan (todo de l'IA dans le panneau droit) ---------- */
+#sp-view-plan { gap: 0.5rem; }
+
+.plan-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.plan-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.plan-count {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  background: var(--accent);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.06rem 0.45rem;
+}
+#plan-collapse { transition: transform 0.18s ease; }
+#plan-collapse.rotated { transform: rotate(-90deg); }
+
+.plan-bar-wrap {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-soft);
+  overflow: hidden;
+}
+.plan-bar {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sage), var(--accent));
+  transition: width 0.4s ease;
+}
+
+#sp-view-plan.collapsed .todo-list,
+#sp-view-plan.collapsed .plan-bar-wrap { display: none; }
+
+.todo-list {
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  padding: 0.34rem 0.5rem;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+}
+.todo-item .box {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: 0.14rem;
+  border: 1.6px solid var(--border);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: transparent;
+  line-height: 1;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.todo-item .label {
+  min-width: 0;
+  color: var(--text);
+}
+.todo-item.done .box {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fffdf6;
+}
+.todo-item.done .label {
+  text-decoration: line-through;
+  color: var(--muted);
+  opacity: 0.72;
+}
+.todo-item.new { animation: todoIn 0.28s ease both; }
+@keyframes todoIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- composer ---------- */
+.composer {
+  position: relative;
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-end;
+  padding: 1rem 1.4rem 1.2rem;
+  border-top: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+#input {
+  flex: 1;
+  resize: none;
+  max-height: 160px;
+  line-height: 1.5;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-mono);
+}
+
+#send { padding: 0.62rem 1.3rem; }
+#send:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+#send.stop {
+  background: linear-gradient(135deg, #dd8a72, var(--danger));
+  color: #fffdf6;
+  box-shadow: 0 4px 14px rgba(194, 91, 69, 0.3);
+}
+
+/* bouton flottant « revenir en bas » au-dessus du composer */
+.scroll-bottom {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 1.4rem;
+  z-index: 15;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(96, 82, 34, 0.18);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, border-color 0.15s, color 0.15s;
+}
+.scroll-bottom.visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.scroll-bottom:hover { color: var(--text); border-color: var(--accent-dim); }
+
+.slash-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 1.4rem;
+  z-index: 20;
+  min-width: 260px;
+  max-width: 340px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(96, 82, 34, 0.18);
+  overflow: hidden;
+}
+
+.slash-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--text);
+  text-align: left;
+}
+.slash-item .slash { color: var(--accent-deep); font-family: var(--font-mono); font-weight: 600; }
+.slash-item small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.slash-item.sel, .slash-item:hover { background: #fdf3dd; }
+
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar, .resizer { display: none; }
+}
+
+/* ---------- conversations ---------- */
+.conv-list {
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+.conv-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.42rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.conv-btn:hover { background: rgba(226, 149, 42, 0.07); color: var(--text); }
+.conv-btn.active {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+.conv-btn .title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conv-btn .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.conv-btn .del:hover { color: var(--danger); opacity: 1; }
+
+.conv-btn input.conv-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.74rem;
+  border-radius: 6px;
+}
+
+/* ---------- logo castor (SVG maison) ---------- */
+.beaver-ico { display: block; width: 100%; height: 100%; }
+.b-fur { fill: #6b4313; }
+.b-muz { fill: #f2d5a0; }
+.b-tooth { fill: #fffdf6; stroke: #cbb58a; stroke-width: 0.4; }
+.b-nose { fill: #33260a; }
+.b-eye { fill: #33260a; }
+.b-wh { stroke: #6b4313; stroke-width: 0.7; stroke-linecap: round; fill: none; }
+.logo__tile svg { width: 20px; height: 20px; }
+.welcome__logo { display: inline-block; }
+.welcome__logo svg { width: 3rem; height: 3rem; margin: 0 auto; }
+
+/* ---------- projets : un espace dédié par dossier ---------- */
+.project-list {
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+.proj-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.84rem;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.proj-btn:hover { background: rgba(226, 149, 42, 0.07); }
+.proj-btn.active {
+  border-color: var(--border);
+  background: var(--panel);
+}
+.proj-ico { width: 22px; height: 22px; flex-shrink: 0; }
+.proj-btn .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj-btn .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.15s;
+}
+.proj-btn:hover .del,
+.proj-btn:focus-within .del { opacity: 0.6; }
+.proj-btn .del:hover { color: var(--danger); opacity: 1; }
+.proj-btn .del.confirm {
+  opacity: 1;
+  color: var(--danger);
+  font-weight: 700;
+}
+#ws-tree-wrap { margin-top: 0.35rem; }
+
+/* ---------- glisser-déposer d'un dossier ---------- */
+body.ws-dropping #project-list,
+body.ws-dropping #open-workspace {
+  outline: 2px dashed var(--accent-dim);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+body.ws-dropping .sidebar { background: rgba(226, 149, 42, 0.10); }
+
+.file-tree {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 0.35rem 0.4rem;
+  margin-top: 0.35rem;
+}
+.file-tree::-webkit-scrollbar { width: 6px; }
+.file-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.file-tree details { margin-left: 0; }
+.file-tree details details { margin-left: 0.85rem; }
+.file-tree summary {
+  cursor: pointer;
+  color: var(--text);
+  list-style: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.file-tree summary::before { content: "▸ "; color: var(--muted); }
+.file-tree details[open] > summary::before { content: "▾ "; }
+.file-tree summary:hover { color: var(--accent-deep); }
+.ft-file {
+  color: var(--muted);
+  white-space: nowrap;
+  padding-left: 1.15rem;
+}
+.ft-more { color: var(--muted); opacity: 0.7; padding-left: 0.6rem; font-style: italic; }
+
+/* ---------- chip workspace dans le header ---------- */
+.ws-chip {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  max-width: 220px;
+}
+.ws-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- modes build / plan ---------- */
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+.mode-btn {
+  border: none;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+.mode-btn.active {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+/* ---------- file d'attente ---------- */
+.queue-zone {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-bottom: 0.45rem;
+}
+.queue-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  max-width: 100%;
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+.queue-chip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-chip button {
+  border: none; background: none; color: inherit;
+  cursor: pointer; font-size: 0.75rem; opacity: 0.6;
+}
+.queue-chip button:hover { color: var(--danger); opacity: 1; }
+
+.icon-btn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.25rem 0.45rem;
+  transition: background 0.15s, color 0.15s;
+}
+.icon-btn:hover { background: rgba(226, 149, 42, 0.1); color: var(--text); }
+
+/* ---------- trace des outils dans le chat ---------- */
+.tools-trace {
+  display: grid;
+  gap: 0.25rem;
+  justify-self: start;
+  width: 100%;
+  max-width: 46rem;
+}
+.tool-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 0.22rem 0.55rem;
+  animation: toolIn 0.25s ease both;
+}
+@keyframes toolIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tool-line.running::after {
+  content: "…";
+  animation: think 1.2s ease-in-out infinite;
+}
+.tool-line.done { opacity: 0.75; }
+.tool-line.done .icon { filter: saturate(0.4); }
+.tool-line .icon { font-style: normal; }
+
+/* ---------- modale d'approbation (diff / commande) ---------- */
+.diff-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+}
+.diff-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(46, 51, 32, 0.35);
+  backdrop-filter: blur(2px);
+}
+.diff-modal__card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.8rem;
+  width: min(720px, calc(100vw - 3rem));
+  max-height: min(80vh, 640px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(96, 82, 34, 0.28);
+  padding: 1.1rem 1.2rem;
+}
+.diff-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+}
+.diff-modal__head code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  word-break: break-all;
+}
+.diff-modal__body {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  overflow: auto;
+  white-space: pre;
+  margin: 0;
+}
+.diff-modal__body .d-add { color: #9ecf6a; background: rgba(147, 168, 98, 0.12); display: block; }
+.diff-modal__body .d-del { color: #e08a76; background: rgba(194, 91, 69, 0.12); display: block; }
+.diff-modal__body .d-hunk { color: var(--river); opacity: 0.85; display: block; margin: 0.2rem 0; }
+
+.diff-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.diff-modal__actions .btn-primary,
+.diff-modal__actions .btn-ghost { padding: 0.5rem 1.2rem; }
+
+/* ---------- conversations : recherche, onglets, temps ---------- */
+.conv-search { margin-bottom: 0.35rem; font-size: 0.76rem; padding: 0.35rem 0.6rem; }
+
+/* regroupement par jour */
+.conv-day {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  opacity: 0.75;
+  padding: 0.5rem 0.35rem 0.1rem;
+}
+.conv-day:first-child { padding-top: 0.1rem; }
+
+.conv-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+}
+.conv-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0.3rem 0.2rem;
+  cursor: pointer;
+}
+.conv-tab:hover { color: var(--text); }
+.conv-tab.active { background: var(--panel); border: 1px solid var(--border-soft); color: var(--text); }
+
+.conv-btn .when {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.64rem;
+  font-family: var(--font-mono);
+  opacity: 0.7;
+}
+/* actions (archiver / supprimer) discrètes : révélées au survol ou au clavier */
+.conv-btn .arch,
+.conv-btn .del {
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.15s;
+}
+.conv-btn:hover .arch,
+.conv-btn:hover .del,
+.conv-btn:focus-within .arch,
+.conv-btn:focus-within .del { opacity: 0.65; }
+.conv-btn .arch:hover,
+.conv-btn .del:hover { opacity: 1; }
+.conv-btn .del.confirm {
+  opacity: 1;
+  color: var(--danger);
+  font-weight: 700;
+}
+.conv-btn .arch {
+  border: none;
+  background: none;
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.conv-btn .arch:hover { color: var(--accent-deep); opacity: 1; }
+.conv-btn .del { margin-left: 0; }
+
+/* ---------- panneau droit ---------- */
+.layout { transition: grid-template-columns 0.2s ease; }
+.layout.resizing { transition: none; }
+.layout.panel-open {
+  grid-template-columns: var(--sidebar-w, 280px) 6px minmax(0, 1fr) 6px var(--panel-w, 320px);
+}
+.layout:not(.panel-open) .resizer--right { display: none; }
+
+.side-panel {
+  display: none;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-soft) 55%, transparent);
+}
+.layout.panel-open .side-panel { display: flex; }
+
+.sp-head {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border-soft);
+  -webkit-app-region: drag;
+}
+.sp-head .sp-tab,
+.sp-head .icon-btn { -webkit-app-region: no-drag; }
+.sp-spacer { flex: 1; }
+
+.sp-tab {
+  border: none;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.sp-tab:hover { color: var(--text); }
+.sp-tab.active { background: var(--panel); border: 1px solid var(--border-soft); color: var(--text); }
+
+/* sous-titres de l'onglet Outils */
+.sp-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.sp-subtitle .hint {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  opacity: 0.7;
+}
+.sp-subtitle--sep {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.sp-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.7rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.sp-view::-webkit-scrollbar { width: 8px; }
+.sp-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.empty-note.big { text-align: center; padding: 2rem 1rem; line-height: 1.6; }
+
+/* changes */
+.changes-list { list-style: none; display: grid; gap: 0.15rem; }
+.changes-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.28rem 0.45rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.changes-row:hover { background: rgba(226, 149, 42, 0.08); }
+.changes-row .path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+.chg-code {
+  flex-shrink: 0;
+  width: 1.7em;
+  text-align: center;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 0.66rem;
+}
+.chg-code.mod { background: #fdf3dd; color: var(--accent-deep); }
+.chg-code.add { background: rgba(147, 168, 98, 0.18); color: var(--sage-deep); }
+.chg-code.del { background: rgba(194, 91, 69, 0.14); color: var(--danger); }
+.chg-code.new { background: var(--panel-2); color: var(--muted); }
+.chg-code.ren { background: rgba(88, 184, 214, 0.14); color: var(--river-deep); }
+
+.code-pre {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  overflow: auto;
+  white-space: pre;
+  margin: 0;
+  max-height: 50vh;
+}
+.code-pre .d-add { color: #9ecf6a; background: rgba(147, 168, 98, 0.12); display: block; }
+.code-pre .d-del { color: #e08a76; background: rgba(194, 91, 69, 0.12); display: block; }
+.code-pre .d-hunk { color: var(--river); opacity: 0.85; display: block; margin: 0.2rem 0; }
+
+/* terminal */
+.term-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.term-filters {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.term-filter {
+  border: none;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding: 0.22rem 0.6rem;
+  cursor: pointer;
+}
+.term-filter:hover { color: var(--text); }
+.term-filter.active {
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.terminal-log { display: grid; gap: 0.5rem; }
+.term-entry {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.term-entry.running { border-color: var(--accent-dim); }
+.term-entry.ko { border-color: rgba(194, 91, 69, 0.45); }
+
+.term-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.38rem 0.55rem;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+.term-head:hover { background: rgba(226, 149, 42, 0.06); }
+.term-status { flex-shrink: 0; font-size: 0.72rem; }
+.term-entry.running .term-status { animation: think 1.2s ease-in-out infinite; }
+.term-entry.ok .term-status { color: var(--sage-deep); }
+.term-entry.ko .term-status { color: var(--danger); }
+.term-cmd {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+.term-time, .term-dur {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 0.58rem;
+}
+.term-copy {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.08rem 0.22rem;
+  border-radius: 5px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.term-copy:hover { opacity: 1; color: var(--accent-deep); background: rgba(226, 149, 42, 0.12); }
+.term-chev {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 0.6rem;
+  transition: transform 0.15s;
+}
+.term-entry.open .term-chev { transform: rotate(90deg); }
+
+.term-out {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-soft);
+  display: none;
+}
+.term-entry.open .term-out { display: block; }
+.term-code {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--sage-deep);
+  padding: 0.2rem 0.6rem 0.35rem;
+  display: none;
+}
+.term-entry.open .term-code { display: block; }
+.term-code.ko { color: var(--danger); }
+
+/* notes */
+.notes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.notes-stats {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  opacity: 0.85;
+}
+#sp-view-notes { gap: 0.45rem; }
+#notes-area {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  border-radius: 12px;
+}
+#notes-area:disabled { opacity: 0.55; }
+
+.notes-preview {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem 0.95rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+.notes-preview code {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+}
+.notes-preview pre {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  overflow-x: auto;
+  margin: 0.45rem 0;
+  white-space: pre;
+}
+#sp-view-notes.preview #notes-area { display: none; }
+#sp-view-notes:not(.preview) #notes-preview { display: none; }
+
+.notes-save-status {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  opacity: 0.85;
+  text-align: right;
+  min-height: 1em;
+}
+#notes-clear.confirm {
+  color: var(--danger);
+  font-weight: 700;
+  background: rgba(194, 91, 69, 0.1);
+}
+
+/* le panneau droit héberge désormais les Outils (compétences, mémoire) :
+   plus de masquage automatique en fenêtre étroite */
+
+</style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <span class="logo__tile beaver-slot" aria-label="Castor"></span>
+          <div>
+            <strong>castor</strong>
+            <small id="app-version"></small>
+          </div>
+        </div>
+
+        <button id="update-pill" class="update-pill hidden" title="Mise à jour de Castor">
+          <span class="update-pill__dot"></span>
+          <span id="update-pill-text"></span>
+        </button>
+
+        <button
+          id="new-chat"
+          class="btn-primary btn-wide sidebar__new"
+          title="Nouvelle conversation (⌘N / Ctrl+N)"
+        >＋ Nouvelle conversation</button>
+
+        <div class="sidebar__scroll">
+          <section class="sb-section" data-collapsible="convs">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Conversations</span>
+              <span id="conv-count" class="count-badge">0</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <input id="conv-search" class="conv-search" placeholder="Rechercher…" spellcheck="false" />
+              <div class="conv-tabs" role="group">
+                <button id="conv-tab-active" class="conv-tab active">
+                  Actives <span id="conv-nb-active" class="count-badge">0</span>
+                </button>
+                <button id="conv-tab-archived" class="conv-tab">
+                  Archivées <span id="conv-nb-archived" class="count-badge">0</span>
+                </button>
+              </div>
+              <ul id="conv-list" class="conv-list"></ul>
+            </div>
+          </section>
+
+          <section class="sb-section" data-collapsible="ws">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Projets</span>
+              <span id="project-count" class="count-badge hidden">0</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <ul id="project-list" class="project-list"></ul>
+              <button id="open-workspace" class="btn-ghost btn-mini">＋ Ajouter un projet…</button>
+              <span id="ws-hint" class="empty-note">Aucun projet — ajoute un dossier pour que le castor code.</span>
+              <div id="ws-tree-wrap" class="hidden">
+                <div id="file-tree" class="file-tree"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sb-section" data-collapsible="providers">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Providers</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <ul id="provider-list" class="provider-list"></ul>
+            </div>
+          </section>
+
+        </div>
+
+        <div class="sidebar__footer">
+          <div class="usage-wrap">
+            <button id="usage-box" class="usage" title="Détail des tokens — cliquer pour ouvrir">
+              <div class="gauge">
+                <div id="gauge-fill" class="gauge__fill"></div>
+              </div>
+              <small id="gauge-label">contexte ~0 tok · 0 % de 128k</small>
+            </button>
+            <div id="usage-popover" class="usage-popover hidden" role="dialog" aria-label="Détail des tokens">
+              <div class="up-section">
+                <div class="up-title">Fenêtre de contexte</div>
+                <div class="up-row"><span>Utilisé</span><b id="up-ctx-used">—</b></div>
+                <div class="up-row"><span>Capacité</span><b id="up-ctx-cap">128 000 tok</b></div>
+                <div class="up-gauge"><i id="up-gauge-fill"></i></div>
+                <div id="up-truncated" class="up-warn hidden">
+                  Fenêtre glissante active : l'historique ancien n'est plus envoyé.
+                </div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Dernière réponse</div>
+                <div id="up-last" class="up-last">Aucune requête pour l'instant.</div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Session</div>
+                <div class="up-row"><span>Tokens</span><b id="up-session-tok">0</b></div>
+                <div class="up-row"><span>Requêtes</span><b id="up-session-req">0</b></div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Cumul (toutes sessions)</div>
+                <div class="up-row"><span>Tokens</span><b id="up-total-tok">0</b></div>
+                <div class="up-row"><span>Requêtes</span><b id="up-total-req">0</b></div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Dernières requêtes</div>
+                <ul id="up-history" class="up-history"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="resizer resizer--left" title="Redimensionner la sidebar"></div>
+
+      <main class="chat">
+        <header class="chat__header">
+          <button
+            id="model-switcher"
+            class="model-switcher"
+            title="Provider &amp; modèle — cliquer pour changer (⌘, / Ctrl+,)"
+            aria-label="Changer de provider ou de modèle"
+          >
+            <h1 id="chat-title">Nouvelle conversation</h1>
+            <code id="model-chip" class="hidden"></code>
+            <span class="chev">▾</span>
+          </button>
+          <span id="ws-chip" class="ws-chip hidden" title="Espace de travail ouvert">📁 <span id="ws-chip-name"></span></span>
+          <span id="active-skill-chip" class="skill-chip hidden">
+            <em>compétence :</em> <b id="skill-chip-name"></b>
+            <button id="clear-skill" title="Retirer">×</button>
+          </span>
+          <span id="stats" class="stats"></span>
+          <button id="theme-toggle" class="icon-btn" title="Basculer jour / nuit" aria-label="Basculer le thème jour / nuit">
+            <!-- icône maison : croissant (jour) / soleil (nuit), tracée à la main -->
+            <svg class="theme-ico" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+              <g class="ico-moon">
+                <path d="M20.7 13.4A8.6 8.6 0 1 1 10.6 3.3a6.9 6.9 0 0 0 10.1 10.1Z" />
+                <path class="ico-star" d="M16.8 5.2v2.6M15.5 6.5h2.6" />
+              </g>
+              <g class="ico-sun">
+                <circle cx="12" cy="12" r="4.1" />
+                <path d="M12 2.9v2M12 19.1v2M2.9 12h2M19.1 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4" />
+              </g>
+            </svg>
+          </button>
+          <button id="panel-toggle" class="icon-btn" title="Panneau : Changes · Terminal · Notes · Outils" aria-label="Ouvrir le panneau Changes / Terminal / Notes / Outils">▤</button>
+        </header>
+
+        <div id="messages" class="messages">
+          <div class="welcome">
+            <span class="welcome__logo beaver-slot"></span>
+            <h2>Salut, je suis Castor.</h2>
+            <p>
+              Choisis un provider et un projet, tape <code>/</code> pour tes compétences,
+              et donne-moi un chantier. Ce que je fais s'affiche en liste.
+            </p>
+            <div class="welcome__hints">
+              <code>/review ce composant</code>
+              <code>/tests pour ma fonction parse()</code>
+              <code>refactore ce fichier en TypeScript</code>
+            </div>
+            <div class="welcome__keys">
+              <span><kbd>⌘N</kbd> nouvelle conversation</span>
+              <span><kbd>⌘O</kbd> ouvrir un chantier</span>
+              <span>ou glisse un dossier dans la fenêtre</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="composer">
+          <div id="slash-menu" class="slash-menu hidden"></div>
+          <div id="queue-zone" class="queue-zone hidden" title="Envoyés dès que le castor a fini"></div>
+          <button id="scroll-bottom" class="scroll-bottom" title="Revenir en bas" aria-label="Revenir en bas de la conversation">↓</button>
+          <div class="mode-toggle" role="group" title="Build : l'agent peut lire, écrire et lancer des commandes · Plan : lecture seule">
+            <button id="mode-build" class="mode-btn active">Build</button>
+            <button id="mode-plan" class="mode-btn">Plan</button>
+          </div>
+          <textarea
+            id="input"
+            rows="1"
+            placeholder="Demande quelque chose au castor…  (/ compétences · Entrée envoyer · Échap arrêter)"
+          ></textarea>
+          <button id="send" class="btn-primary">Envoyer</button>
+        </footer>
+      </main>
+
+      <div class="resizer resizer--right" title="Redimensionner le panneau"></div>
+
+      <aside id="side-panel" class="side-panel">
+        <header class="sp-head">
+          <button class="sp-tab active" data-tab="changes">
+            Changes <span id="chg-badge" class="count-badge hidden">0</span>
+          </button>
+          <button class="sp-tab" data-tab="plan">
+            Plan <span id="todo-badge" class="count-badge hidden">0/0</span>
+          </button>
+          <button class="sp-tab" data-tab="terminal">
+            Terminal <span id="term-badge" class="count-badge hidden">0</span>
+          </button>
+          <button class="sp-tab" data-tab="notes">Notes</button>
+          <button class="sp-tab" data-tab="tools">
+            Outils <span id="skill-count" class="count-badge">0</span>
+          </button>
+          <span class="sp-spacer"></span>
+          <button id="sp-refresh" class="icon-btn" title="Rafraîchir">↻</button>
+          <button id="sp-close" class="icon-btn" title="Fermer le panneau">✕</button>
+        </header>
+
+        <section id="sp-view-changes" class="sp-view">
+          <div id="changes-empty" class="empty-note big">
+            Ouvre un chantier pour suivre les fichiers modifiés par le castor.
+          </div>
+          <ul id="changes-list" class="changes-list"></ul>
+          <pre id="changes-diff" class="code-pre hidden"></pre>
+        </section>
+
+        <section id="sp-view-plan" class="sp-view hidden">
+          <div class="plan-head">
+            <span class="plan-title">☑️ Plan de la tâche</span>
+            <span class="sp-spacer"></span>
+            <span id="plan-count" class="plan-count">0/0</span>
+            <button id="plan-collapse" class="icon-btn" title="Replier / déplier la liste">▾</button>
+          </div>
+          <div class="plan-bar-wrap"><i class="plan-bar"><b id="plan-bar"></b></i></div>
+          <div id="plan-empty" class="empty-note big">
+            La liste de cases à cocher du castor apparaîtra ici pendant qu'il code.
+          </div>
+          <ul id="todo-list" class="todo-list hidden"></ul>
+        </section>
+
+        <section id="sp-view-terminal" class="sp-view hidden">
+          <div class="term-toolbar">
+            <div class="term-filters" role="group" title="Filtrer les commandes">
+              <button class="term-filter active" data-filter="all">Tous</button>
+              <button class="term-filter" data-filter="ok">✓ OK</button>
+              <button class="term-filter" data-filter="ko">✕ Erreurs</button>
+            </div>
+            <span class="sp-spacer"></span>
+            <button id="term-copy-all" class="icon-btn" title="Copier tout l'historique">⧉</button>
+            <button id="term-clear" class="icon-btn" title="Vider l'historique">⌫</button>
+          </div>
+          <div id="terminal-empty" class="empty-note big">
+            Les commandes lancées par le castor et leur sortie apparaîtront ici.
+          </div>
+          <div id="terminal-log" class="terminal-log"></div>
+        </section>
+
+        <section id="sp-view-notes" class="sp-view hidden">
+          <div class="notes-toolbar">
+            <button id="notes-mode" class="btn-ghost btn-mini">Aperçu</button>
+            <span id="notes-stats" class="notes-stats"></span>
+            <span class="sp-spacer"></span>
+            <button id="notes-copy" class="icon-btn" title="Copier la note">⧉</button>
+            <button id="notes-clear" class="icon-btn" title="Vider la note (2 clics)">🗑</button>
+          </div>
+          <textarea
+            id="notes-area"
+            placeholder="Notes liées au chantier — sauvegardées automatiquement…"
+            spellcheck="false"
+          ></textarea>
+          <div id="notes-preview" class="notes-preview hidden"></div>
+          <div id="notes-save-status" class="notes-save-status"></div>
+        </section>
+
+        <section id="sp-view-tools" class="sp-view hidden">
+          <h3 class="sp-subtitle">
+            Compétences <span class="hint">/ dans le champ</span>
+          </h3>
+          <ul id="skill-list" class="skill-list"></ul>
+          <div id="skill-editor" class="mini-editor hidden">
+            <input id="skill-name" placeholder="nom — ex : review" spellcheck="false" />
+            <textarea id="skill-body" rows="4" placeholder="Instructions injectées quand la compétence est active…" spellcheck="false"></textarea>
+            <div class="mini-editor__row">
+              <button id="save-skill" class="btn-primary btn-mini">Enregistrer</button>
+              <button id="cancel-skill" class="btn-ghost btn-mini">Annuler</button>
+            </div>
+          </div>
+          <button id="add-skill" class="btn-ghost btn-mini">＋ Nouvelle compétence</button>
+
+          <h3 class="sp-subtitle sp-subtitle--sep">
+            Mémoire persistante
+            <span class="sp-spacer"></span>
+            <span id="memory-count" class="count-badge">0</span>
+          </h3>
+          <form id="memory-form" class="memory-form">
+            <input id="memory-input" placeholder="Un fait à retenir pour toujours…" />
+            <button type="submit" class="btn-ghost btn-mini">＋</button>
+          </form>
+          <ul id="memory-list" class="memory-list"></ul>
+        </section>
+      </aside>
+    </div>
+
+    <div id="provider-modal" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <div class="diff-modal__card pm-card">
+        <header class="diff-modal__head">
+          <span id="pm-icon">⚙️</span>
+          <div>
+            <strong id="pm-title">Réglages du provider</strong>
+            <code id="pm-provider"></code>
+          </div>
+        </header>
+        <div class="pm-body">
+          <label>
+            Modèle
+            <input id="model-input" list="model-options" spellcheck="false" />
+            <datalist id="model-options"></datalist>
+          </label>
+          <div class="model-picker">
+            <input id="model-search" placeholder="Filtrer les modèles — gratuits d'abord…" spellcheck="false" />
+            <div id="model-list" class="model-list" role="listbox" aria-label="Modèles disponibles"></div>
+          </div>
+          <button id="refresh-models" class="btn-ghost btn-mini">
+            ↻ Rafraîchir les modèles
+          </button>
+          <label id="key-row" class="hidden">
+            Clé API
+            <input id="key-input" type="password" placeholder="sk-…" />
+          </label>
+          <a id="key-link" class="key-link hidden" href="#" title="Ouvre le site du provider pour créer une clé gratuite">Obtenir une clé gratuite ↗</a>
+          <button id="save-key" class="btn-primary btn-mini hidden">
+            Enregistrer la clé
+          </button>
+          <label>
+            Endpoint (optionnel)
+            <input id="baseurl-input" placeholder="https://…" spellcheck="false" />
+          </label>
+          <button id="test-conn" class="btn-ghost btn-mini">
+            Tester la connexion
+          </button>
+          <span id="test-result" class="test-result"></span>
+        </div>
+        <footer class="diff-modal__actions">
+          <button id="pm-close" class="btn-ghost">Fermer</button>
+        </footer>
+      </div>
+    </div>
+
+    <div id="diff-modal" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <div class="diff-modal__card">
+        <header class="diff-modal__head">
+          <span id="diff-icon">✏️</span>
+          <div>
+            <strong id="diff-title">Écriture de fichier</strong>
+            <code id="diff-path"></code>
+          </div>
+        </header>
+        <pre id="diff-body" class="diff-modal__body"></pre>
+        <footer class="diff-modal__actions">
+          <button id="diff-reject" class="btn-ghost">Refuser</button>
+          <button id="diff-approve" class="btn-primary">Approuver</button>
+        </footer>
+      </div>
+    </div>
+
+    <script>
+/* Simulateur window.castor pour la DÉMO hors-Electron (preview-demo.html).
+   Aucune vraie requête : providers, store, streaming, outils et approbation
+   sont simulés en mémoire pour présenter l'UI retravaillée. */
+(function () {
+  "use strict";
+
+  const mem = new Map();
+  mem.set("skills", [
+    { name: "review", body: "Relis le code fourni comme un reviewer senior : points bloquants d'abord, puis suggestions concrètes avec extraits corrigés." },
+    { name: "tests", body: "Propose des tests couvrant les cas limites du code fourni, prêts à coller dans le projet." },
+    { name: "explique", body: "Explique pas à pas, avec une analogie simple, puis un résumé en 3 points." },
+  ]);
+  mem.set("memory", [
+    { id: 1, text: "Réponses courtes, code en TypeScript." },
+    { id: 2, text: "Le projet castor utilise Vite + React 18." },
+  ]);
+  mem.set("usage", { totalTokens: 4821, requests: 7 });
+
+  const now = Date.now();
+  const P_CASTOR = "/Users/demo/projets/castor";
+  const P_SITE = "/Users/demo/projets/site-vitrine";
+  mem.set("projects", [
+    { id: P_CASTOR, name: "castor", path: P_CASTOR },
+    { id: P_SITE, name: "site-vitrine", path: P_SITE },
+  ]);
+  mem.set("conversations", [
+    { id: 1, projectId: P_CASTOR, title: "Refactore le lecteur de config en TypeScript", messages: [{ role: "user", content: "Refactore le lecteur de config en TypeScript." }], updatedAt: now - 1000 * 60 * 42, archived: false },
+    { id: 2, projectId: P_CASTOR, title: "Corrige le bug d'accents dans le parseur CSV", messages: [{ role: "user", content: "Corrige le bug d'accents." }], updatedAt: now - 1000 * 60 * 60 * 5, archived: false },
+    { id: 3, projectId: null, title: "Idées de nommage pour le module de thèmes", messages: [{ role: "user", content: "Des idées de nommage ?" }], updatedAt: now - 1000 * 60 * 60 * 26, archived: false },
+    { id: 4, projectId: P_SITE, title: "Optimise les images de la page modèles", messages: [{ role: "user", content: "Optimise les images." }], updatedAt: now - 1000 * 60 * 60 * 30, archived: true },
+  ]);
+
+  const listeners = { chunk: [], end: [], error: [], toolStart: [], toolResult: [], approval: [] };
+  const on = (key) => (cb) => {
+    listeners[key].push(cb);
+    return () => { listeners[key] = listeners[key].filter((f) => f !== cb); };
+  };
+  const emit = (key, data) => listeners[key].forEach((cb) => { try { cb(data); } catch (e) { console.error(e); } });
+
+  let reqSeq = 0;
+  let timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+  // simulateur de mise à jour : la pastille de la sidebar doit apparaître
+  let updateStatus = { state: "idle" };
+  const updateCbs = [];
+  let updateSimStarted = false;
+  function simulateUpdate() {
+    if (updateSimStarted) return;
+    updateSimStarted = true;
+    const push = (s) => { updateStatus = s; updateCbs.forEach((cb) => cb({ ...s })); };
+    setTimeout(() => push({ state: "available", version: "0.2.1", percent: null }), 1500);
+    setTimeout(() => push({ state: "available", version: "0.2.1", percent: 42 }), 2700);
+    setTimeout(() => push({ state: "available", version: "0.2.1", percent: 100 }), 3900);
+    setTimeout(() => push({ state: "downloaded", version: "0.2.1", percent: 100 }), 5100);
+  }
+  setTimeout(simulateUpdate, 800);
+
+  const FAKE_REPLY = [
+    "Voici mon plan :\n",
+    "\n- [x] lire le fichier de config\n- [x] repérer les types manquants\n- [ ] réécrire `config.js` en TypeScript\n\n",
+    "Le lecteur actuel mélange lecture et validation. Je propose un module typé :\n\n",
+    "```ts\nexport interface Config {\n  port: number;\n  theme: \"clair\" | \"sombre\";\n}\n```\n\n",
+    "Je peux écrire `src/config.ts` — dis-moi et je m'en occupe. 🦫",
+  ].join("");
+
+  function runFakeStream(reqId) {
+    later(250, () => emit("toolStart", { reqId, callId: "t1", icon: "📄", label: "read_file src/config.js" }));
+    later(950, () => emit("toolResult", { reqId, callId: "t1", meta: { kind: "read" } }));
+    later(1200, () =>
+      emit("approval", {
+        callId: "w1",
+        kind: "write",
+        path: "src/config.ts",
+        isNew: true,
+        diff:
+          "@@ -0,0 +1,4 @@\n" +
+          "+ export interface Config {\n+   port: number;\n+   theme: \"clair\" | \"sombre\";\n+ }\n",
+      })
+    );
+    // commande shell simulée : visible dans l'onglet Terminal du panneau droit
+    later(3400, () =>
+      emit("toolStart", {
+        reqId,
+        callId: "c1",
+        icon: "⚙️",
+        label: "run_command « npm test »",
+        kind: "command",
+      })
+    );
+    later(4700, () =>
+      emit("toolResult", {
+        reqId,
+        callId: "c1",
+        meta: {
+          kind: "command",
+          command: "npm test",
+          code: 0,
+          output: "> castor@0.1.0 test\n✓ 12 tests passés (2,1 s)\n✓ coverage 94 %",
+        },
+      })
+    );
+    later(5200, () => {
+      const parts = FAKE_REPLY.match(/[\s\S]{1,80}/g) || [];
+      parts.forEach((p, i) => later(i * 170, () => emit("chunk", { reqId, delta: p })));
+      later(parts.length * 170 + 350, () => {
+        emit("end", { reqId, ms: 4400 + parts.length * 170, cancelled: false });
+      });
+    });
+  }
+
+  let currentWs = null;
+  const PROJECTS = () => mem.get("projects") || [];
+  const fakeWorkspace = () => {
+    const list = PROJECTS();
+    const target = list.find((p) => p.path !== currentWs) || list[0];
+    if (!target) return { ok: false };
+    currentWs = target.path;
+    return { ok: true, name: target.name, path: target.path };
+  };
+
+  window.castor = {
+    appInfo: async () => ({ version: "0.2.0", platform: "darwin" }),
+
+    listProviders: async () => [
+      { id: "openrouter", label: "OpenRouter", baseURL: "https://openrouter.ai/api/v1", needsKey: true, keyUrl: "https://openrouter.ai/settings/keys", defaultModel: "meta-llama/llama-3.3-70b-instruct", models: ["meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat", "qwen/qwen-2.5-coder-32b-instruct", "mistralai/mistral-small-24b-instruct"], hint: "", configured: true },
+      { id: "groq", label: "Groq", baseURL: "https://api.groq.com/openai/v1", needsKey: true, keyUrl: "https://console.groq.com/keys", defaultModel: "llama-3.3-70b-versatile", models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], hint: "", configured: false },
+      { id: "ollama", label: "Local · Ollama", baseURL: "http://localhost:11434/v1", needsKey: false, keyUrl: null, defaultModel: "qwen2.5-coder:7b", models: ["qwen2.5-coder:7b", "llama3.2:3b"], hint: "", configured: true },
+      { id: "lmstudio", label: "Local · LM Studio", baseURL: "http://localhost:1234/v1", needsKey: false, keyUrl: null, defaultModel: "local-model", models: [], hint: "", configured: true },
+    ],
+    setKey: async () => {
+      const p = window.castor.__providers.find((x) => x.id === window.castor.__activeId);
+      if (p) p.configured = true;
+      return true;
+    },
+    refreshModels: async () => ({
+      ok: true,
+      models: [
+        { id: "meta-llama/llama-3.3-70b-instruct", free: true, context: 131072 },
+        { id: "deepseek/deepseek-r1:free", free: true, context: 163840 },
+        { id: "deepseek/deepseek-chat", free: true, context: 65536 },
+        { id: "qwen/qwen-2.5-coder-32b-instruct", free: true, context: 32768 },
+        { id: "mistralai/mistral-small-24b-instruct", free: true, context: 32768 },
+        { id: "google/gemini-2.0-flash-exp:free", free: true, context: 1048576 },
+        { id: "anthropic/claude-sonnet-4", free: false, context: 200000 },
+        { id: "openai/gpt-4.1-mini", free: false, context: 1047576 },
+      ],
+    }),
+    testConnection: async () => ({ ok: true }),
+
+    stream: async () => {
+      const reqId = ++reqSeq;
+      runFakeStream(reqId);
+      return { ok: true, reqId };
+    },
+    cancel: async (reqId) => {
+      clearTimers();
+      emit("end", { reqId, ms: 900, cancelled: true });
+    },
+    onChunk: on("chunk"),
+    onEnd: on("end"),
+    onError: on("error"),
+    onToolStart: on("toolStart"),
+    onToolResult: on("toolResult"),
+    onApprovalRequest: on("approval"),
+
+    openWorkspace: async () => fakeWorkspace(),
+    openWorkspacePath: async (p) => {
+      const proj = PROJECTS().find((x) => x.path === p);
+      if (!proj) return { ok: false };
+      currentWs = proj.path;
+      return { ok: true, name: proj.name, path: proj.path };
+    },
+    restoreWorkspace: async () => {
+      const first = PROJECTS()[0];
+      if (!first) return { ok: false };
+      currentWs = first.path;
+      return { ok: true, name: first.name, path: first.path };
+    },
+    closeWorkspace: async () => { currentWs = null; return { ok: true }; },
+    workspaceTree: async () => ({
+      ok: true,
+      tree: {
+        children: [
+          { type: "dir", name: "desktop", children: [{ type: "file", name: "main.js" }, { type: "file", name: "preload.js" }, { type: "dir", name: "renderer", children: [{ type: "file", name: "app.js" }, { type: "file", name: "index.html" }, { type: "file", name: "styles.css" }] }] },
+          { type: "dir", name: "src", children: [{ type: "file", name: "config.js" }, { type: "file", name: "utils.js" }] },
+          { type: "file", name: "package.json" },
+        ],
+      },
+    }),
+    workspaceChanges: async () =>
+      currentWs
+        ? { ok: true, repo: true, clean: false, files: [
+            { code: "M", path: "desktop/renderer/app.js" },
+            { code: "M", path: "desktop/renderer/styles.css" },
+            { code: "A", path: "src/config.ts" },
+          ] }
+        : { ok: true, repo: false },
+    workspaceFileDiff: async () => ({
+      ok: true,
+      content:
+        "@@ -12,7 +12,9 @@\n- function loadConfig() {\n-   return JSON.parse(raw);\n- }\n+ function loadConfig(): Config {\n+   return schema.parse(JSON.parse(raw));\n+ }\n",
+    }),
+    pathForFile: () => null,
+    respondApproval: (_callId, approved) => {
+      if (!approved) return;
+      const reqId = reqSeq;
+      later(150, () => emit("toolStart", { reqId, callId: "w1", icon: "✏️", label: "write_file src/config.ts" }));
+      later(1100, () => emit("toolResult", { reqId, callId: "w1", meta: { kind: "write" } }));
+    },
+
+    storeGet: async (k) => (mem.has(k) ? mem.get(k) : null),
+    storeSet: async (k, v) => { mem.set(k, v); return true; },
+
+    // mises à jour (séquence simulée : dispo → téléchargement → prête)
+    checkUpdates: async () => {
+      simulateUpdate();
+      return { ...updateStatus };
+    },
+    installUpdate: async () => true,
+    onUpdateStatus: (cb) => {
+      updateCbs.push(cb);
+      return () => { const i = updateCbs.indexOf(cb); if (i >= 0) updateCbs.splice(i, 1); };
+    },
+
+    // état interne pour que setKey sache qui modifier
+    __providers: null,
+    __activeId: "openrouter",
+  };
+
+  // petit pont : listProviders mémorise la liste pour setKey
+  const realList = window.castor.listProviders;
+  window.castor.listProviders = async () => {
+    const list = await realList();
+    window.castor.__providers = list;
+    return list;
+  };
+})();
+
+</script>
+<script>
 /* Castor Desktop — renderer
    Providers multiples · compétences (/) · mémoire persistante ·
    usage & contexte · plan de tâches live extrait du flux. */
@@ -2448,3 +4932,7 @@ function initSections() {
   window.castor.onUpdateStatus?.(renderUpdate);
   $("#input").focus();
 })();
+
+</script>
+  </body>
+</html>

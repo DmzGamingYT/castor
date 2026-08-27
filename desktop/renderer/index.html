@@ -17,124 +17,156 @@
     <div class="layout">
       <aside class="sidebar">
         <div class="sidebar__brand">
-          <span class="logo__tile">🦫</span>
+          <span class="logo__tile beaver-slot" aria-label="Castor"></span>
           <div>
             <strong>castor</strong>
             <small id="app-version"></small>
           </div>
         </div>
 
-        <div class="sidebar__section-title">
-          Conversations
-          <span id="conv-count" class="count-badge">0</span>
-        </div>
-        <input id="conv-search" class="conv-search" placeholder="Rechercher…" spellcheck="false" />
-        <div class="conv-tabs" role="group">
-          <button id="conv-tab-active" class="conv-tab active">
-            Actives <span id="conv-nb-active" class="count-badge">0</span>
-          </button>
-          <button id="conv-tab-archived" class="conv-tab">
-            Archivées <span id="conv-nb-archived" class="count-badge">0</span>
-          </button>
-        </div>
-        <ul id="conv-list" class="conv-list"></ul>
+        <button id="update-pill" class="update-pill hidden" title="Mise à jour de Castor">
+          <span class="update-pill__dot"></span>
+          <span id="update-pill-text"></span>
+        </button>
 
-        <div class="sidebar__section-title">Providers</div>
-        <ul id="provider-list" class="provider-list"></ul>
+        <button
+          id="new-chat"
+          class="btn-primary btn-wide sidebar__new"
+          title="Nouvelle conversation (⌘N / Ctrl+N)"
+        >＋ Nouvelle conversation</button>
 
-        <div id="provider-settings" class="provider-settings hidden">
-          <label>
-            Modèle
-            <input id="model-input" list="model-options" spellcheck="false" />
-            <datalist id="model-options"></datalist>
-          </label>
-          <button id="refresh-models" class="btn-ghost btn-mini">
-            ↻ Rafraîchir les modèles
-          </button>
-          <label id="key-row" class="hidden">
-            Clé API
-            <input id="key-input" type="password" placeholder="sk-…" />
-          </label>
-          <button id="save-key" class="btn-primary btn-mini hidden">
-            Enregistrer la clé
-          </button>
-          <label>
-            Endpoint (optionnel)
-            <input id="baseurl-input" placeholder="https://…" spellcheck="false" />
-          </label>
-          <button id="test-conn" class="btn-ghost btn-mini">
-            Tester la connexion
-          </button>
-          <span id="test-result" class="test-result"></span>
+        <div class="sidebar__scroll">
+          <section class="sb-section" data-collapsible="convs">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Conversations</span>
+              <span id="conv-count" class="count-badge">0</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <input id="conv-search" class="conv-search" placeholder="Rechercher…" spellcheck="false" />
+              <div class="conv-tabs" role="group">
+                <button id="conv-tab-active" class="conv-tab active">
+                  Actives <span id="conv-nb-active" class="count-badge">0</span>
+                </button>
+                <button id="conv-tab-archived" class="conv-tab">
+                  Archivées <span id="conv-nb-archived" class="count-badge">0</span>
+                </button>
+              </div>
+              <ul id="conv-list" class="conv-list"></ul>
+            </div>
+          </section>
+
+          <section class="sb-section" data-collapsible="ws">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Projets</span>
+              <span id="project-count" class="count-badge hidden">0</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <ul id="project-list" class="project-list"></ul>
+              <button id="open-workspace" class="btn-ghost btn-mini">＋ Ajouter un projet…</button>
+              <span id="ws-hint" class="empty-note">Aucun projet — ajoute un dossier pour que le castor code.</span>
+              <div id="ws-tree-wrap" class="hidden">
+                <div id="file-tree" class="file-tree"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sb-section" data-collapsible="providers">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Providers</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <ul id="provider-list" class="provider-list"></ul>
+            </div>
+          </section>
+
         </div>
 
-        <div class="sidebar__section-title">Espace de travail</div>
-        <div id="ws-box" class="ws-box">
-          <button id="open-workspace" class="btn-ghost btn-mini">📁 Ouvrir un dossier…</button>
-          <span id="ws-hint" class="empty-note">Aucun dossier — le castor ne peut pas coder sans chantier.</span>
-        </div>
-        <div id="ws-active" class="hidden">
-          <div class="ws-head">
-            <strong id="ws-name" title=""></strong>
-            <button id="close-workspace" class="del" title="Fermer l'espace de travail">✕</button>
+        <div class="sidebar__footer">
+          <div class="usage-wrap">
+            <button id="usage-box" class="usage" title="Détail des tokens — cliquer pour ouvrir">
+              <div class="gauge">
+                <div id="gauge-fill" class="gauge__fill"></div>
+              </div>
+              <small id="gauge-label">contexte ~0 tok · 0 % de 128k</small>
+            </button>
+            <div id="usage-popover" class="usage-popover hidden" role="dialog" aria-label="Détail des tokens">
+              <div class="up-section">
+                <div class="up-title">Fenêtre de contexte</div>
+                <div class="up-row"><span>Utilisé</span><b id="up-ctx-used">—</b></div>
+                <div class="up-row"><span>Capacité</span><b id="up-ctx-cap">128 000 tok</b></div>
+                <div class="up-gauge"><i id="up-gauge-fill"></i></div>
+                <div id="up-truncated" class="up-warn hidden">
+                  Fenêtre glissante active : l'historique ancien n'est plus envoyé.
+                </div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Dernière réponse</div>
+                <div id="up-last" class="up-last">Aucune requête pour l'instant.</div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Session</div>
+                <div class="up-row"><span>Tokens</span><b id="up-session-tok">0</b></div>
+                <div class="up-row"><span>Requêtes</span><b id="up-session-req">0</b></div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Cumul (toutes sessions)</div>
+                <div class="up-row"><span>Tokens</span><b id="up-total-tok">0</b></div>
+                <div class="up-row"><span>Requêtes</span><b id="up-total-req">0</b></div>
+              </div>
+              <div class="up-section">
+                <div class="up-title">Dernières requêtes</div>
+                <ul id="up-history" class="up-history"></ul>
+              </div>
+            </div>
           </div>
-          <div id="file-tree" class="file-tree"></div>
         </div>
-
-        <div class="sidebar__section-title">Compétences <span class="hint">/ dans le champ</span></div>
-        <ul id="skill-list" class="skill-list"></ul>
-        <div id="skill-editor" class="mini-editor hidden">
-          <input id="skill-name" placeholder="nom — ex : review" spellcheck="false" />
-          <textarea id="skill-body" rows="4" placeholder="Instructions injectées quand la compétence est active…" spellcheck="false"></textarea>
-          <div class="mini-editor__row">
-            <button id="save-skill" class="btn-primary btn-mini">Enregistrer</button>
-            <button id="cancel-skill" class="btn-ghost btn-mini">Annuler</button>
-          </div>
-        </div>
-        <button id="add-skill" class="btn-ghost btn-mini">＋ Nouvelle compétence</button>
-
-        <div class="sidebar__section-title">
-          Mémoire persistante <span id="memory-count" class="count-badge">0</span>
-        </div>
-        <form id="memory-form" class="memory-form">
-          <input id="memory-input" placeholder="Un fait à retenir pour toujours…" />
-          <button type="submit" class="btn-ghost btn-mini">＋</button>
-        </form>
-        <ul id="memory-list" class="memory-list"></ul>
-
-        <div class="sidebar__section-title">Contexte & utilisation</div>
-        <div class="usage">
-          <div class="usage__row"><span>Session</span><strong id="u-session">0 tok</strong></div>
-          <div class="usage__row"><span>Total cumulé</span><strong id="u-total">0 tok</strong></div>
-          <div class="usage__row"><span>Requêtes</span><strong id="u-req">0</strong></div>
-          <div class="gauge" title="Remplissage estimé de la fenêtre de contexte">
-            <div id="gauge-fill" class="gauge__fill"></div>
-          </div>
-          <small id="gauge-label">contexte ~0 % · fenêtre 128k</small>
-        </div>
-
-        <div class="sidebar__spacer"></div>
-        <button id="new-chat" class="btn-primary btn-wide">＋ Nouvelle conversation</button>
       </aside>
+
+      <div class="resizer resizer--left" title="Redimensionner la sidebar"></div>
 
       <main class="chat">
         <header class="chat__header">
-          <h1 id="chat-title">Nouvelle conversation</h1>
+          <button
+            id="model-switcher"
+            class="model-switcher"
+            title="Provider &amp; modèle — cliquer pour changer (⌘, / Ctrl+,)"
+            aria-label="Changer de provider ou de modèle"
+          >
+            <h1 id="chat-title">Nouvelle conversation</h1>
+            <code id="model-chip" class="hidden"></code>
+            <span class="chev">▾</span>
+          </button>
           <span id="ws-chip" class="ws-chip hidden" title="Espace de travail ouvert">📁 <span id="ws-chip-name"></span></span>
           <span id="active-skill-chip" class="skill-chip hidden">
             <em>compétence :</em> <b id="skill-chip-name"></b>
             <button id="clear-skill" title="Retirer">×</button>
           </span>
           <span id="stats" class="stats"></span>
-          <button id="panel-toggle" class="icon-btn" title="Panneau Changes / Terminal / Notes">▤</button>
+          <button id="theme-toggle" class="icon-btn" title="Basculer jour / nuit" aria-label="Basculer le thème jour / nuit">
+            <!-- icône maison : croissant (jour) / soleil (nuit), tracée à la main -->
+            <svg class="theme-ico" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+              <g class="ico-moon">
+                <path d="M20.7 13.4A8.6 8.6 0 1 1 10.6 3.3a6.9 6.9 0 0 0 10.1 10.1Z" />
+                <path class="ico-star" d="M16.8 5.2v2.6M15.5 6.5h2.6" />
+              </g>
+              <g class="ico-sun">
+                <circle cx="12" cy="12" r="4.1" />
+                <path d="M12 2.9v2M12 19.1v2M2.9 12h2M19.1 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4" />
+              </g>
+            </svg>
+          </button>
+          <button id="panel-toggle" class="icon-btn" title="Panneau : Changes · Terminal · Notes · Outils" aria-label="Ouvrir le panneau Changes / Terminal / Notes / Outils">▤</button>
         </header>
 
         <div id="messages" class="messages">
           <div class="welcome">
-            <span class="welcome__logo">🦫</span>
+            <span class="welcome__logo beaver-slot"></span>
             <h2>Salut, je suis Castor.</h2>
             <p>
-              Choisis un provider, tape <code>/</code> pour tes compétences,
+              Choisis un provider et un projet, tape <code>/</code> pour tes compétences,
               et donne-moi un chantier. Ce que je fais s'affiche en liste.
             </p>
             <div class="welcome__hints">
@@ -142,24 +174,18 @@
               <code>/tests pour ma fonction parse()</code>
               <code>refactore ce fichier en TypeScript</code>
             </div>
+            <div class="welcome__keys">
+              <span><kbd>⌘N</kbd> nouvelle conversation</span>
+              <span><kbd>⌘O</kbd> ouvrir un chantier</span>
+              <span>ou glisse un dossier dans la fenêtre</span>
+            </div>
           </div>
         </div>
-
-        <section id="todo-panel" class="todo-panel hidden">
-          <button id="todo-toggle" class="todo-panel__head">
-            <span>☑️ Plan de la tâche</span>
-            <span class="todo-progress">
-              <i class="todo-bar"><b id="todo-bar"></b></i>
-              <strong id="todo-count">0/0</strong>
-            </span>
-            <em id="todo-chevron">▾</em>
-          </button>
-          <ul id="todo-list" class="todo-list"></ul>
-        </section>
 
         <footer class="composer">
           <div id="slash-menu" class="slash-menu hidden"></div>
           <div id="queue-zone" class="queue-zone hidden" title="Envoyés dès que le castor a fini"></div>
+          <button id="scroll-bottom" class="scroll-bottom" title="Revenir en bas" aria-label="Revenir en bas de la conversation">↓</button>
           <div class="mode-toggle" role="group" title="Build : l'agent peut lire, écrire et lancer des commandes · Plan : lecture seule">
             <button id="mode-build" class="mode-btn active">Build</button>
             <button id="mode-plan" class="mode-btn">Plan</button>
@@ -173,15 +199,24 @@
         </footer>
       </main>
 
+      <div class="resizer resizer--right" title="Redimensionner le panneau"></div>
+
       <aside id="side-panel" class="side-panel">
         <header class="sp-head">
           <button class="sp-tab active" data-tab="changes">
             Changes <span id="chg-badge" class="count-badge hidden">0</span>
           </button>
-          <button class="sp-tab" data-tab="terminal">Terminal</button>
+          <button class="sp-tab" data-tab="plan">
+            Plan <span id="todo-badge" class="count-badge hidden">0/0</span>
+          </button>
+          <button class="sp-tab" data-tab="terminal">
+            Terminal <span id="term-badge" class="count-badge hidden">0</span>
+          </button>
           <button class="sp-tab" data-tab="notes">Notes</button>
+          <button class="sp-tab" data-tab="tools">
+            Outils <span id="skill-count" class="count-badge">0</span>
+          </button>
           <span class="sp-spacer"></span>
-          <button id="term-clear" class="icon-btn hidden" title="Vider l'historique">⌫</button>
           <button id="sp-refresh" class="icon-btn" title="Rafraîchir">↻</button>
           <button id="sp-close" class="icon-btn" title="Fermer le panneau">✕</button>
         </header>
@@ -194,7 +229,31 @@
           <pre id="changes-diff" class="code-pre hidden"></pre>
         </section>
 
+        <section id="sp-view-plan" class="sp-view hidden">
+          <div class="plan-head">
+            <span class="plan-title">☑️ Plan de la tâche</span>
+            <span class="sp-spacer"></span>
+            <span id="plan-count" class="plan-count">0/0</span>
+            <button id="plan-collapse" class="icon-btn" title="Replier / déplier la liste">▾</button>
+          </div>
+          <div class="plan-bar-wrap"><i class="plan-bar"><b id="plan-bar"></b></i></div>
+          <div id="plan-empty" class="empty-note big">
+            La liste de cases à cocher du castor apparaîtra ici pendant qu'il code.
+          </div>
+          <ul id="todo-list" class="todo-list hidden"></ul>
+        </section>
+
         <section id="sp-view-terminal" class="sp-view hidden">
+          <div class="term-toolbar">
+            <div class="term-filters" role="group" title="Filtrer les commandes">
+              <button class="term-filter active" data-filter="all">Tous</button>
+              <button class="term-filter" data-filter="ok">✓ OK</button>
+              <button class="term-filter" data-filter="ko">✕ Erreurs</button>
+            </div>
+            <span class="sp-spacer"></span>
+            <button id="term-copy-all" class="icon-btn" title="Copier tout l'historique">⧉</button>
+            <button id="term-clear" class="icon-btn" title="Vider l'historique">⌫</button>
+          </div>
           <div id="terminal-empty" class="empty-note big">
             Les commandes lancées par le castor et leur sortie apparaîtront ici.
           </div>
@@ -202,13 +261,95 @@
         </section>
 
         <section id="sp-view-notes" class="sp-view hidden">
+          <div class="notes-toolbar">
+            <button id="notes-mode" class="btn-ghost btn-mini">Aperçu</button>
+            <span id="notes-stats" class="notes-stats"></span>
+            <span class="sp-spacer"></span>
+            <button id="notes-copy" class="icon-btn" title="Copier la note">⧉</button>
+            <button id="notes-clear" class="icon-btn" title="Vider la note (2 clics)">🗑</button>
+          </div>
           <textarea
             id="notes-area"
             placeholder="Notes liées au chantier — sauvegardées automatiquement…"
             spellcheck="false"
           ></textarea>
+          <div id="notes-preview" class="notes-preview hidden"></div>
+          <div id="notes-save-status" class="notes-save-status"></div>
+        </section>
+
+        <section id="sp-view-tools" class="sp-view hidden">
+          <h3 class="sp-subtitle">
+            Compétences <span class="hint">/ dans le champ</span>
+          </h3>
+          <ul id="skill-list" class="skill-list"></ul>
+          <div id="skill-editor" class="mini-editor hidden">
+            <input id="skill-name" placeholder="nom — ex : review" spellcheck="false" />
+            <textarea id="skill-body" rows="4" placeholder="Instructions injectées quand la compétence est active…" spellcheck="false"></textarea>
+            <div class="mini-editor__row">
+              <button id="save-skill" class="btn-primary btn-mini">Enregistrer</button>
+              <button id="cancel-skill" class="btn-ghost btn-mini">Annuler</button>
+            </div>
+          </div>
+          <button id="add-skill" class="btn-ghost btn-mini">＋ Nouvelle compétence</button>
+
+          <h3 class="sp-subtitle sp-subtitle--sep">
+            Mémoire persistante
+            <span class="sp-spacer"></span>
+            <span id="memory-count" class="count-badge">0</span>
+          </h3>
+          <form id="memory-form" class="memory-form">
+            <input id="memory-input" placeholder="Un fait à retenir pour toujours…" />
+            <button type="submit" class="btn-ghost btn-mini">＋</button>
+          </form>
+          <ul id="memory-list" class="memory-list"></ul>
         </section>
       </aside>
+    </div>
+
+    <div id="provider-modal" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <div class="diff-modal__card pm-card">
+        <header class="diff-modal__head">
+          <span id="pm-icon">⚙️</span>
+          <div>
+            <strong id="pm-title">Réglages du provider</strong>
+            <code id="pm-provider"></code>
+          </div>
+        </header>
+        <div class="pm-body">
+          <label>
+            Modèle
+            <input id="model-input" list="model-options" spellcheck="false" />
+            <datalist id="model-options"></datalist>
+          </label>
+          <div class="model-picker">
+            <input id="model-search" placeholder="Filtrer les modèles — gratuits d'abord…" spellcheck="false" />
+            <div id="model-list" class="model-list" role="listbox" aria-label="Modèles disponibles"></div>
+          </div>
+          <button id="refresh-models" class="btn-ghost btn-mini">
+            ↻ Rafraîchir les modèles
+          </button>
+          <label id="key-row" class="hidden">
+            Clé API
+            <input id="key-input" type="password" placeholder="sk-…" />
+          </label>
+          <a id="key-link" class="key-link hidden" href="#" title="Ouvre le site du provider pour créer une clé gratuite">Obtenir une clé gratuite ↗</a>
+          <button id="save-key" class="btn-primary btn-mini hidden">
+            Enregistrer la clé
+          </button>
+          <label>
+            Endpoint (optionnel)
+            <input id="baseurl-input" placeholder="https://…" spellcheck="false" />
+          </label>
+          <button id="test-conn" class="btn-ghost btn-mini">
+            Tester la connexion
+          </button>
+          <span id="test-result" class="test-result"></span>
+        </div>
+        <footer class="diff-modal__actions">
+          <button id="pm-close" class="btn-ghost">Fermer</button>
+        </footer>
+      </div>
     </div>
 
     <div id="diff-modal" class="diff-modal hidden">

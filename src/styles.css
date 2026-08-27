@@ -1241,6 +1241,29 @@ main:focus { outline: none; }
 
 .dl-list { display: grid; gap: 0.6rem; text-align: left; }
 
+.dl-os { display: grid; gap: 0.3rem; }
+
+/* liens secondaires : versions portables / autres architectures */
+.os-row__alts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  padding: 0 0.35rem;
+}
+.os-row__alts a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-dim);
+}
+.os-row__alts a:hover { color: var(--accent-deep); }
+
+/* la modale affiche aussi l'indication de désinstallation */
+.dl-note { text-align: left; }
+
+
+
 .os-row {
   display: flex;
   align-items: center;

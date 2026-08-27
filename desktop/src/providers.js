@@ -6,6 +6,7 @@ const PROVIDERS = [
     label: "OpenRouter",
     baseURL: "https://openrouter.ai/api/v1",
     needsKey: true,
+    includeUsage: true, // accepte stream_options.include_usage (compteurs réels)
     keyUrl: "https://openrouter.ai/settings/keys",
     defaultModel: "meta-llama/llama-3.3-70b-instruct",
     models: [
@@ -21,6 +22,7 @@ const PROVIDERS = [
     label: "Groq",
     baseURL: "https://api.groq.com/openai/v1",
     needsKey: true,
+    includeUsage: true,
     keyUrl: "https://console.groq.com/keys",
     defaultModel: "llama-3.3-70b-versatile",
     models: [
@@ -35,6 +37,7 @@ const PROVIDERS = [
     label: "OpenCode Zen",
     baseURL: "https://opencode.ai/zen/v1",
     needsKey: true,
+    includeUsage: true,
     keyUrl: "https://opencode.ai/zen",
     defaultModel: "grok-code",
     models: ["grok-code", "qwen3-coder", "claude-sonnet-4"],

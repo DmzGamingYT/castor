@@ -1,8 +1,15 @@
 name: Release Desktop
 
-# Construit les binaires Desktop (arm64) et les attache à la Release GitHub
-# correspondant au tag poussé (ex : v0.1.0). La modale du site pointe vers
-# releases/latest/download — les liens deviennent actifs dès la fin du job.
+# Construit les binaires Desktop (arm64 + x64) et les attache à la Release
+# GitHub correspondant au tag poussé (ex : v0.1.0). La modale du site pointe
+# vers releases/latest/download — les liens deviennent actifs dès la fin du job.
+#
+# Installers propres par OS :
+#  - Windows : NSIS (Castor-Windows-<arch>-setup.exe) — désinstalleur intégré
+#    (« Applications installées »), raccourcis bureau + menu démarrer
+#  - macOS : DMG glisser-déposer (Castor-macOS-<arch>.dmg) + zip portable ;
+#    désinstallation via scripts/uninstall-macos.sh
+#  - Linux : .deb (apt remove castor-desktop) + AppImage portable + tar.gz
 
 on:
   push:
@@ -18,15 +25,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14 # runner Apple Silicon natif
+          - os: macos-14 # runner Apple Silicon natif (cross-build x64 ok)
             platform: mac
-            artifact: Castor-macOS-arm64.zip
+            args: --mac --arm64 --x64
           - os: windows-latest
             platform: win
-            artifact: Castor-Windows-arm64-portable.zip
+            args: --win --arm64 --x64
           - os: ubuntu-latest
             platform: linux
-            artifact: Castor-Linux-arm64.tar.gz
+            args: --linux --arm64 --x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -42,11 +49,18 @@ jobs:
         working-directory: desktop
         run: npm ci
 
-      - name: Build ${{ matrix.platform }} arm64
+      - name: Build ${{ matrix.platform }} (arm64 + x64)
         working-directory: desktop
-        run: npx electron-builder --${{ matrix.platform }} --arm64 --publish never
+        run: npx electron-builder ${{ matrix.args }} --publish never
 
       - name: Upload vers la Release
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/release/${{ matrix.artifact }}
+          files: |
+            desktop/release/Castor-*.zip
+            desktop/release/Castor-*.dmg
+            desktop/release/Castor-*.exe
+            desktop/release/Castor-*.AppImage
+            desktop/release/*.deb
+            desktop/release/Castor-*.tar.gz
+            desktop/release/latest*.yml

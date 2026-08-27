@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("castor", {
+  // app
+  appInfo: () => ipcRenderer.invoke("app:info"),
+
   // providers
   listProviders: () => ipcRenderer.invoke("providers:list"),
   setKey: (id, key) => ipcRenderer.invoke("key:set", id, key),
@@ -32,4 +35,9 @@ contextBridge.exposeInMainWorld("castor", {
   // stockage persistant (compétences, mémoire, usage, conversations)
   storeGet: (key) => ipcRenderer.invoke("store:get", key),
   storeSet: (key, value) => ipcRenderer.invoke("store:set", key, value),
+
+  // mises à jour
+  checkUpdates: () => ipcRenderer.invoke("updates:check"),
+  installUpdate: () => ipcRenderer.invoke("updates:install"),
+  onUpdateStatus: (cb) => ipcRenderer.on("updates:status", (_e, d) => cb(d)),
 });

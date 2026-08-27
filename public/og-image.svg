@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0bc63"/>
+      <stop offset="1" stop-color="#e2952a"/>
+    </linearGradient>
+    <linearGradient id="accentText" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2c063"/>
+      <stop offset="0.55" stop-color="#d99a3e"/>
+      <stop offset="1" stop-color="#e8a13c"/>
+    </linearGradient>
+    <radialGradient id="glowL" cx="0.5" cy="0" r="0.85">
+      <stop offset="0" stop-color="#e2952a" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#e2952a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowR" cx="0.5" cy="1" r="0.9">
+      <stop offset="0" stop-color="#58b8d6" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#58b8d6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- fond -->
+  <rect width="1200" height="630" fill="#171b10"/>
+  <rect x="-200" y="-260" width="900" height="700" fill="url(#glowL)"/>
+  <rect x="620" y="330" width="900" height="600" fill="url(#glowR)"/>
+
+  <!-- grille papier subtile -->
+  <g stroke="#d2d6aa" stroke-opacity="0.05" stroke-width="1">
+    <path d="M0,110 H1200 M0,220 H1200 M0,330 H1200 M0,440 H1200 M0,550 H1200"/>
+    <path d="M110,0 V630 M220,0 V630 M330,0 V630 M440,0 V630 M550,0 V630 M660,0 V630 M770,0 V630 M880,0 V630 M990,0 V630 M1100,0 V630"/>
+  </g>
+
+  <!-- coin castor : tuile ambre + castor -->
+  <g transform="translate(72,58)">
+    <rect width="96" height="96" rx="24" fill="url(#tile)"/>
+    <g transform="translate(16,16)">
+      <g fill="#33260a">
+        <ellipse cx="45" cy="42" rx="15" ry="8" transform="rotate(-20 45 42)"/>
+        <circle cx="27" cy="30" r="17"/>
+        <circle cx="14.5" cy="15" r="5.5"/>
+        <circle cx="34.5" cy="11" r="5.5"/>
+      </g>
+      <rect x="23.5" y="38" width="5" height="10" rx="2" fill="#fffdf6"/>
+      <circle cx="21" cy="27" r="2.4" fill="#fffdf6"/>
+      <circle cx="32.5" cy="25" r="2.4" fill="#fffdf6"/>
+    </g>
+  </g>
+  <text x="192" y="126" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="44" fill="#e8e4d2">castor</text>
+
+  <!-- titre -->
+  <text x="72" y="324" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="#e8e4d2">Donne-lui un chantier.</text>
+  <text x="72" y="412" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="url(#accentText)">Il construit.</text>
+
+  <!-- sous-titre -->
+  <text x="72" y="480" font-family="Helvetica, Arial, sans-serif" font-weight="500" font-size="30" fill="#9aa087">Agent de code gratuit · Desktop · CLI · Web · Chat</text>
+
+  <!-- bas de carte -->
+  <text x="72" y="566" font-family="Helvetica, Arial, sans-serif" font-weight="500" font-size="22" fill="#6f735c">0 € facturés · open source · tes modèles, ton choix</text>
+</svg>

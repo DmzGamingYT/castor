@@ -10,32 +10,71 @@
     "start": "electron .",
     "dist:dir": "electron-builder --dir",
     "dist": "electron-builder --mwl"
-  },
-  "build": {
+  },  "build": {
     "appId": "app.castor.desktop",
     "productName": "Castor",
     "directories": { "output": "release" },
     "files": ["main.js", "preload.js", "src/**/*", "renderer/**/*"],
+    "publish": { "provider": "github", "owner": "DmzGamingYT", "repo": "castor" },
+    "dmg": {
+      "title": "Castor ${version} — glisse Castor dans Applications",
+      "artifactName": "Castor-macOS-${arch}.${ext}"
+    },
     "mac": {
-      "target": ["zip"],
+      "target": [
+        {
+          "target": "dmg"
+        },
+        {
+          "target": "zip"
+        }
+      ],
       "category": "public.app-category.developer-tools",
       "icon": "build/icon.icns",
       "artifactName": "Castor-macOS-${arch}.${ext}"
     },
     "win": {
-      "target": ["zip"],
+      "target": [
+        {
+          "target": "nsis"
+        },
+        {
+          "target": "zip"
+        }
+      ],
       "icon": "build/icon.png",
       "artifactName": "Castor-Windows-${arch}-portable.${ext}"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Castor-Windows-${arch}-setup.${ext}",
+      "shortcutName": "Castor",
+      "uninstallDisplayName": "Castor Desktop",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "linux": {
-      "target": ["tar.gz"],
+      "target": [
+        "AppImage",
+        "deb",
+        "tar.gz"
+      ],
       "category": "Development",
       "icon": "build/icon.png",
-      "artifactName": "Castor-Linux-${arch}.${ext}"
+      "artifactName": "Castor-Linux-${arch}.${ext}",
+      "desktop": {
+        "Name": "Castor",
+        "Comment": "Le castor qui code pour toi",
+        "StartupWMClass": "Castor"
+      }
     }
   },
   "devDependencies": {
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }
