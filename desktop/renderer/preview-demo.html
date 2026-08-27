@@ -1189,12 +1189,12 @@ textarea { resize: vertical; font-family: var(--font-body); font-size: 0.8rem; l
   stroke: currentColor;
   stroke-width: 1.05;
   stroke-linecap: round;
-  color: inherit;
+  /* encre sombre fixe : l'icône réelle est crème + encre, quel que soit le thème */
+  color: var(--ink);
 }
-.logo-ico rect { fill: var(--bg); }
-.logo__tile { color: var(--ink); }
+.logo-ico rect { fill: #faf6ec; } /* papier crème constant (pas var(--bg), sombre en nuit) */
 .logo__tile svg { width: 20px; height: 20px; }
-.welcome__logo { display: inline-block; color: var(--text); }
+.welcome__logo { display: inline-block; }
 .welcome__logo svg { width: 3rem; height: 3rem; margin: 0 auto; }
 
 /* base des icônes SVG inline (stroke courant, hérite de la couleur) */
