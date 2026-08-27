@@ -14,7 +14,16 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
 import zlib
+
+# Les consoles Windows / GitHub Actions peuvent être codées en CP1252 :
+# force l'UTF-8 pour que les print() accentués n'échouent pas à l'étape icône.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
