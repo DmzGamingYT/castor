@@ -1,7 +1,7 @@
 {
   "name": "castor-desktop",
   "productName": "Castor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Castor — agent de code multi-providers : OpenRouter, Groq, OpenCode Zen et modèles locaux. Alternative optimisée à la CLI.",
   "main": "main.js",
   "author": "Castor",
