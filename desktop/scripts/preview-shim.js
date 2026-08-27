@@ -66,7 +66,7 @@
   ].join("");
 
   function runFakeStream(reqId) {
-    later(250, () => emit("toolStart", { reqId, callId: "t1", icon: "📄", label: "read_file src/config.js" }));
+    later(250, () => emit("toolStart", { reqId, callId: "t1", icon: "search", label: "read_file src/config.js" }));
     later(950, () => emit("toolResult", { reqId, callId: "t1", meta: { kind: "read" } }));
     later(1200, () =>
       emit("approval", {
@@ -84,7 +84,7 @@
       emit("toolStart", {
         reqId,
         callId: "c1",
-        icon: "⚙️",
+        icon: "term",
         label: "run_command « npm test »",
         kind: "command",
       })
@@ -197,6 +197,14 @@
             { code: "A", path: "src/config.ts" },
           ] }
         : { ok: true, repo: false },
+    workspaceReadFile: async (p) => ({
+      ok: true,
+      content:
+        "// " + p + "\n\n/* Fichier simulé pour la démo — le vrai contenu apparaît" +
+        " dans l'app Electron. */\nexport const demo = true;\n",
+      truncated: false,
+      bytes: 0,
+    }),
     workspaceFileDiff: async () => ({
       ok: true,
       content:
@@ -206,7 +214,7 @@
     respondApproval: (_callId, approved) => {
       if (!approved) return;
       const reqId = reqSeq;
-      later(150, () => emit("toolStart", { reqId, callId: "w1", icon: "✏️", label: "write_file src/config.ts" }));
+      later(150, () => emit("toolStart", { reqId, callId: "w1", icon: "pencil", label: "write_file src/config.ts" }));
       later(1100, () => emit("toolResult", { reqId, callId: "w1", meta: { kind: "write" } }));
     },
 

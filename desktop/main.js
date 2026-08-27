@@ -277,6 +277,17 @@ ipcMain.handle("workspace:tree", () => {
   }
 });
 
+// lecture en lecture seule (200 ko max) pour l'aperçu dans l'onglet Files
+ipcMain.handle("workspace:readFile", (_e, rel) => {
+  if (!WORKSPACE) return { ok: false, error: "aucun dossier ouvert" };
+  try {
+    const r = readFileCapped(WORKSPACE, rel);
+    return { ok: true, content: r.content, truncated: r.truncated, bytes: r.bytes };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // ---------- approbation des actions sensibles ----------
 const approvals = new Map(); // callId -> resolve
 let bounceId = null;
@@ -401,7 +412,7 @@ async function executeTool(call, reqId) {
   win.webContents.send("tool:start", {
     reqId,
     callId: call.id,
-    icon: name === "run_command" ? "⚙️" : name === "write_file" ? "✏️" : "🔎",
+    icon: name === "run_command" ? "term" : name === "write_file" ? "pencil" : "search",
     label: toolLabel(name, args),
     kind: name === "run_command" ? "command" : name === "write_file" ? "write" : "read",
   });

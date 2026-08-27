@@ -12,19 +12,38 @@ const DEFAULT_SKILLS = [
   { name: "explique", body: "Explique pas à pas, avec une analogie simple, puis un résumé en 3 points." },
 ];
 
-/* logo castor dessiné main (tuile de marque + accueil) */
-const BEAVER_SVG =
-  `<svg class="beaver-ico" viewBox="0 0 24 24" aria-hidden="true">
-    <circle class="b-fur" cx="6.9" cy="7.1" r="2" />
-    <circle class="b-fur" cx="17.1" cy="7.1" r="2" />
-    <path class="b-fur" d="M12 4.4c4.4 0 7.3 2.9 7.3 6.8 0 2-.7 3.7-2 4.9-1 .9-1.6 2-1.6 3.2v.8h-7.4v-.8c0-1.2-.6-2.3-1.6-3.2-1.3-1.2-2-2.9-2-4.9 0-3.9 2.9-6.8 7.3-6.8Z" />
-    <path class="b-muz" d="M8.7 12.4c0-1.4 1.5-2.4 3.3-2.4s3.3 1 3.3 2.4-1.5 3-3.3 3-3.3-1.6-3.3-3Z" />
-    <path class="b-tooth" d="M10.9 13.9h2.2v1.9a.6.6 0 0 1-.6.6h-1a.6.6 0 0 1-.6-.6v-1.9Z" />
-    <path class="b-nose" d="M10.8 10.9h2.4l-.8 1.3c-.2.3-.6.3-.8 0l-.8-1.3Z" />
-    <circle class="b-eye" cx="9.1" cy="9.2" r=".85" />
-    <circle class="b-eye" cx="14.9" cy="9.2" r=".85" />
-    <path class="b-wh" d="M7.1 11.5l1.6.5M7.1 13l1.6-.2M16.9 11.5l-1.6.5M16.9 13l-1.6-.2" />
+/* icône « document » — identité Castor (tuile de marque, accueil, app icon) */
+const LOGO_SVG =
+  `<svg class="logo-ico" viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="1.44" y="1.44" width="21.12" height="21.12" rx="4.44"/>
+    <path d="M5.04 6.84h13.92M5.04 8.56h13.92M5.04 10.28h13.92M5.04 12h13.92M5.04 13.72h13.92M5.04 15.44h13.92M5.04 17.16h13.92"/>
   </svg>`;
+
+/* icônes SVG dessinées main — même trait que le thème (stroke courant) */
+const icoSVG = (body) =>
+  `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+
+const ICONS = {
+  folder: icoSVG(`<path d="M3.5 7.2a1.7 1.7 0 0 1 1.7-1.7h4.1l2 2h7.5a1.7 1.7 0 0 1 1.7 1.7v7.9a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7V7.2Z"/>`),
+  file:   icoSVG(`<path d="M6 3.5h8l4.5 4.5V20.5H6z"/><path d="M14 3.5v4.5h4.5"/>`),
+  gear:   icoSVG(`<circle cx="12" cy="12" r="3.1"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>`),
+  pencil: icoSVG(`<path d="M4 20l1.1-4.2 9.9-9.9a1.9 1.9 0 0 1 2.7 0l.4.4a1.9 1.9 0 0 1 0 2.7L8.2 18.9 4 20Z"/><path d="M13.8 6.9l3.3 3.3"/>`),
+  search: icoSVG(`<circle cx="10.8" cy="10.8" r="6"/><path d="M15.4 15.4 20 20"/>`),
+  term:   icoSVG(`<path d="M4.5 6.5 10 12l-5.5 5.5"/><path d="M11 17.5h8"/>`),
+  trash:  icoSVG(`<path d="M4.5 6.5h15M9.5 6.5V4.8h5v1.7M6.5 6.5l.8 12.7h9.4l.8-12.7M10 10.5v5M14 10.5v5"/>`),
+  copy:   icoSVG(`<rect x="8.5" y="8.5" width="11" height="11" rx="1.8"/><path d="M5.5 15.5h-.8a1.7 1.7 0 0 1-1.7-1.7V5.2a1.7 1.7 0 0 1 1.7-1.7h8.6a1.7 1.7 0 0 1 1.7 1.7v.8"/>`),
+  chevR:  icoSVG(`<path d="M9 5.5 15.5 12 9 18.5"/>`),
+  chevD:  icoSVG(`<path d="M5.5 9 12 15.5 18.5 9"/>`),
+  panel:  icoSVG(`<rect x="3.5" y="4.5" width="17" height="15" rx="2.4"/><path d="M12 4.5v15"/>`),
+  close:  icoSVG(`<path d="M6 6l12 12M18 6 6 18"/>`),
+  refresh:icoSVG(`<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4.5h-4.5"/>`),
+  check:  icoSVG(`<path d="M5 12.6 9.8 17.4 19 7"/>`),
+  clock:  icoSVG(`<circle cx="12" cy="12" r="8.2"/><path d="M12 7.2V12l3.4 2"/>`),
+  archive:icoSVG(`<path d="M3.5 8h17v12h-17z"/><path d="M3 3.5h18v4.5H3zM9.5 12h5"/>`),
+  restore:icoSVG(`<path d="M9 6 3.5 11.5 9 17"/><path d="M3.5 11.5H15a5.5 5.5 0 0 1 5.5 5.5"/>`),
+  sparkle:icoSVG(`<path d="M12 3.5l1.6 3.9 3.9 1.6-3.9 1.6L12 14.5l-1.6-3.9-3.9-1.6 3.9-1.6L12 3.5Z"/>`),
+  checkList: icoSVG(`<rect x="3.5" y="4.5" width="17" height="15" rx="2.4"/><path d="M7.5 9.5l2 2 3.5-3.5M7.5 15.5l2 2 3.5-3.5"/>`),
+};
 
 const state = {
   providers: [],
@@ -222,7 +241,7 @@ function renderProviderList() {
     const gear = document.createElement("button");
     gear.className = "gear";
     gear.title = "Réglages…";
-    gear.textContent = "⚙";
+    gear.innerHTML = ICONS.gear;
     gear.addEventListener("click", (e) => {
       e.stopPropagation();
       openProviderSettings(p.id);
@@ -529,6 +548,7 @@ function applyWorkspace(info) {
   renderConvList();
   loadNotes();
   if (state.panelOpen && state.panelTab === "changes") refreshChanges();
+  if (state.panelOpen && state.panelTab === "files") refreshFiles();
 }
 
 async function clearWorkspaceView() {
@@ -543,6 +563,7 @@ async function clearWorkspaceView() {
   renderConvList();
   loadNotes();
   refreshChanges();
+  refreshFiles();
 }
 
 async function switchToProject(p) {
@@ -651,14 +672,20 @@ function fileTreeNode(node, depth) {
       const details = document.createElement("details");
       if (depth < 2) details.open = true;
       const summary = document.createElement("summary");
-      summary.textContent = "📁 " + child.name;
+      const dirIco = document.createElement("span");
+      dirIco.className = "ft-ico";
+      dirIco.innerHTML = ICONS.folder;
+      summary.append(dirIco, document.createTextNode(child.name));
       details.appendChild(summary);
       if (child.children?.length) details.appendChild(fileTreeNode(child, depth + 1));
       frag.appendChild(details);
     } else {
       const file = document.createElement("div");
       file.className = "ft-file";
-      file.textContent = "📄 " + child.name;
+      const fileIco = document.createElement("span");
+      fileIco.className = "ft-ico";
+      fileIco.innerHTML = ICONS.file;
+      file.append(fileIco, document.createTextNode(child.name));
       frag.appendChild(file);
     }
   }
@@ -677,8 +704,8 @@ window.castor.onToolStart(({ reqId, callId, icon, label, kind }) => {
   line.className = "tool-line running";
   line.dataset.callId = callId;
   const ic = document.createElement("i");
-  ic.className = "icon";
-  ic.textContent = icon;
+  ic.className = "icon" + (ICONS[icon] ? " ico" : "");
+  ic.innerHTML = ICONS[icon] || escapeHtml(String(icon || ""));
   const lb = document.createElement("span");
   lb.textContent = label;
   line.append(ic, lb);
@@ -772,10 +799,11 @@ function setPanelTab(tab) {
   document.querySelectorAll(".sp-tab").forEach((b) =>
     b.classList.toggle("active", b.dataset.tab === tab)
   );
-  ["changes", "plan", "terminal", "notes", "tools"].forEach((t) =>
+  ["changes", "files", "plan", "terminal", "notes", "tools"].forEach((t) =>
     $("#sp-view-" + t).classList.toggle("hidden", t !== tab)
   );
   if (tab === "changes" && state.panelOpen) refreshChanges();
+  if (tab === "files" && state.panelOpen) refreshFiles();
   if (tab === "notes" && state.wsPath) $("#notes-area").focus();
 }
 
@@ -848,6 +876,154 @@ async function showFileDiff(f) {
     : colorizeDiff(res.content);
 }
 
+/* ---------- onglet Files : explorateur du chantier ---------- */
+let filesTreeData = null; // arborescence brute (pour le filtre)
+let filesOpen = new Set(); // dossiers dépliés (chemins relatifs)
+let filesSel = null; // fichier sélectionné
+
+async function refreshFiles() {
+  const empty = $("#files-empty");
+  const tree = $("#files-tree");
+  tree.innerHTML = "";
+  $("#files-preview").classList.add("hidden");
+  if (!state.wsPath) {
+    empty.textContent = "Ouvre un chantier pour explorer ses fichiers.";
+    empty.classList.remove("hidden");
+    $("#files-badge").classList.add("hidden");
+    return;
+  }
+  const res = await window.castor.workspaceTree();
+  if (!res.ok) {
+    empty.textContent = res.error || "Impossible de lire le chantier.";
+    empty.classList.remove("hidden");
+    $("#files-badge").classList.add("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  filesTreeData = res.tree;
+  // au premier chargement : les dossiers de premier niveau sont dépliés
+  if (!filesOpen.size) {
+    for (const c of res.tree?.children || []) {
+      if (c.type === "dir") filesOpen.add(c.name);
+    }
+  }
+  renderFilesList();
+}
+
+/* un dossier (ou un parent) reste visible si lui ou un descendant matche le filtre */
+function filesCollectVisible(node, q, rel, out) {
+  const self = !q || node.name.toLowerCase().includes(q);
+  let child = false;
+  for (const c of node.children || []) {
+    if (filesCollectVisible(c, q, rel + "/" + c.name, out)) child = true;
+  }
+  if (self || child) out.add(rel);
+  return self || child;
+}
+
+function filesCountFiles(node) {
+  let n = 0;
+  for (const c of node?.children || []) n += c.type === "file" ? 1 : filesCountFiles(c);
+  return n;
+}
+
+function renderFilesList() {
+  const box = $("#files-tree");
+  box.innerHTML = "";
+  const q = ($("#files-search").value || "").trim().toLowerCase();
+  const visible = new Set();
+  for (const c of filesTreeData?.children || []) {
+    filesCollectVisible(c, q, c.name, visible);
+  }
+  let shownFiles = 0;
+  const frag = document.createDocumentFragment();
+
+  const walk = (node, rel, depth) => {
+    if (!visible.has(rel)) return;
+    if (node.type === "dir") {
+      const open = filesOpen.has(rel);
+      const row = document.createElement("div");
+      row.className = "fs-row fs-dir" + (open ? " open" : "");
+      row.style.paddingLeft = 8 + depth * 14 + "px";
+      const chev = document.createElement("span");
+      chev.className = "fs-chev";
+      chev.innerHTML = ICONS.chevR;
+      const ic = document.createElement("span");
+      ic.className = "fs-ico";
+      ic.innerHTML = ICONS.folder;
+      const name = document.createElement("span");
+      name.className = "fs-name";
+      name.textContent = node.name;
+      name.title = rel;
+      row.append(chev, ic, name);
+      row.addEventListener("click", () => {
+        if (open) filesOpen.delete(rel);
+        else filesOpen.add(rel);
+        renderFilesList();
+      });
+      frag.appendChild(row);
+      if (open) {
+        for (const c of node.children || []) walk(c, rel + "/" + c.name, depth + 1);
+      }
+    } else {
+      shownFiles++;
+      const row = document.createElement("div");
+      row.className = "fs-row fs-file" + (filesSel === rel ? " sel" : "");
+      row.style.paddingLeft = 8 + depth * 14 + "px";
+      const chev = document.createElement("span");
+      chev.className = "fs-chev";
+      const ic = document.createElement("span");
+      ic.className = "fs-ico";
+      ic.innerHTML = ICONS.file;
+      const name = document.createElement("span");
+      name.className = "fs-name";
+      name.textContent = node.name;
+      name.title = rel;
+      row.append(chev, ic, name);
+      row.addEventListener("click", () => {
+        filesSel = rel;
+        renderFilesList();
+        openFilePreview(rel);
+      });
+      frag.appendChild(row);
+    }
+  };
+  for (const c of filesTreeData?.children || []) walk(c, c.name, 0);
+  box.appendChild(frag);
+
+  const total = filesCountFiles(filesTreeData);
+  const badge = $("#files-badge");
+  badge.textContent = String(q ? shownFiles : total);
+  badge.classList.toggle("hidden", !(q ? shownFiles : total));
+}
+
+async function openFilePreview(rel) {
+  const pv = $("#files-preview");
+  pv.classList.remove("hidden");
+  $(".fp-path").textContent = rel;
+  const body = $(".fp-body");
+  body.textContent = "Lecture…";
+  const res = await window.castor.workspaceReadFile(rel);
+  if (!res.ok) {
+    body.textContent = res.error || "Erreur de lecture.";
+    $(".fp-meta").textContent = "";
+    return;
+  }
+  body.textContent =
+    res.content.slice(0, 20000) + (res.content.length > 20000 ? "\n…(tronqué)" : "");
+  $(".fp-meta").textContent = res.truncated
+    ? `> ${Math.round(res.bytes / 1024)} ko — tronqué`
+    : "";
+}
+
+$("#files-search").addEventListener("input", () => {
+  if (filesTreeData) renderFilesList();
+});
+$("#files-refresh").addEventListener("click", refreshFiles);
+$("#fp-close").addEventListener("click", () => {
+  $("#files-preview").classList.add("hidden");
+});
+
 /* ---------- terminal : entrées enrichies (running / ok / ko) ---------- */
 function termCmdFromLabel(label) {
   const m = String(label || "").match(/«\s*([^»]+)/);
@@ -881,7 +1057,7 @@ function termEntryEl(callId, command, ts) {
   head.className = "term-head";
   const st = document.createElement("span");
   st.className = "term-status";
-  st.textContent = "⏳";
+  st.innerHTML = ICONS.clock;
   const cmd = document.createElement("code");
   cmd.className = "term-cmd";
   cmd.textContent = "$ " + command;
@@ -895,11 +1071,11 @@ function termEntryEl(callId, command, ts) {
   dur.textContent = "…";
   const copy = document.createElement("span");
   copy.className = "term-copy";
-  copy.textContent = "⧉";
+  copy.innerHTML = ICONS.copy;
   copy.title = "Copier la commande et sa sortie";
   const chev = document.createElement("span");
   chev.className = "term-chev";
-  chev.textContent = "▸";
+  chev.innerHTML = ICONS.chevR;
   head.append(st, cmd, time, dur, copy, chev);
 
   const out = document.createElement("pre");
@@ -933,7 +1109,7 @@ function termFinish(callId, meta) {
   entry.dataset.status = status;
   entry.classList.remove("running");
   entry.classList.add(status === "ko" ? "ko" : "ok");
-  entry.querySelector(".term-status").textContent = status === "ok" ? "✓" : "✕";
+  entry.querySelector(".term-status").innerHTML = status === "ok" ? ICONS.check : ICONS.close;
   entry.querySelector(".term-cmd").textContent = "$ " + meta.command;
   entry.querySelector(".term-cmd").title = meta.command;
   entry.querySelector(".term-out").textContent =
@@ -959,8 +1135,8 @@ $("#terminal-log").addEventListener("click", (e) => {
     const out = entry.querySelector(".term-out").textContent;
     const code = entry.querySelector(".term-code").textContent;
     copyText(cmd + "\n" + out + "\n" + code);
-    copy.textContent = "✓";
-    setTimeout(() => (copy.textContent = "⧉"), 900);
+    copy.innerHTML = ICONS.check;
+    setTimeout(() => (copy.innerHTML = ICONS.copy), 900);
     return;
   }
   const head = e.target.closest(".term-head");
@@ -1124,6 +1300,7 @@ document.querySelectorAll(".sp-tab").forEach((btn) =>
 );
 $("#sp-refresh").addEventListener("click", () => {
   if (state.panelTab === "changes") refreshChanges();
+  if (state.panelTab === "files") refreshFiles();
 });
 $("#term-clear").addEventListener("click", () => {
   $("#terminal-log").innerHTML = "";
@@ -1160,12 +1337,12 @@ function colorizeDiff(diff) {
 function showApproval(p) {
   pendingApproval = p.callId;
   if (p.kind === "command") {
-    $("#diff-icon").textContent = "⚙️";
+    $("#diff-icon").innerHTML = ICONS.term;
     $("#diff-title").textContent = "Commande shell";
     $("#diff-path").textContent = `dans ${state.wsName || "le projet"} — ${p.command}`;
     $("#diff-body").innerHTML = escapeHtml("$ " + p.command);
   } else {
-    $("#diff-icon").textContent = p.isNew ? "✨" : "✏️";
+    $("#diff-icon").innerHTML = p.isNew ? ICONS.sparkle : ICONS.pencil;
     $("#diff-title").textContent = p.isNew ? "Nouveau fichier" : "Écriture de fichier";
     $("#diff-path").textContent = p.path;
     $("#diff-body").innerHTML = colorizeDiff(p.diff || "");
@@ -2169,7 +2346,7 @@ function renderConvList() {
     when.title = new Date(c.updatedAt).toLocaleString("fr-FR");
     const arch = document.createElement("button");
     arch.className = "arch";
-    arch.textContent = c.archived ? "↩" : "📦";
+    arch.innerHTML = c.archived ? ICONS.restore : ICONS.archive;
     arch.title = c.archived ? "Désarchiver" : "Archiver";
     arch.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -2333,7 +2510,7 @@ $("#new-chat").addEventListener("click", resetChatView);
 function welcomeHTML() {
   return `
     <div class="welcome">
-      <span class="welcome__logo">${BEAVER_SVG}</span>
+      <span class="welcome__logo">${LOGO_SVG}</span>
       <h2>Salut, je suis Castor.</h2>
       <p>Choisis un provider et un projet, tape <code>/</code> pour tes compétences,
          et donne-moi un chantier. Ce que je fais s'affiche en liste.</p>
@@ -2389,7 +2566,7 @@ function initSections() {
   state.version = info?.version ? "v" + info.version : "";
   $("#app-version").textContent = state.version;
   $("#app-version").title = "Clique pour vérifier les mises à jour";
-  document.querySelectorAll(".beaver-slot").forEach((el) => (el.innerHTML = BEAVER_SVG));
+  document.querySelectorAll(".beaver-slot").forEach((el) => (el.innerHTML = LOGO_SVG));
 
   state.skills = (await window.castor.storeGet("skills")) || DEFAULT_SKILLS;
   if (!(await window.castor.storeGet("skills"))) {

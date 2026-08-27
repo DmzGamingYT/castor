@@ -55,6 +55,7 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - **Mémoire persistante** : des faits injectés dans chaque requête, qui survivent aux redémarrages
 - **Plan de tâches live** : la checklist du modèle devient une todo avec barre de progression
 - **Jauge de contexte** : remplissage estimé de la fenêtre 128k en temps réel
+- **Onglet Files** : explorateur du chantier (filtre par nom, dossiers dépliables, aperçu lecture seule d'un fichier au clic)
 - **Fenêtre glissante** : sur les longues conversations, seuls les ~75 % récents de la fenêtre sont envoyés (les 2 derniers messages toujours conservés) — ça ne déborde jamais
 - Clés API **chiffrées** via `safeStorage` du système · icône et thème maison · packaging DMG / NSIS / AppImage
 
@@ -157,6 +158,7 @@ Builds **arm64 + x64** attachées automatiquement à la Release GitHub à chaque
 ## Notes de packaging
 
 - macOS : builds **non notarisées** (compte Developer requis) — premier lancement via *Réglages → Confidentialité et sécurité → Ouvrir même ainsi*, ou `xattr -cr /Applications/Castor.app`
+- L'icône (carré crème + 7 lignes, style « papier & encre ») est générée sans dépendance : `python3 desktop/scripts/gen-icon.py` → `desktop/build/icon.{png,icns,ico,svg}`
 - Le désinstalleur NSIS retire aussi `%APPDATA%\castor-desktop` (réglages, mémoire, clés) ; sur macOS/Linux, les scripts font pareil
 - La modale de téléchargement pointe vers `releases/latest/download` ; le dossier local `public/downloads/` sert uniquement de cache en dev
 

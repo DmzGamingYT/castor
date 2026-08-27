@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld("castor", {
   restoreWorkspace: () => ipcRenderer.invoke("workspace:restore"),
   closeWorkspace: () => ipcRenderer.invoke("workspace:close"),
   workspaceTree: () => ipcRenderer.invoke("workspace:tree"),
+  workspaceReadFile: (p) => ipcRenderer.invoke("workspace:readFile", p),
   workspaceChanges: () => ipcRenderer.invoke("workspace:changes"),
   workspaceFileDiff: (p) => ipcRenderer.invoke("workspace:fileDiff", p),
   pathForFile: (file) => webUtils.getPathForFile(file),

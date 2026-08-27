@@ -49,6 +49,12 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      # desktop/build/ est ignoré par git : l'icône est régénérée ici
+      # (icon.icns via iconutil sur macOS, icon.png/icon.ico partout)
+      - name: Génération de l'icône
+        working-directory: desktop
+        run: python3 scripts/gen-icon.py
+
       - name: Build ${{ matrix.platform }} (arm64 + x64)
         working-directory: desktop
         run: npx electron-builder ${{ matrix.args }} --publish never

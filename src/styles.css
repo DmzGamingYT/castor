@@ -9,11 +9,11 @@
   --bg-soft: #f2ecda;
   --panel: #fffdf6;
   --panel-2: #f7f1e0;
-  --border: #e3dac0;
-  --border-soft: #ece4cd;
+  --border: #d8ccab;
+  --border-soft: #e4dab9;
 
   --text: #2e3320;
-  --muted: #7c7860;
+  --muted: #6b6450;
 
   --accent: #e2952a;       /* ambre principal */
   --accent-2: #efb65a;
@@ -320,7 +320,7 @@ main:focus { outline: none; }
   position: relative;
   overflow: hidden;
   text-align: center;
-  padding: 5.5rem 1.5rem 7rem;
+  padding: 4.2rem 1.5rem 5.5rem;
 }
 
 .hero__glow {
@@ -383,7 +383,7 @@ main:focus { outline: none; }
   color: var(--muted);
   font-size: 1.13rem;
   max-width: 36rem;
-  margin: 0 auto 2.2rem;
+  margin: 0 auto 1.8rem;
 }
 
 .install {
@@ -424,11 +424,11 @@ main:focus { outline: none; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 2.2rem;
+  margin-top: 0.4rem;
 }
 
 /* ---------- Le Chantier (hero interactif) ---------- */
-.dam { position: relative; max-width: 680px; margin: 2.6rem auto 0; }
+.dam { position: relative; max-width: 880px; margin: 2rem auto 0; }
 
 .dam__input-row {
   display: flex;
@@ -436,6 +436,9 @@ main:focus { outline: none; }
   justify-content: center;
   align-items: stretch;
   flex-wrap: wrap;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .dam__field {
@@ -476,7 +479,9 @@ main:focus { outline: none; }
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.9rem;
+  margin: 0.9rem auto 0;
+  max-width: 680px;
+  width: 100%;
 }
 
 .dam__chip {
@@ -500,6 +505,7 @@ main:focus { outline: none; }
   position: relative;
   margin-top: 1.6rem;
   display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
   gap: 0.9rem;
 }
 
@@ -542,7 +548,7 @@ main:focus { outline: none; }
   display: grid;
   gap: 0.6rem;
   padding: 1rem;
-  min-height: 218px;
+  min-height: 196px;
   align-content: start;
 }
 
@@ -559,7 +565,7 @@ main:focus { outline: none; }
 
 .blk--hero {
   position: relative;
-  height: 64px;
+  height: 56px;
   background: linear-gradient(120deg, rgba(238, 195, 106, 0.30), rgba(217, 154, 62, 0.16) 55%, rgba(88, 184, 214, 0.20));
 }
 .blk--hero .blk__title {
@@ -571,12 +577,28 @@ main:focus { outline: none; }
 }
 
 .blk--card {
-  height: 44px;
+  height: 40px;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .blk-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
 @media (max-width: 560px) { .blk-row { grid-template-columns: 1fr; } }
+
+/* hero compact : stage 2 colonnes sur desktop, empilé + commandes adaptées en mobile */
+@media (max-width: 900px) {
+  .dam__stage { grid-template-columns: 1fr; }
+  .dam__input-row > .btn { flex: 1 1 100%; }
+  .dam__chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .dam__chips::-webkit-scrollbar { display: none; }
+  .dam__site { min-height: 168px; }
+  .hero { padding: 3.6rem 1.1rem 4.5rem; }
+}
 
 .blk--footer { height: 10px; width: 60%; }
 .blk.on.blk--footer { background: #3f7f96; opacity: 0.8; }

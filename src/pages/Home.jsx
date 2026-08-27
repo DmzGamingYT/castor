@@ -50,8 +50,6 @@ function Hero({ onDownload }) {
         Cloud ou sous ton toit, avec les modèles que tu choisis.
       </p>
 
-      <DamScene />
-
       <div className="hero__actions">
         <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
           Télécharger Desktop
@@ -60,6 +58,8 @@ function Hero({ onDownload }) {
           Découvrir les produits
         </a>
       </div>
+
+      <DamScene />
     </section>
   );
 }

@@ -10,7 +10,7 @@ desktop/release/
 public/downloads/*
 !public/downloads/.gitkeep
 
-# icônes générées (scripts/make-icon.cjs les recrée)
+# icônes générées (python3 desktop/scripts/gen-icon.py les recrée)
 desktop/build/
 !desktop/build/.gitkeep
 

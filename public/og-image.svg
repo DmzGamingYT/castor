@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;display=swap');
+      .display { font-family: "Space Grotesk", Helvetica, Arial, sans-serif; }
+    </style>
     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f0bc63"/>
       <stop offset="1" stop-color="#e2952a"/>
@@ -45,15 +49,15 @@
       <circle cx="32.5" cy="25" r="2.4" fill="#fffdf6"/>
     </g>
   </g>
-  <text x="192" y="126" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="44" fill="#e8e4d2">castor</text>
+  <text class="display" x="192" y="126" font-weight="700" font-size="42" fill="#e8e4d2">castor</text>
 
   <!-- titre -->
-  <text x="72" y="324" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="#e8e4d2">Donne-lui un chantier.</text>
-  <text x="72" y="412" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="72" fill="url(#accentText)">Il construit.</text>
+  <text class="display" x="72" y="322" font-weight="700" font-size="64" fill="#e8e4d2">Donne-lui un chantier.</text>
+  <text class="display" x="72" y="404" font-weight="700" font-size="64" fill="url(#accentText)">Il construit.</text>
 
   <!-- sous-titre -->
-  <text x="72" y="480" font-family="Helvetica, Arial, sans-serif" font-weight="500" font-size="30" fill="#9aa087">Agent de code gratuit · Desktop · CLI · Web · Chat</text>
+  <text class="display" x="72" y="470" font-weight="500" font-size="28" fill="#9aa087">Agent de code gratuit · Desktop · CLI · Web · Chat</text>
 
   <!-- bas de carte -->
-  <text x="72" y="566" font-family="Helvetica, Arial, sans-serif" font-weight="500" font-size="22" fill="#6f735c">0 € facturés · open source · tes modèles, ton choix</text>
+  <text class="display" x="72" y="556" font-weight="500" font-size="21" fill="#6f735c">0 € facturés · open source · tes modèles, ton choix</text>
 </svg>
