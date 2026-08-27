@@ -49,6 +49,13 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      # python3 n'existe pas sur les runners Windows (voir actions/runner-images#2461) :
+      # setup-python fournit un python3 invocable sur toutes les plateformes.
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       # desktop/build/ est ignoré par git : l'icône est régénérée ici
       # (icon.icns via iconutil sur macOS, icon.png/icon.ico partout)
       - name: Génération de l'icône
