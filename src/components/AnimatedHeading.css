@@ -1,0 +1,80 @@
+/* ---------- AnimatedHeadings ---------- */
+.ah { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+.ah .sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* --- variant : letters (stagger par caractère) --- */
+.ah--letters { display: inline-flex; flex-wrap: wrap; }
+.ah__char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(18px) rotateX(-40deg);
+  transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.ah__char--in {
+  opacity: 1;
+  transform: translateY(0) rotateX(0);
+}
+
+/* --- variant : gradient animé --- */
+.ah--gradient {
+  position: relative;
+  display: inline-block;
+}
+.ah--gradient .ah__text {
+  background: linear-gradient(
+    90deg,
+    var(--text) 0%,
+    var(--accent) 25%,
+    var(--river) 50%,
+    var(--sage) 75%,
+    var(--text) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ah--gradient.ah--in .ah__text {
+  opacity: 1;
+  transform: translateY(0);
+  animation: gradientFlow 4s linear infinite;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 250% 50%; }
+}
+
+/* --- variant : words (stagger par mot) --- */
+.ah--words { display: inline; }
+.ah__word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.ah__word--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- variant : slide (slide + fade depuis le bas) --- */
+.ah--slide {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ah--slide.ah--in {
+  opacity: 1;
+  transform: translateY(0);
+}

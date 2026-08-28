@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
 import Icon from "../components/Icon.jsx";
 import { fetchFreeOpenRouter } from "../lib/openrouter.js";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 import {
   SNAPSHOT,
   SNAPSHOT_DATE,
   PROVIDERS,
   TYPES,
   formatCtx,
+  shortId,
 } from "../data/models.js";
 
 const TYPE_CLASS = {
@@ -19,10 +21,18 @@ const TYPE_CLASS = {
   outils: "tag--outils",
 };
 
+const SORT_OPTIONS = [
+  { key: "default", label: "Par défaut" },
+  { key: "name", label: "Nom A→Z" },
+  { key: "ctx", label: "Contexte ↓" },
+  { key: "provider", label: "Par provider" },
+];
+
 /* cache module : évite de re-fetch à chaque visite de la page */
 let liveCache = null; // { entries }
 
 export default function Models() {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState(liveCache ? liveCache.entries : SNAPSHOT);
   const [status, setStatus] = useState(() =>
     liveCache
@@ -31,6 +41,7 @@ export default function Models() {
   );
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState("default");
   const [activeTypes, setActiveTypes] = useState(new Set());
   const reqRef = useRef(0);
   const aliveRef = useRef(true);
@@ -59,14 +70,25 @@ export default function Models() {
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return entries.filter((e) => {
+    const providerOrder = Object.keys(PROVIDERS);
+    const list = entries.filter((e) => {
       if (tab !== "all" && e.provider !== tab) return false;
       if (activeTypes.size && ![...activeTypes].some((t) => e.types.includes(t)))
         return false;
       if (query && !`${e.name} ${e.id}`.toLowerCase().includes(query)) return false;
       return true;
     });
-  }, [entries, tab, q, activeTypes]);
+    if (sort === "name")
+      return [...list].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    if (sort === "ctx") return [...list].sort((a, b) => b.ctx - a.ctx);
+    if (sort === "provider")
+      return [...list].sort(
+        (a, b) =>
+          providerOrder.indexOf(a.provider) - providerOrder.indexOf(b.provider) ||
+          a.name.localeCompare(b.name, "fr")
+      );
+    return list;
+  }, [entries, tab, q, sort, activeTypes]);
 
   function toggleType(t) {
     setActiveTypes((prev) => {
@@ -81,7 +103,7 @@ export default function Models() {
       <section className="hero hero--product models__hero">
         <div className="hero__glow hero__glow--lime" aria-hidden="true" />
         <Hills />
-        <a className="back" href="#/">← Accueil</a>
+        <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
         <h1>
           Modèles <span className="hero__accent">gratuits</span>
         </h1>
@@ -141,6 +163,20 @@ export default function Models() {
               aria-label="Rechercher un modèle"
             />
           </label>
+          <label className="models__sort">
+            <span aria-hidden="true">↕</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              aria-label="Trier les modèles"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="type-filters">
             {Object.entries(TYPES).map(([key, label]) => (
               <button
@@ -170,7 +206,9 @@ export default function Models() {
                   {PROVIDERS[m.provider]?.label || m.provider}
                 </span>
               </header>
-              <code className="model-card__id">{m.id}</code>
+              <code className="model-card__id" title={m.id}>
+                {shortId(m.id)}
+              </code>
               <div className="model-card__tags">
                 {m.types.map((t) => (
                   <span key={t} className={`tag ${TYPE_CLASS[t]}`}>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Castor CLI — Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #faf8f5;
+    color: #2d2a26;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.3rem;
+  }
+  h1 span { color: #d4880f; }
+  .subtitle { color: #888; margin-bottom: 2.5rem; font-size: 1rem; }
+  h2 {
+    font-size: 1.3rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #e8e4df;
+  }
+  h2 .emoji { margin-right: 0.4rem; }
+
+  /* Architecture tree */
+  .tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .tree .dir { color: #89b4fa; }
+  .tree .file { color: #a6e3a1; }
+  .tree .comment { color: #6c7086; }
+  .tree .arrow { color: #f9e2af; }
+
+  /* Terminal mock */
+  .terminal {
+    background: #11111b;
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  }
+  .terminal-bar {
+    background: #181825;
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .terminal-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .terminal-dot.r { background: #f38ba8; }
+  .terminal-dot.y { background: #f9e2af; }
+  .terminal-dot.g { background: #a6e3a1; }
+  .terminal-title {
+    color: #6c7086;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+  .terminal-body {
+    padding: 1.2rem 1.5rem;
+    line-height: 1.8;
+    color: #cdd6f4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .terminal-body .prompt { color: #fab387; }
+  .terminal-body .cmd { color: #89dceb; }
+  .terminal-body .dim { color: #6c7086; }
+  .terminal-body .ok { color: #a6e3a1; }
+  .terminal-body .warn { color: #f38ba8; }
+  .terminal-body .accent { color: #f9e2af; }
+  .terminal-body .tool-icon { color: #cba6f7; }
+  .terminal-body .file-icon { color: #89b4fa; }
+  .terminal-body .output { color: #bac2de; }
+
+  /* Command cards */
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .cmd-card {
+    background: #fff;
+    border: 1px solid #e8e4df;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    transition: box-shadow 0.2s;
+  }
+  .cmd-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .cmd-card .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #d4880f;
+    font-size: 0.9rem;
+  }
+  .cmd-card .desc {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+  }
+  .flow-box {
+    background: #fff;
+    border: 2px solid #d4880f;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    font-weight: 600;
+  }
+  .flow-box.blue { border-color: #89b4fa; }
+  .flow-box.green { border-color: #a6e3a1; }
+  .flow-box.purple { border-color: #cba6f7; }
+  .flow-arrow { color: #888; font-size: 1.2rem; }
+
+  /* Module cards */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .module-card {
+    background: #fff;
+    border: 1px solid #e8e4df;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .module-card .icon { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  .module-card .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #d4880f;
+  }
+  .module-card .lines {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 0.2rem;
+  }
+  .module-card .role {
+    font-size: 0.8rem;
+    color: #555;
+    margin-top: 0.4rem;
+  }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #d4880f;
+  }
+  .stat .label {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  /* Provider table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+  }
+  th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: #f0ece8;
+    font-weight: 600;
+  }
+  td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #e8e4df;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge.green { background: #d4edda; color: #155724; }
+  .badge.yellow { background: #fff3cd; color: #856404; }
+  .badge.red { background: #f8d7da; color: #721c24; }
+  .badge.blue { background: #d1ecf1; color: #0c5460; }
+
+  /* Tool table */
+  .tool-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #f0ece8;
+  }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-icon-big {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tool-info .tool-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .tool-info .tool-desc {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+  }
+  .tool-info .tool-security {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.2rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>🦫 <span>castor</span> CLI</h1>
+<p class="subtitle">Agent de code gratuit dans ton terminal — v0.1.0</p>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat"><div class="num">5</div><div class="label">modules</div></div>
+  <div class="stat"><div class="num">50</div><div class="label">tests</div></div>
+  <div class="stat"><div class="num">18</div><div class="label">commandes /</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">tools</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">providers</div></div>
+  <div class="stat"><div class="num">0</div><div class="label">dépendances npm</div></div>
+</div>
+
+<h2><span class="emoji">🏗️</span>Architecture</h2>
+
+<div class="tree">
+<span class="dir">cli/</span>
+├── <span class="dir">bin/</span>
+│   └── <span class="file">castor.js</span>        <span class="arrow">←</span> <span class="comment">35 lignes · parse args → dispatch</span>
+├── <span class="dir">lib/</span>
+│   ├── <span class="file">context.js</span>       <span class="arrow">←</span> <span class="comment">état partagé · getters/setters · persistance</span>
+│   ├── <span class="file">chat.js</span>          <span class="arrow">←</span> <span class="comment">streaming · tool_calls · boucle ask()</span>
+│   ├── <span class="file">commands.js</span>      <span class="arrow">←</span> <span class="comment">18 commandes slash · handleCommand()</span>
+│   ├── <span class="file">onboarding.js</span>    <span class="arrow">←</span> <span class="comment">banner · help · premier lancement</span>
+│   ├── <span class="file">repl.js</span>          <span class="arrow">←</span> <span class="comment">boucle REPL · queue · signaux · auto-save</span>
+│   ├── <span class="file">providers.js</span>     <span class="arrow">←</span> <span class="comment">registre 5 providers · isChatModel()</span>
+│   ├── <span class="file">store.js</span>         <span class="arrow">←</span> <span class="comment">persistance ~/.castor/ · config · sessions</span>
+│   ├── <span class="file">tools.js</span>         <span class="arrow">←</span> <span class="comment">5 tools · définitions JSON Schema · exécuteurs</span>
+│   ├── <span class="file">todos.js</span>         <span class="arrow">←</span> <span class="comment">parseMarkdown [- [ ] ...]</span>
+│   └── <span class="file">ui.js</span>            <span class="arrow">←</span> <span class="comment">couleurs ANSI · spinner · SSE · tokens</span>
+└── <span class="dir">tests/</span>
+    ├── <span class="file">context.test.js</span>  <span class="comment">13 tests</span>
+    ├── <span class="file">store.test.js</span>    <span class="comment">10 tests</span>
+    ├── <span class="file">tools.test.js</span>    <span class="comment">13 tests</span>
+    ├── <span class="file">todos.test.js</span>    <span class="comment">6 tests</span>
+    └── <span class="file">ui.test.js</span>       <span class="comment">8 tests</span>
+</div>
+
+<h2><span class="emoji">📦</span>Modules</h2>
+
+<div class="module-grid">
+  <div class="module-card">
+    <div class="icon">🧠</div>
+    <div class="name">context.js</div>
+    <div class="lines">~90 lignes</div>
+    <div class="role">État partagé<br>getters / setters<br>persistance auto</div>
+  </div>
+  <div class="module-card">
+    <div class="icon">💬</div>
+    <div class="name">chat.js</div>
+    <div class="lines">~180 lignes</div>
+    <div class="role">Streaming SSE<br>Tool calling loop<br>buildSystemMessage</div>
+  </div>
+  <div class="module-card">
+    <div class="icon">⌨️</div>
+    <div class="name">commands.js</div>
+    <div class="lines">~200 lignes</div>
+    <div class="role">18 commandes slash<br>handleCommand()<br>routeur central</div>
+  </div>
+  <div class="module-card">
+    <div class="icon">🔄</div>
+    <div class="name">repl.js</div>
+    <div class="lines">~80 lignes</div>
+    <div class="role">Boucle REPL<br>Queue séquentielle<br>Ctrl+C auto-save</div>
+  </div>
+  <div class="module-card">
+    <div class="icon">🚀</div>
+    <div class="name">onboarding.js</div>
+    <div class="lines">~60 lignes</div>
+    <div class="role">Premier lancement<br>Bannière v0.1.0<br>Page d'aide</div>
+  </div>
+</div>
+
+<h2><span class="emoji">▶️</span>Flux d'exécution</h2>
+
+<div class="flow">
+  <div class="flow-box">castor.js<br><span style="font-size:0.7rem;color:#888">parse args</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box blue">repl.js<br><span style="font-size:0.7rem;color:#888">boucle REPL</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box green">commands.js<br><span style="font-size:0.7rem;color:#888">/slash</span></div>
+  <span class="flow-arrow">ou</span>
+  <div class="flow-box purple">chat.js<br><span style="font-size:0.7rem;color:#888">ask()</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box">Provider API<br><span style="font-size:0.7rem;color:#888">streaming SSE</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box green">tools.js<br><span style="font-size:0.7rem;color:#888">exec local</span></div>
+</div>
+
+<h2><span class="emoji">⌨️</span>Commandes</h2>
+
+<div class="cmd-grid">
+  <div class="cmd-card">
+    <div class="name">/provider [id]</div>
+    <div class="desc">Lister ou changer de provider</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/model [id]</div>
+    <div class="desc">Lister ou changer de modèle</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/key &lt;clé&gt;</div>
+    <div class="desc">Enregistrer la clé du provider courant</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/skills</div>
+    <div class="desc">Lister les compétences disponibles</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/skill &lt;nom&gt;</div>
+    <div class="desc">Activer une compétence pour la prochaine demande</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/memory</div>
+    <div class="desc">Voir la mémoire persistante</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/remember &lt;fait&gt;</div>
+    <div class="desc">Ajouter un fait injecté à chaque demande</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/forget &lt;motif&gt;</div>
+    <div class="desc">Oublier des entrées mémoire</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/tools [on|off]</div>
+    <div class="desc">Lister / activer / désactiver les tools</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/save [nom]</div>
+    <div class="desc">Sauvegarder la conversation</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/load &lt;nom&gt;</div>
+    <div class="desc">Restaurer une session sauvegardée</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/history</div>
+    <div class="desc">Lister les sessions sauvegardées</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/todo</div>
+    <div class="desc">Réafficher le dernier plan de tâches</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/usage</div>
+    <div class="desc">Tokens cumulés & requêtes</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/demo</div>
+    <div class="desc">Rendu hors-ligne, sans clé</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/clear</div>
+    <div class="desc">Effacer la conversation</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/delete &lt;nom&gt;</div>
+    <div class="desc">Supprimer une session</div>
+  </div>
+  <div class="cmd-card">
+    <div class="name">/exit</div>
+    <div class="desc">Quitter (auto-save)</div>
+  </div>
+</div>
+
+<h2><span class="emoji">🔧</span>Tools (Function Calling)</h2>
+
+<div style="background:#fff;border:1px solid #e8e4df;border-radius:10px;padding:1.2rem 1.5rem;margin:1rem 0">
+  <div class="tool-row">
+    <div class="tool-icon-big">📄</div>
+    <div class="tool-info">
+      <div class="tool-name">read_file <span style="color:#888;font-weight:400">(path, start_line?, end_line?)</span></div>
+      <div class="tool-desc">Lit le contenu d'un fichier du projet. Tronqué à 8000 lignes.</div>
+      <div class="tool-security">🔒 Blocage des traversées de chemin (../..)</div>
+    </div>
+  </div>
+  <div class="tool-row">
+    <div class="tool-icon-big">📁</div>
+    <div class="tool-info">
+      <div class="tool-name">list_directory <span style="color:#888;font-weight:400">(path?)</span></div>
+      <div class="tool-desc">Liste les fichiers et sous-dossiers d'un répertoire.</div>
+    </div>
+  </div>
+  <div class="tool-row">
+    <div class="tool-icon-big">🔍</div>
+    <div class="tool-info">
+      <div class="tool-name">search_code <span style="color:#888;font-weight:400">(pattern, path?, glob?)</span></div>
+      <div class="tool-desc">Recherche un motif (texte ou regex) via grep -rn. Résultats max : 80 lignes.</div>
+    </div>
+  </div>
+  <div class="tool-row">
+    <div class="tool-icon-big">⚡</div>
+    <div class="tool-info">
+      <div class="tool-name">run_command <span style="color:#888;font-weight:400">(command, timeout?)</span></div>
+      <div class="tool-desc">Exécute une commande shell. Timeout 30s, max 120s.</div>
+      <div class="tool-security">🔒 Commandes bannies : sudo, rm -rf, format, del…</div>
+    </div>
+  </div>
+  <div class="tool-row">
+    <div class="tool-icon-big">✏️</div>
+    <div class="tool-info">
+      <div class="tool-name">write_file <span style="color:#888;font-weight:400">(path, content)</span></div>
+      <div class="tool-desc">Écrit ou crée un fichier. Crée les sous-dossiers si nécessaire.</div>
+      <div class="tool-security">🔒 Blocage des traversées de chemin</div>
+    </div>
+  </div>
+</div>
+
+<h2><span class="emoji">🔌</span>Providers</h2>
+
+<table>
+  <thead>
+    <tr><th>Provider</th><th>Clé</th><th>Particularité</th><th>Tools</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>OpenRouter</strong></td>
+      <td><span class="badge yellow">requise</span></td>
+      <td>400+ modèles, tier :free</td>
+      <td><span class="badge green">✓</span></td>
+    </tr>
+    <tr>
+      <td><strong>Groq</strong></td>
+      <td><span class="badge yellow">requise</span></td>
+      <td>Inférence LPU ultra-rapide</td>
+      <td><span class="badge green">✓</span></td>
+    </tr>
+    <tr>
+      <td><strong>OpenCode Zen</strong></td>
+      <td><span class="badge yellow">requise</span></td>
+      <td>Passerelle spécialisée code</td>
+      <td><span class="badge green">✓</span></td>
+    </tr>
+    <tr>
+      <td><strong>Ollama</strong></td>
+      <td><span class="badge green">non</span></td>
+      <td>100% hors ligne</td>
+      <td><span class="badge red">✗</span></td>
+    </tr>
+    <tr>
+      <td><strong>LM Studio</strong></td>
+      <td><span class="badge green">non</span></td>
+      <td>Serveur local, détection auto</td>
+      <td><span class="badge red">✗</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2><span class="emoji">🖥️</span>Démo terminal</h2>
+
+<div class="terminal">
+  <div class="terminal-bar">
+    <div class="terminal-dot r"></div>
+    <div class="terminal-dot y"></div>
+    <div class="terminal-dot g"></div>
+    <span class="terminal-title">castor-cli — bash</span>
+  </div>
+  <div class="terminal-body">
+<span class="dim">❯</span> <span class="cmd">castor</span>
+
+<span class="accent">◆ castor</span> <span class="dim">v0.1.0 — le castor qui code pour toi</span>
+<span class="dim">  provider : OpenRouter · modèle : stealth/ox-alpha · tools : on · 0 € facturés</span>
+<span class="dim">  /help commandes · /demo voir le rendu sans clé · Ctrl+C quitter</span>
+
+<span class="prompt">❯ </span><span class="cmd">Relis src/app.js et propose des améliorations</span>
+
+<span class="dim">  ⚙ read_file(path=src/app.js)…</span>
+<span class="dim">  ↳ {"content":"const express = require('express')...", total: 42}</span>
+
+<span class="dim">  ⚙ search_code(pattern=app\.listen)…</span>
+<span class="dim">  ↳ {"results":"src/app.js:15:app.listen(3000)..."}</span>
+
+<span class="output">Voici mes suggestions pour améliorer `src/app.js` :</span>
+
+<span class="output">1. **Port dynamique** — remplace `3000` par `process.env.PORT || 3000`</span>
+<span class="output">2. **Gestion d'erreurs** — ajoute un middleware global `app.use(errHandler)`</span>
+<span class="output">3. **Helmet** — `app.use(helmet())` pour les headers de sécurité</span>
+
+<span class="dim">  ── plan ──</span>
+<span class="accent">  ☐</span> Ajouter le port dynamique
+<span class="accent">  ☐</span> Ajouter le middleware d'erreurs
+<span class="accent">  ☐</span> Installer et configurer helmet
+
+<span class="dim">  ── 2.3s · ~1.2k↑ 340↓ tok · total 4.5k tok · 2 appel(s) tool ──</span>
+
+<span class="prompt">❯ </span><span class="cmd">/tools</span>
+
+<span class="accent">Tools disponibles :</span>
+  <span class="accent">read_file</span>       <span class="dim">Lit le contenu d'un fichier du projet</span>
+  <span class="accent">list_directory</span>  <span class="dim">Liste le contenu d'un dossier</span>
+  <span class="accent">search_code</span>     <span class="dim">Recherche un motif dans les fichiers</span>
+  <span class="accent">run_command</span>     <span class="dim">Exécute une commande shell</span>
+  <span class="accent">write_file</span>      <span class="dim">Écrit du contenu dans un fichier</span>
+
+  <span class="dim">/tools on — activer · /tools off — désactiver · état : </span><span class="ok">on</span>
+
+<span class="prompt">❯ </span><span class="cmd">/save review-app</span>
+<span class="ok">✓ session « review-app » sauvegardée (6 messages) → ~/.castor/sessions/review-app.json</span>
+
+<span class="prompt">❯ </span><span class="cmd">/history</span>
+<span class="accent">Sessions (1) :</span>
+  <span class="accent"> 1.</span> <span class="accent">review-app</span>    <span class="dim">28/08/2026 10:30</span> <span class="dim">6 msg</span> <span class="dim">openrouter</span> <span class="accent">← active</span>
+      <span class="dim">Relis src/app.js et propose des améliorations</span>
+
+  <span class="dim">/load <nom> pour restaurer · /delete <nom> pour supprimer</span>
+  </div>
+</div>
+
+<h2><span class="emoji">🔒</span>Sécurité</h2>
+
+<div style="background:#fff;border:1px solid #e8e4df;border-radius:10px;padding:1.2rem 1.5rem;margin:1rem 0;font-size:0.9rem;line-height:1.8">
+  <strong>Paths :</strong> Tous les chemins résolus par rapport au CWD. Les traversées <code>../..</code> sont bloquées.<br>
+  <strong>Commandes :</strong> <code>sudo</code>, <code>rm -rf</code>, <code>format</code>, <code>del</code> etc. sont bannies.<br>
+  <strong>Clés :</strong> Stockées dans <code>~/.castor/config.json</code> en mode <code>0o600</code> (lecture utilisateur seule).<br>
+  <strong>Sessions :</strong> Noms sanitisés (seulement <code>a-zA-Z0-9_-</code>).<br>
+  <strong>Timeout :</strong> 30s par défaut pour les commandes, 120s max.<br>
+  <strong>Tronquage :</strong> Sortie <code>read_file</code> limitée à 8000 lignes. Sortie <code>run_command</code> à 12 Ko.
+</div>
+
+</body>
+</html>

@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { fetchFreeModels } from "../lib/openrouter.js";
 import { useApiKey } from "../lib/useApiKey.js";
 import ModelSelect from "../components/ModelSelect.jsx";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 import {
   DEFAULT_MODEL,
   renderMarkdown,
@@ -56,6 +57,7 @@ const Message = memo(function Message({ role, content }) {
 });
 
 export default function ChatStudio() {
+  const navigate = useNavigate();
   const [chats, setChats] = useState(loadChats);
   const [activeId, setActiveId] = useState(() => loadStored(ACTIVE_STORE, null));
   const [input, setInput] = useState("");
@@ -287,7 +289,7 @@ export default function ChatStudio() {
   return (
     <div className={`chatapp ${sideOpen ? "chatapp--menu" : ""}`}>
       <aside className="chatapp__side">
-        <a className="back" href="#/">← Accueil</a>
+        <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
         <button className="newchat-btn" onClick={newChat}>＋ Nouvelle conversation</button>
 
         <div className="chatapp__list-label">
@@ -324,7 +326,7 @@ export default function ChatStudio() {
         </ul>
 
         <div className="chatapp__foot">
-          Par Castor · <a href="#/desktop">essaie l'agent de code →</a>
+          Par Castor · <a href="/castor/desktop" onClick={(e) => { e.preventDefault(); navigate("/desktop"); }}>essaie l'agent de code →</a>
         </div>
       </aside>
 

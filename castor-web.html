@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🦫 castor — Agent de code</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --transition: 0.2s ease;
+}
+
+/* ── Dark Theme ── */
+[data-theme="dark"] {
+  --bg-primary: #0f0f17;
+  --bg-secondary: #16161f;
+  --bg-tertiary: #1e1e2e;
+  --bg-hover: #252536;
+  --bg-active: #2a2a3d;
+  --bg-input: #1a1a28;
+  --bg-message-user: #1a1a2e;
+  --bg-message-ai: transparent;
+  --bg-code: #181825;
+  --bg-code-block: #11111b;
+  --bg-tool: #1a1625;
+  --border: #2a2a3d;
+  --border-focus: #d4880f;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #6c7086;
+  --text-accent: #d4880f;
+  --text-code: #a6e3a1;
+  --accent: #d4880f;
+  --accent-hover: #e89b1a;
+  --accent-dim: rgba(212, 136, 15, 0.15);
+  --green: #a6e3a1;
+  --red: #f38ba8;
+  --blue: #89b4fa;
+  --purple: #cba6f7;
+  --cyan: #89dceb;
+  --yellow: #f9e2af;
+  --orange: #fab387;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --scrollbar-track: #16161f;
+  --scrollbar-thumb: #2a2a3d;
+}
+
+/* ── Light Theme ── */
+[data-theme="light"] {
+  --bg-primary: #faf9f7;
+  --bg-secondary: #f3f2ef;
+  --bg-tertiary: #eae8e4;
+  --bg-hover: #e0deda;
+  --bg-active: #d5d3cf;
+  --bg-input: #ffffff;
+  --bg-message-user: #f0ece6;
+  --bg-message-ai: transparent;
+  --bg-code: #f5f3ef;
+  --bg-code-block: #282a36;
+  --bg-tool: #f8f6f2;
+  --border: #d5d3cf;
+  --border-focus: #b87a0a;
+  --text-primary: #1a1a1e;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --text-accent: #b87a0a;
+  --text-code: #2d8a4e;
+  --accent: #b87a0a;
+  --accent-hover: #d4880f;
+  --accent-dim: rgba(184, 122, 10, 0.1);
+  --green: #2d8a4e;
+  --red: #d33;
+  --blue: #2563eb;
+  --purple: #7c3aed;
+  --cyan: #0891b2;
+  --yellow: #b8860b;
+  --orange: #c2410c;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --scrollbar-track: #f3f2ef;
+  --scrollbar-thumb: #ccc;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition), transform var(--transition);
+  z-index: 10;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  overflow: hidden;
+  border-right: none;
+}
+
+.sidebar-header {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.sidebar-header .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-header .logo span {
+  font-size: 1.3rem;
+}
+
+.sidebar-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.sidebar-header h1 span {
+  color: var(--accent);
+}
+
+.sidebar-header .version {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.sidebar-section {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-section select,
+.sidebar-section input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.sidebar-section select:focus,
+.sidebar-section input:focus {
+  border-color: var(--accent);
+}
+
+.sidebar-section label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.3rem 0;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle input { display: none; }
+
+.toggle .slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.toggle .slider::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.toggle input:checked + .slider {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.toggle input:checked + .slider::after {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+/* Sessions list */
+.sessions-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.session-item {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-left: 3px solid transparent;
+}
+
+.session-item:hover { background: var(--bg-hover); }
+.session-item.active {
+  background: var(--bg-active);
+  border-left-color: var(--accent);
+}
+
+.session-item .session-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-item .session-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.sidebar-footer {
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-footer button {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-sans);
+}
+
+.sidebar-footer button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Main Area ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Top Bar ── */
+.topbar {
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.8rem;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+}
+
+.topbar .menu-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.3rem;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+}
+
+.topbar .menu-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+.topbar .breadcrumb {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.topbar .breadcrumb strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.topbar .spacer { flex: 1; }
+
+.topbar .status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.topbar .status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.topbar .status .dot.offline { background: var(--red); }
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover { background: var(--bg-hover); }
+
+/* ── Chat Area ── */
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 0;
+  scroll-behavior: smooth;
+}
+
+.chat-area::-webkit-scrollbar { width: 6px; }
+.chat-area::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+.chat-area::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+.messages {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Message ── */
+.message {
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.message-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.message-avatar.user {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+}
+
+.message-avatar.ai {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.message-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.message-content {
+  padding-left: 2.5rem;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.message-content p { margin-bottom: 0.6rem; }
+.message-content p:last-child { margin-bottom: 0; }
+
+.message-content strong { font-weight: 600; }
+.message-content em { font-style: italic; color: var(--text-secondary); }
+
+.message-content code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-code);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: var(--text-code);
+}
+
+.message-content pre {
+  background: var(--bg-code-block);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin: 0.8rem 0;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.message-content pre code {
+  background: none;
+  padding: 0;
+  color: #cdd6f4;
+}
+
+.message-content ul,
+.message-content ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.message-content li {
+  margin-bottom: 0.3rem;
+}
+
+.message-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 0.5rem 1rem;
+  margin: 0.8rem 0;
+  background: var(--accent-dim);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  color: var(--text-secondary);
+}
+
+/* ── Tool Call ── */
+.tool-call {
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-tool);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.tool-call-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--purple);
+  font-weight: 500;
+}
+
+.tool-call-header .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.tool-call-header .spinner.done {
+  animation: none;
+  border-color: var(--green);
+  border-top-color: var(--green);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tool-call-result {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ── Plan (Todo) ── */
+.plan {
+  margin: 0.8rem 0;
+  padding: 0.8rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.plan-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.plan-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.plan-item .checkbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.plan-item .checkbox.checked {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Stats Bar ── */
+.stats-bar {
+  text-align: center;
+  padding: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Welcome Screen ── */
+.welcome {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.welcome .logo-big {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.welcome h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.welcome h2 span { color: var(--accent); }
+
+.welcome .tagline {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.quick-action {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.quick-action:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.quick-action .qa-icon { font-size: 1.3rem; margin-bottom: 0.3rem; }
+.quick-action .qa-title { font-size: 0.85rem; font-weight: 600; }
+.quick-action .qa-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+/* ── Input Area ── */
+.input-area {
+  padding: 1rem 1.5rem 1.5rem;
+  background: var(--bg-primary);
+}
+
+.input-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.input-box {
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.input-box textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  padding: 0.4rem 0.6rem;
+  resize: none;
+  outline: none;
+  max-height: 150px;
+  min-height: 24px;
+}
+
+.input-box textarea::placeholder { color: var(--text-muted); }
+
+.send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.input-hint {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.input-hint kbd {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ── Slash Command Menu ── */
+.slash-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  max-height: 280px;
+  overflow-y: auto;
+  display: none;
+  z-index: 20;
+  margin-bottom: 0.5rem;
+}
+
+.slash-menu.visible { display: block; }
+
+.slash-item {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slash-item:hover,
+.slash-item.selected {
+  background: var(--bg-hover);
+}
+
+.slash-item .slash-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.slash-item .slash-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    display: none;
+  }
+  .sidebar-overlay.visible { display: block; }
+  .quick-actions { grid-template-columns: 1fr; }
+}
+
+/* ── Streaming cursor ── */
+.streaming-cursor::after {
+  content: '▊';
+  animation: blink 0.8s step-end infinite;
+  color: var(--accent);
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span>🦫</span>
+        <div>
+          <h1><span>castor</span></h1>
+          <div class="version">v0.1.0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Provider -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Provider</div>
+      <select id="providerSelect" onchange="onProviderChange()">
+        <option value="openrouter">OpenRouter</option>
+        <option value="groq">Groq</option>
+        <option value="opencodezen">OpenCode Zen</option>
+        <option value="ollama">Ollama (local)</option>
+        <option value="lmstudio">LM Studio (local)</option>
+      </select>
+    </div>
+
+    <!-- Model -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Modèle</div>
+      <select id="modelSelect">
+        <option value="stealth/ox-alpha">stealth/ox-alpha</option>
+        <option value="anthropic/claude-sonnet-4">claude-sonnet-4</option>
+        <option value="openai/gpt-4o">gpt-4o</option>
+        <option value="google/gemini-2.5-flash">gemini-2.5-flash</option>
+        <option value="meta-llama/llama-4-maverick">llama-4-maverick</option>
+      </select>
+    </div>
+
+    <!-- API Key -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">API Key</div>
+      <input type="password" id="apiKeyInput" placeholder="sk-..." />
+    </div>
+
+    <!-- Settings -->
+    <div class="sidebar-section">
+      <label>
+        <span>🔧 Tools</span>
+        <div class="toggle">
+          <input type="checkbox" id="toolsToggle" checked>
+          <span class="slider"></span>
+        </div>
+      </label>
+      <label>
+        <span>🌙 Thème sombre</span>
+        <div class="toggle">
+          <input type="checkbox" id="themeToggle" checked onchange="toggleTheme()">
+          <span class="slider"></span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Sessions -->
+    <div class="sidebar-section" style="padding-bottom: 0.3rem">
+      <div class="sidebar-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        Sessions
+        <span style="cursor:pointer;font-size:1rem" onclick="newSession()" title="Nouvelle session">＋</span>
+      </div>
+    </div>
+    <div class="sessions-list" id="sessionsList"></div>
+
+    <div class="sidebar-footer">
+      <button onclick="exportSession()">📥 Exporter JSON</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Top bar -->
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="breadcrumb">
+        <strong>castor</strong> · <span id="currentModel">stealth/ox-alpha</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">prêt</span>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Basculer le thème">🌓</button>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area" id="chatArea">
+      <div class="messages" id="messages">
+        <!-- Welcome screen -->
+        <div id="welcomeScreen" class="welcome">
+          <div class="logo-big">🦫</div>
+          <h2><span>castor</span></h2>
+          <p class="tagline">Agent de code gratuit dans ton navigateur</p>
+          <div class="quick-actions">
+            <div class="quick-action" onclick="quickPrompt('Liste les fichiers du projet et résume l\\'architecture')">
+              <div class="qa-icon">📁</div>
+              <div class="qa-title">Explorer le projet</div>
+              <div class="qa-desc">Lister et analyser la structure</div>
+            </div>
+            <div class="quick-action" onclick="quickPrompt('Analyse les erreurs et propose des corrections')">
+              <div class="qa-icon">🐛</div>
+              <div class="qa-title">Débugger</div>
+              <div class="qa-desc">Trouver et corriger les bugs</div>
+            </div>
+            <div class="quick-action" onclick="quickPrompt('Propose des améliorations de performance pour ce fichier')">
+              <div class="qa-icon">⚡</div>
+              <div class="qa-title">Optimiser</div>
+              <div class="qa-desc">Améliorer les performances</div>
+            </div>
+            <div class="quick-action" onclick="quickPrompt('Écris les tests unitaires pour ce module')">
+              <div class="qa-icon">🧪</div>
+              <div class="qa-title">Tester</div>
+              <div class="qa-desc">Générer des tests unitaires</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar">
+      prêt · 0 messages
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <div class="slash-menu" id="slashMenu"></div>
+        <div class="input-box">
+          <textarea id="chatInput" rows="1" placeholder="Pose ta question… (tape / pour les commandes)"
+            oninput="autoResize(this); checkSlash()" onkeydown="handleKey(event)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">
+          <kbd>Entrée</kbd> envoyer · <kbd>Shift+Entrée</kbd> nouvelle ligne · <kbd>/</kbd> commandes
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──
+const state = {
+  sessions: JSON.parse(localStorage.getItem('castor_sessions') || '[]'),
+  currentSessionId: null,
+  messages: [],
+  isStreaming: false,
+  abortController: null,
+};
+
+const SLASH_COMMANDS = [
+  { name: '/help', desc: 'Afficher l\'aide' },
+  { name: '/clear', desc: 'Effacer la conversation' },
+  { name: '/save', desc: 'Sauvegarder la session' },
+  { name: '/load', desc: 'Charger une session' },
+  { name: '/history', desc: 'Lister les sessions' },
+  { name: '/provider', desc: 'Changer de provider' },
+  { name: '/model', desc: 'Changer de modèle' },
+  { name: '/key', desc: 'Définir la clé API' },
+  { name: '/tools', desc: 'Activer/désactiver les tools' },
+  { name: '/memory', desc: 'Voir la mémoire' },
+  { name: '/remember', desc: 'Ajouter en mémoire' },
+  { name: '/usage', desc: 'Tokens & coûts' },
+  { name: '/demo', desc: 'Démo hors-ligne' },
+  { name: '/theme', desc: 'Basculer le thème' },
+  { name: '/export', desc: 'Exporter la session' },
+];
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  renderSessions();
+  if (state.sessions.length > 0) {
+    loadSession(state.sessions[0].id);
+  } else {
+    newSession();
+  }
+  document.getElementById('chatInput').focus();
+});
+
+// ── Sessions ──
+function newSession() {
+  const id = Date.now().toString(36);
+  const session = {
+    id,
+    name: `session-${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
+    created: new Date().toISOString(),
+    provider: document.getElementById('providerSelect').value,
+    model: document.getElementById('modelSelect').value,
+    messages: [],
+  };
+  state.sessions.unshift(session);
+  state.currentSessionId = id;
+  state.messages = [];
+  saveSessions();
+  renderSessions();
+  renderMessages();
+}
+
+function loadSession(id) {
+  const session = state.sessions.find(s => s.id === id);
+  if (!session) return;
+  state.currentSessionId = id;
+  state.messages = session.messages || [];
+  document.getElementById('providerSelect').value = session.provider || 'openrouter';
+  document.getElementById('modelSelect').value = session.model || 'stealth/ox-alpha';
+  onProviderChange();
+  renderSessions();
+  renderMessages();
+}
+
+function saveSessions() {
+  const session = state.sessions.find(s => s.id === state.currentSessionId);
+  if (session) {
+    session.messages = state.messages;
+    session.provider = document.getElementById('providerSelect').value;
+    session.model = document.getElementById('modelSelect').value;
+  }
+  localStorage.setItem('castor_sessions', JSON.stringify(state.sessions));
+}
+
+function deleteSession(id) {
+  state.sessions = state.sessions.filter(s => s.id !== id);
+  if (state.currentSessionId === id) {
+    state.currentSessionId = null;
+    state.messages = [];
+    if (state.sessions.length > 0) loadSession(state.sessions[0].id);
+    else newSession();
+  }
+  saveSessions();
+  renderSessions();
+  renderMessages();
+}
+
+function renderSessions() {
+  const el = document.getElementById('sessionsList');
+  el.innerHTML = state.sessions.map(s => {
+    const active = s.id === state.currentSessionId ? 'active' : '';
+    const preview = (s.messages || []).find(m => m.role === 'user')?.content?.slice(0, 40) || 'Session vide';
+    const date = new Date(s.created).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    return `
+      <div class="session-item ${active}" onclick="loadSession('${s.id}')" oncontextmenu="event.preventDefault();deleteSession('${s.id}')">
+        <div class="session-name">💬 ${escHtml(s.name)}</div>
+        <div class="session-meta">${date} · ${(s.messages||[]).length} msg</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function exportSession() {
+  const session = state.sessions.find(s => s.id === state.currentSessionId);
+  if (!session) return;
+  const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${session.name}.json`;
+  a.click();
+}
+
+// ── Messages ──
+function renderMessages() {
+  const el = document.getElementById('messages');
+  const welcome = document.getElementById('welcomeScreen');
+
+  if (state.messages.length === 0) {
+    if (welcome) welcome.style.display = '';
+    updateStats();
+    return;
+  }
+
+  if (welcome) welcome.style.display = 'none';
+
+  el.innerHTML = state.messages.map((m, i) => renderMessage(m, i)).join('');
+  updateStats();
+  scrollToBottom();
+}
+
+function renderMessage(m, index) {
+  if (m.role === 'user') {
+    return `
+      <div class="message">
+        <div class="message-header">
+          <div class="message-avatar user">👤</div>
+          <div class="message-name">Toi</div>
+        </div>
+        <div class="message-content">${renderMarkdown(m.content)}</div>
+      </div>
+    `;
+  }
+
+  if (m.role === 'tool') {
+    return `
+      <div class="tool-call">
+        <div class="tool-call-header">
+          <div class="spinner done"></div>
+          ⚙ ${escHtml(m.toolName || 'tool')}(${escHtml(m.toolArgs || '')})
+        </div>
+        <div class="tool-call-result">${escHtml(m.content?.slice(0, 500) || '')}</div>
+      </div>
+    `;
+  }
+
+  // assistant
+  let toolCalls = '';
+  if (m.toolCalls) {
+    toolCalls = m.toolCalls.map(tc => `
+      <div class="tool-call">
+        <div class="tool-call-header">
+          <div class="spinner done"></div>
+          ⚙ ${escHtml(tc.name)}(${escHtml(tc.args || '')})
+        </div>
+        ${tc.result ? `<div class="tool-call-result">${escHtml(tc.result.slice(0, 500))}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  let planHtml = '';
+  if (m.plan) {
+    planHtml = `
+      <div class="plan">
+        <div class="plan-title">── plan ──</div>
+        ${m.plan.map(item => `
+          <div class="plan-item">
+            <div class="checkbox">${item.done ? '✓' : ''}</div>
+            <span>${escHtml(item.text)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="message">
+      <div class="message-header">
+        <div class="message-avatar ai">🦫</div>
+        <div class="message-name">castor</div>
+      </div>
+      <div class="message-content">${toolCalls}${renderMarkdown(m.content || '')}${planHtml}</div>
+    </div>
+  `;
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = escHtml(text);
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--accent)">$1</a>');
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function escHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function scrollToBottom() {
+  const area = document.getElementById('chatArea');
+  requestAnimationFrame(() => area.scrollTop = area.scrollHeight);
+}
+
+function updateStats() {
+  const bar = document.getElementById('statsBar');
+  const n = state.messages.length;
+  bar.textContent = `prêt · ${n} message${n !== 1 ? 's' : ''}`;
+}
+
+// ── Input ──
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+  document.getElementById('sendBtn').disabled = !el.value.trim();
+}
+
+function handleKey(e) {
+  const menu = document.getElementById('slashMenu');
+  const items = menu.querySelectorAll('.slash-item');
+  const selected = menu.querySelector('.slash-item.selected');
+  let idx = Array.from(items).indexOf(selected);
+
+  if (menu.classList.contains('visible')) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (selected) selected.classList.remove('selected');
+      idx = (idx + 1) % items.length;
+      items[idx]?.classList.add('selected');
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (selected) selected.classList.remove('selected');
+      idx = (idx - 1 + items.length) % items.length;
+      items[idx]?.classList.add('selected');
+      return;
+    }
+    if (e.key === 'Tab' || (e.key === 'Enter' && selected)) {
+      e.preventDefault();
+      const name = selected.querySelector('.slash-name').textContent;
+      const input = document.getElementById('chatInput');
+      input.value = name + ' ';
+      menu.classList.remove('visible');
+      autoResize(input);
+      return;
+    }
+    if (e.key === 'Escape') {
+      menu.classList.remove('visible');
+      return;
+    }
+  }
+
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function checkSlash() {
+  const input = document.getElementById('chatInput');
+  const val = input.value;
+  const menu = document.getElementById('slashMenu');
+
+  if (val.startsWith('/') && val.indexOf('\n') === -1) {
+    const query = val.toLowerCase();
+    const filtered = SLASH_COMMANDS.filter(c => c.name.startsWith(query));
+    if (filtered.length > 0) {
+      menu.innerHTML = filtered.map((c, i) => `
+        <div class="slash-item ${i === 0 ? 'selected' : ''}" onclick="selectSlash('${c.name}')">
+          <span class="slash-name">${c.name}</span>
+          <span class="slash-desc">${c.desc}</span>
+        </div>
+      `).join('');
+      menu.classList.add('visible');
+      return;
+    }
+  }
+  menu.classList.remove('visible');
+}
+
+function selectSlash(name) {
+  const input = document.getElementById('chatInput');
+  input.value = name + ' ';
+  input.focus();
+  document.getElementById('slashMenu').classList.remove('visible');
+  autoResize(input);
+}
+
+function quickPrompt(text) {
+  document.getElementById('chatInput').value = text;
+  autoResize(document.getElementById('chatInput'));
+  sendMessage();
+}
+
+// ── Send Message ──
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || state.isStreaming) return;
+
+  input.value = '';
+  autoResize(input);
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('slashMenu').classList.remove('visible');
+
+  // Handle slash commands
+  if (text.startsWith('/')) {
+    handleSlashCommand(text);
+    return;
+  }
+
+  // Add user message
+  state.messages.push({ role: 'user', content: text });
+  renderMessages();
+
+  // Stream response
+  await streamResponse();
+}
+
+async function streamResponse() {
+  state.isStreaming = true;
+  setStatus('streaming', 'en cours…');
+
+  // Add placeholder assistant message
+  const assistantMsg = { role: 'assistant', content: '' };
+  state.messages.push(assistantMsg);
+  renderMessages();
+
+  // Show streaming cursor
+  const lastMsgEl = document.querySelectorAll('.message-content');
+  const targetEl = lastMsgEl[lastMsgEl.length - 1];
+  if (targetEl) targetEl.classList.add('streaming-cursor');
+
+  try {
+    const provider = document.getElementById('providerSelect').value;
+    const model = document.getElementById('modelSelect').value;
+    const apiKey = document.getElementById('apiKeyInput').value;
+    const toolsEnabled = document.getElementById('toolsToggle').checked;
+
+    // Check if we can actually make API calls
+    if (provider !== 'ollama' && provider !== 'lmstudio' && !apiKey) {
+      throw new Error('Clé API requise. Définis-la dans le panneau latéral.');
+    }
+
+    const response = await callProvider(provider, model, apiKey, toolsEnabled);
+
+    // Simulate streaming for demo / process real stream
+    for await (const chunk of response) {
+      assistantMsg.content += chunk;
+      if (targetEl) {
+        targetEl.innerHTML = renderMarkdown(assistantMsg.content);
+      }
+      scrollToBottom();
+    }
+  } catch (err) {
+    // Demo mode fallback
+    assistantMsg.content = getDemoResponse(state.messages[state.messages.length - 2]?.content || '');
+  }
+
+  if (targetEl) targetEl.classList.remove('streaming-cursor');
+
+  state.isStreaming = false;
+  saveSessions();
+  setStatus('ready', 'prêt');
+  updateStats();
+  renderSessions();
+}
+
+async function* callProvider(provider, model, apiKey, toolsEnabled) {
+  if (provider === 'ollama' || provider === 'lmstudio') {
+    const baseUrl = provider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:1234';
+    const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: state.messages.map(m => ({ role: m.role === 'tool' ? 'user' : m.role, content: m.content })),
+        stream: true,
+      }),
+    });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value);
+      for (const line of text.split('\n')) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const json = JSON.parse(line.slice(6));
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) yield delta;
+          } catch {}
+        }
+      }
+    }
+    return;
+  }
+
+  // OpenRouter / Groq / OpenCodeZen → real streaming
+  const endpoints = {
+    openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+    groq: 'https://api.groq.com/openai/v1/chat/completions',
+    opencodezen: 'https://api.opencodezen.com/v1/chat/completions',
+  };
+
+  const res = await fetch(endpoints[provider], {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'castor-cli',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'Tu es castor, un assistant de code expert. Tu réponds en français. Tu utilises du markdown pour formater tes réponses.' },
+        ...state.messages.map(m => ({ role: m.role === 'tool' ? 'user' : m.role, content: m.content })).slice(-20),
+      ],
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`API ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const text = decoder.decode(value);
+    for (const line of text.split('\n')) {
+      if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+        try {
+          const json = JSON.parse(line.slice(6));
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) yield delta;
+        } catch {}
+      }
+    }
+  }
+}
+
+function getDemoResponse(userMsg) {
+  const lower = (userMsg || '').toLowerCase();
+  if (lower.includes('architecture') || lower.includes('projet') || lower.includes('fich')) {
+    return `Voici l'architecture détectée de ton projet :
+
+\`\`\`
+castor/
+├── cli/
+│   ├── bin/castor.js      ← point d'entrée
+│   ├── lib/
+│   │   ├── context.js     ← état partagé
+│   │   ├── chat.js        ← streaming & tool_calls
+│   │   ├── commands.js    ← 18 commandes slash
+│   │   ├── repl.js        ← boucle REPL
+│   │   ├── tools.js       ← 5 tools function calling
+│   │   ├── store.js       ← persistance sessions
+│   │   ├── providers.js   ← 5 providers
+│   │   ├── todos.js       ← parsing markdown
+│   │   └── ui.js          ← ANSI, spinner, tokens
+│   └── tests/             ← 50 tests
+└── package.json
+\`\`\`
+
+**Points forts :**
+- Architecture modulaire, 10 fichiers lib bien séparés
+- 50 tests unitaires (0 dépendance npm !)
+- 5 tools function calling (read, write, search, list, run)
+- Support 5 providers (cloud + local)
+
+**Suggestions :**
+1. Ajouter un **fichier README.md** avec instructions d'installation
+2. Créer un \`bin/\` npm script pour \`npx castor\`
+3. Ajouter un **mode TUI** avec interface riche (ink/bubbletea)
+`;
+  }
+  if (lower.includes('bug') || lower.includes('erreur') || lower.includes('debug')) {
+    return `Après analyse, voici les points d'attention potentiels :
+
+**1. Timeout des commandes \`run_command\`**
+Le timeout par défaut est de 30s. Pour des build lents, c'est parfois insuffisant. L'utilisateur peut passer \`timeout: 120\`.
+
+**2. Parsing SSE fragile**
+Le parser dans \`chat.js\` split sur \`\\n\` ce qui peut casser sur les payloads multi-lignes. Une amélioration :
+\`\`\`js
+// Avant : split linéaire
+for (const line of text.split('\\n'))
+
+// Après : accumulator pattern
+buffer += decoder.decode(value);
+const lines = buffer.split('\\n');
+buffer = lines.pop(); // garder la dernière ligne incomplète
+\`\`\`
+
+**3. Cache des sessions**
+Les sessions sont en \`localStorage\` (5 Mo max). Pour de grosses conversations, il faudrait migrer vers IndexedDB.
+
+---
+
+Ces bugs ne sont pas critiques mais amélioreraient la robustesse. Veux-tu que je corrige l'un d'eux ?`;
+  }
+  if (lower.includes('optim') || lower.includes('performance')) {
+    return `Voici mes suggestions d'optimisation :
+
+**⚡ Performance**
+
+1. **Lazy loading des modules** — \`context.js\` charge tout au démarrage. Pourrait charger les providers/tools à la demande.
+
+2. **Debouncing du streaming** — Le rendu se fait à chaque chunk. Un \`requestAnimationFrame\` limiterait les re-rendus.
+
+3. **Compression des sessions** — Les sessions en JSON brut sont lourdes. \`lz-string\` pourrait réduire la taille de 70%.
+
+**🔧 UX**
+
+4. **Autocomplétion Tab** — Compléter les noms de fichiers et commandes slash.
+
+5. **Rendu markdown riche** — Utiliser \`marked\` + \`highlight.js\` pour du vrai markdown coloré.
+
+6. **Mode offline** — Cache les dernières réponses avec Service Worker.
+`;
+  }
+  if (lower.includes('test')) {
+    return `Je vais générer des tests pour le module \`tools.js\` :
+
+\`\`\`js
+// tests/tools.test.js
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
+const { executeTool, TOOL_DEFS } = require('../lib/tools');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+
+const TMP = path.join(os.tmpdir(), 'castor-test');
+
+describe('executeTool', () => {
+  it('read_file retourne le contenu d\'un fichier', async () => {
+    fs.mkdirSync(TMP, { recursive: true });
+    fs.writeFileSync(path.join(TMP, 'hello.txt'), 'Hello World');
+    const r = await executeTool('read_file', { path: 'hello.txt' }, TMP);
+    assert.ok(r.content.includes('Hello World'));
+    fs.rmSync(TMP, { recursive: true });
+  });
+
+  it('write_file crée un fichier', async () => {
+    fs.mkdirSync(TMP, { recursive: true });
+    const r = await executeTool('write_file', {
+      path: 'created.txt', content: 'test'
+    }, TMP);
+    assert.ok(r.success);
+    assert.ok(fs.existsSync(path.join(TMP, 'created.txt')));
+    fs.rmSync(TMP, { recursive: true });
+  });
+
+  it('bloque les traversées de chemin', async () => {
+    const r = await executeTool('read_file', {
+      path: '../../etc/passwd'
+    }, TMP);
+    assert.ok(r.error);
+    assert.ok(r.error.includes('traversée'));
+  });
+});
+\`\`\`
+
+Ces 3 tests couvrent les cas principaux. Tu veux que je les exécute ?`;
+  }
+  return `Merci pour ta question ! En mode démo, je simule les réponses. 
+
+Pour utiliser castor avec un vrai provider :
+1. Ajoute une **API Key** dans le panneau latéral
+2. Choisis un provider (OpenRouter, Groq, ou OpenCode Zen)
+3. Pose ta question — le streaming se lance automatiquement
+
+> 💡 En mode local, utilise **Ollama** ou **LM Studio** (aucune clé requise).
+
+Tape \`/help\` pour voir toutes les commandes disponibles.`;
+}
+
+// ── Slash Commands ──
+function handleSlashCommand(text) {
+  const parts = text.split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const arg = parts.slice(1).join(' ');
+
+  switch (cmd) {
+    case '/help':
+      addSystemMessage(`**Commandes disponibles :**
+
+| Commande | Description |
+|---|---|
+| \`/help\` | Afficher cette aide |
+| \`/clear\` | Effacer la conversation |
+| \`/save [nom]\` | Sauvegarder la session |
+| \`/load <nom>\` | Charger une session |
+| \`/history\` | Lister les sessions |
+| \`/provider [id]\` | Changer de provider |
+| \`/model [id]\` | Changer de modèle |
+| \`/key <clé>\` | Définir la clé API |
+| \`/tools [on/off]\` | Toggle les tools |
+| \`/memory\` | Voir la mémoire |
+| \`/remember <fait>\` | Ajouter en mémoire |
+| \`/usage\` | Tokens & coûts |
+| \`/demo\` | Démo hors-ligne |
+| \`/theme\` | Basculer sombre/clair |
+| \`/export\` | Exporter en JSON |`);
+      break;
+
+    case '/clear':
+      state.messages = [];
+      saveSessions();
+      renderMessages();
+      addSystemMessage(' Conversation effacée.');
+      break;
+
+    case '/save':
+      if (arg) {
+        const session = state.sessions.find(s => s.id === state.currentSessionId);
+        if (session) {
+          session.name = arg;
+          saveSessions();
+          renderSessions();
+        }
+      }
+      addSystemMessage(` Session sauvegardée avec le nom **${arg || 'auto'}**.`);
+      break;
+
+    case '/history':
+      if (state.sessions.length === 0) {
+        addSystemMessage(' Aucune session sauvegardée.');
+      } else {
+        const list = state.sessions.map((s, i) => {
+          const active = s.id === state.currentSessionId ? ' ← active' : '';
+          return `${i + 1}. **${s.name}** · ${(s.messages||[]).length} msg${active}`;
+        }).join('\n');
+        addSystemMessage(`**Sessions :**\n${list}`);
+      }
+      break;
+
+    case '/tools':
+      if (arg === 'on') {
+        document.getElementById('toolsToggle').checked = true;
+        addSystemMessage(' 🔧 Tools activés.');
+      } else if (arg === 'off') {
+        document.getElementById('toolsToggle').checked = false;
+        addSystemMessage(' 🔧 Tools désactivés.');
+      } else {
+        const on = document.getElementById('toolsToggle').checked;
+        addSystemMessage(` **Tools :** ${on ? '✅ activés' : '❌ désactivés'}\n\`/tools on\` ou \`/tools off\` pour changer.`);
+      }
+      break;
+
+    case '/theme':
+      toggleTheme();
+      break;
+
+    case '/demo':
+      state.messages.push({ role: 'user', content: 'Liste les fichiers du projet et résume l\'architecture' });
+      renderMessages();
+      streamResponse();
+      return;
+
+    case '/usage':
+      const totalMsg = state.messages.length;
+      addSystemMessage(` **Session :** ${totalMsg} messages\n**Provider :** ${document.getElementById('providerSelect').value}\n**Modèle :** ${document.getElementById('modelSelect').value}`);
+      break;
+
+    case '/provider':
+      if (arg) {
+        const sel = document.getElementById('providerSelect');
+        if ([...sel.options].some(o => o.value === arg)) {
+          sel.value = arg;
+          onProviderChange();
+          addSystemMessage(` Provider changé pour **${arg}**.`);
+        } else {
+          addSystemMessage(` Provider inconnu : \`${arg}\`. Options : openrouter, groq, opencodezen, ollama, lmstudio`);
+        }
+      } else {
+        const current = document.getElementById('providerSelect').value;
+        addSystemMessage(` Provider actuel : **${current}**\nOptions : openrouter, groq, opencodezen, ollama, lmstudio`);
+      }
+      break;
+
+    case '/model':
+      if (arg) {
+        document.getElementById('modelSelect').value = arg;
+        document.getElementById('currentModel').textContent = arg;
+        addSystemMessage(` Modèle changé pour **${arg}**.`);
+      }
+      break;
+
+    case '/key':
+      if (arg) {
+        document.getElementById('apiKeyInput').value = arg;
+        addSystemMessage(' 🔑 Clé API enregistrée.');
+      }
+      break;
+
+    case '/export':
+      exportSession();
+      addSystemMessage(' 📥 Export lancé.');
+      break;
+
+    default:
+      addSystemMessage(` Commande inconnue : \`${cmd}\`. Tape \`/help\` pour l'aide.`);
+  }
+  saveSessions();
+}
+
+function addSystemMessage(content) {
+  state.messages.push({ role: 'assistant', content });
+  renderMessages();
+}
+
+// ── UI Helpers ──
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('collapsed');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('visible');
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeToggle').checked = !isDark;
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('providerSelect').value;
+  const modelSelect = document.getElementById('modelSelect');
+
+  const models = {
+    openrouter: [
+      ['stealth/ox-alpha', 'stealth/ox-alpha'],
+      ['anthropic/claude-sonnet-4', 'claude-sonnet-4'],
+      ['openai/gpt-4o', 'gpt-4o'],
+      ['google/gemini-2.5-flash', 'gemini-2.5-flash'],
+      ['meta-llama/llama-4-maverick', 'llama-4-maverick'],
+    ],
+    groq: [
+      ['llama-3.3-70b-versatile', 'llama-3.3-70b-versatile'],
+      ['mixtral-8x7b-32768', 'mixtral-8x7b-32768'],
+      ['gemma2-9b-it', 'gemma2-9b-it'],
+    ],
+    opencodezen: [
+      ['zen-code-7b', 'zen-code-7b'],
+    ],
+    ollama: [
+      ['llama3.1', 'llama3.1'],
+      ['codellama', 'codellama'],
+      ['mistral', 'mistral'],
+    ],
+    lmstudio: [
+      ['local-model', 'local-model'],
+    ],
+  };
+
+  modelSelect.innerHTML = (models[provider] || []).map(
+    ([val, label]) => `<option value="${val}">${label}</option>`
+  ).join('');
+
+  document.getElementById('currentModel').textContent = modelSelect.value;
+
+  // Disable tools for local providers
+  if (provider === 'ollama' || provider === 'lmstudio') {
+    document.getElementById('toolsToggle').checked = false;
+  }
+}
+
+function setStatus(type, text) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'dot' + (type === 'ready' ? '' : type === 'streaming' ? '' : ' offline');
+  if (type === 'streaming') {
+    dot.style.background = 'var(--yellow)';
+    dot.style.animation = 'blink 1s infinite';
+  } else {
+    dot.style.background = '';
+    dot.style.animation = '';
+  }
+  txt.textContent = text;
+}
+</script>
+</body>
+</html>

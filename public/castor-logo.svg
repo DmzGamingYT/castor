@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" aria-label="Castor logo">
+  <!-- Tuile ambre arrondie -->
+  <defs>
+    <linearGradient id="tile-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0bc63"/>
+      <stop offset="1" stop-color="#e2952a"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tile-bg)"/>
+
+  <!-- Castor -->
+  <g fill="#33260a">
+    <ellipse cx="45" cy="42" rx="15" ry="8" transform="rotate(-20 45 42)"/>
+    <circle cx="27" cy="30" r="17"/>
+    <circle cx="14.5" cy="15" r="5.5"/>
+    <circle cx="34.5" cy="11" r="5.5"/>
+  </g>
+  <rect x="23.5" y="38" width="5" height="10" rx="2" fill="#fffdf6"/>
+  <circle cx="21" cy="27" r="2.4" fill="#fffdf6"/>
+  <circle cx="32.5" cy="25" r="2.4" fill="#fffdf6"/>
+  <path d="M26.5 33.5l-2.6 3h5.6z" fill="#fffdf6" opacity="0.55"/>
+</svg>

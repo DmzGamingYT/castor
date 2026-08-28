@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AnimatedHeading from "./AnimatedHeading.jsx";
 
 const FAQS = [
   {
@@ -28,7 +29,7 @@ export default function FAQ() {
 
   return (
     <section id="faq" className="section faq">
-      <h2>Questions fréquentes</h2>
+      <AnimatedHeading variant="words">Questions fréquentes</AnimatedHeading>
       <div className="faq__list">
         {FAQS.map((f, i) => {
           const isOpen = open === i;

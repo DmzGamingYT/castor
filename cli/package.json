@@ -17,6 +17,7 @@
   "keywords": ["cli", "ai", "agent", "code", "openrouter", "groq", "ollama", "terminal"],
   "scripts": {
     "start": "node bin/castor.js",
-    "test": "cd .. && npm test"
+    "test": "node --test tests/*.test.js",
+    "test:root": "cd .. && npm test"
   }
 }

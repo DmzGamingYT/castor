@@ -19,3 +19,4 @@ desktop/build/
 .DS_Store
 .env
 .env.*
+cli/output.txt

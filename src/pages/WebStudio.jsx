@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
 import ModelSelect from "../components/ModelSelect.jsx";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 import {
   generateSite,
   generateWithAI,
@@ -43,6 +44,7 @@ function loadProjects() {
 }
 
 export default function WebStudio() {
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [theme, setTheme] = useState(null);
   const [phase, setPhase] = useState("idle");
@@ -222,7 +224,7 @@ export default function WebStudio() {
       <section className="hero hero--product studio__hero">
         <div className="hero__glow hero__glow--lime" aria-hidden="true" />
         <Hills />
-        <a className="back" href="#/">← Accueil</a>
+        <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
         <span className="hero__badge">Castor Web · modèles gratuits OpenRouter</span>
         <h1>
           Qu'est-ce qu'on <span className="hero__accent">construit ?</span>

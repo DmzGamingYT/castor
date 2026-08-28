@@ -11,8 +11,12 @@ Site vitrine · studio de création web · app Desktop multi-providers
 [![React](https://img.shields.io/badge/React-18-2e3320?style=flat-square&logo=react&logoColor=white)](https://react.dev)
 [![Electron](https://img.shields.io/badge/Electron-33-2e3320?style=flat-square&logo=electron&logoColor=white)](https://electronjs.org)
 [![Vite](https://img.shields.io/badge/Vite-5-2e3320?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Node](https://img.shields.io/badge/Node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Licence](https://img.shields.io/badge/Licence-MIT-e2952a?style=flat-square)](LICENSE)
 [![Prix](https://img.shields.io/badge/prix-0%20€-93a862?style=flat-square)](#)
+[![GitHub release](https://img.shields.io/github/v/release/DmzGamingYT/castor?style=flat-square&color=2e3320)](https://github.com/DmzGamingYT/castor/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/DmzGamingYT/castor?style=flat-square&color=e2952a)](https://github.com/DmzGamingYT/castor/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/DmzGamingYT/castor?style=flat-square&color=93a862)](https://github.com/DmzGamingYT/castor/issues)
 
 </div>
 
@@ -26,6 +30,26 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - une **CLI zéro dépendance** : l'agent dans ton terminal — streaming, compétences `/`, mémoire persistante, plans de tâches,
 - une **app Desktop** (Windows / macOS / Linux) qui branche OpenRouter, Groq, OpenCode Zen et tes modèles locaux, avec compétences `/`, mémoire persistante, suivi d'usage et plan de tâches en direct.
 
+---
+
+## 📑 Table des matières
+
+- [Aperçus](#aperçus)
+- [Fonctionnalités](#fonctionnalités)
+  - [Site & studio Web](#site--studio-web)
+  - [App Desktop](#app-desktop)
+  - [CLI](#cli)
+- [Démarrage rapide](#démarrage-rapide)
+- [Providers](#providers)
+- [Sécurité](#sécurité)
+- [Structure](#structure)
+- [Installer & désinstaller](#installer--désinstaller)
+- [Notes de packaging](#notes-de-packaging)
+- [Roadmap](#roadmap)
+- [Licence](#licence)
+
+---
+
 ## Aperçus
 
 | Accueil — le chantier | Modèles gratuits |
@@ -38,7 +62,10 @@ Site vitrine · studio de création web · app Desktop multi-providers
 
 ## Fonctionnalités
 
-### Site & studio Web
+<details>
+<summary><strong>🌐 Site & studio Web</strong></summary>
+
+<br>
 
 - **Hero « Le Chantier »** : écris un chantier, regarde l'app se construire bloc par bloc avec son journal de bord
 - **Page `/models`** : modèles gratuits par provider, filtres par type (multimodal, vision, raisonnement, code, rapide, outils), fenêtre de contexte, **actualisation live** depuis l'API publique d'OpenRouter
@@ -47,7 +74,12 @@ Site vitrine · studio de création web · app Desktop multi-providers
   - **avec une clé OpenRouter gratuite** → génération de code sur mesure par le modèle choisi, aperçu iframe, export `.html`, projets sauvegardés dans le navigateur
 - Thème clair « papier & encre », icônes SVG dessinées main, zéro framework CSS
 
-### App Desktop
+</details>
+
+<details>
+<summary><strong>🖥️ App Desktop</strong></summary>
+
+<br>
 
 - **Multi-providers** via le protocole OpenAI-compatible : OpenRouter · Groq · OpenCode Zen · Ollama · LM Studio
 - **Streaming token par token**, arrêt à la volée (Échap), stats : latence, tok/s, premier token, ↑↓ tokens
@@ -59,7 +91,12 @@ Site vitrine · studio de création web · app Desktop multi-providers
 - **Fenêtre glissante** : sur les longues conversations, seuls les ~75 % récents de la fenêtre sont envoyés (les 2 derniers messages toujours conservés) — ça ne déborde jamais
 - Clés API **chiffrées** via `safeStorage` du système · icône et thème maison · packaging DMG / NSIS / AppImage
 
-### CLI
+</details>
+
+<details>
+<summary><strong>⌨️ CLI</strong></summary>
+
+<br>
 
 ```bash
 cd cli && npm link        # ou : node bin/castor.js
@@ -77,6 +114,8 @@ castor -p "explique ce fichier"   # one-shot
 | `/demo` | rendu hors-ligne complet, **sans aucune clé** |
 
 Le prompt système injecte automatiquement mémoire, compétence active, date et contexte ; les plans multi-étapes (`- [ ]`) sont extraits et affichés en checklist.
+
+</details>
 
 ## Démarrage rapide
 
@@ -102,8 +141,15 @@ npm link               # commande `castor` globale
 castor                 # session interactive · /demo pour essayer sans clé
 ```
 
+<details>
+<summary><strong>🔧 Commandes utiles (dev)</strong></summary>
+
+<br>
+
 > Générer l'icône après modification : `npx electron scripts/make-icon.cjs`
 > Capturer les écrans du README : `npx electron scripts/capture.cjs` (dev server requis)
+
+</details>
 
 ## Providers
 
@@ -143,7 +189,10 @@ castor/
     └── renderer/            # UI Desktop (même DA que le site)
 ```
 
-## Installer & désinstaller
+<details>
+<summary><strong>📦 Installer & désinstaller</strong></summary>
+
+<br>
 
 Chaque OS a un **installateur propre** (recommandé) et des **versions portables** :
 
@@ -155,12 +204,19 @@ Chaque OS a un **installateur propre** (recommandé) et des **versions portables
 
 Builds **arm64 + x64** attachées automatiquement à la Release GitHub à chaque tag `v*` (workflow `.github/workflows/release.yml`). La modale du site détecte ta plateforme et ton architecture pour présélectionner le bon fichier.
 
-## Notes de packaging
+</details>
+
+<details>
+<summary><strong>📝 Notes de packaging</strong></summary>
+
+<br>
 
 - macOS : builds **non notarisées** (compte Developer requis) — premier lancement via *Réglages → Confidentialité et sécurité → Ouvrir même ainsi*, ou `xattr -cr /Applications/Castor.app`
 - L'icône (carré crème + 7 lignes, style « papier & encre ») est générée sans dépendance : `python3 desktop/scripts/gen-icon.py` → `desktop/build/icon.{png,icns,ico,svg}`
 - Le désinstalleur NSIS retire aussi `%APPDATA%\castor-desktop` (réglages, mémoire, clés) ; sur macOS/Linux, les scripts font pareil
 - La modale de téléchargement pointe vers `releases/latest/download` ; le dossier local `public/downloads/` sert uniquement de cache en dev
+
+</details>
 
 ## Roadmap
 

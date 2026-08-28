@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /downloads/
+Disallow: /404.html
 
 Sitemap: https://dmzgamingyt.github.io/castor/sitemap.xml

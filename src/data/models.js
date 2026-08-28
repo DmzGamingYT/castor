@@ -5,7 +5,7 @@
    Les listes Groq / Zen / Local sont des sélections curatées des
    principaux modèles actifs (leurs catalogues exigent une clé). */
 
-export const SNAPSHOT_DATE = "21 août 2026";
+export const SNAPSHOT_DATE = "28 août 2026";
 
 export const PROVIDERS = {
   openrouter: { label: "OpenRouter", note: "Tier gratuit partagé, débit limité" },
@@ -26,24 +26,24 @@ export const TYPES = {
 /* --- OpenRouter : liste réelle des gratuits au 21/08/2026 (hors
        modèles de modération et previews musique) --- */
 const OPENROUTER_LIVE = [
-  { id: "stealth/ox-alpha", name: "Ox Alpha", types: ["raisonnement", "code", "outils"], ctx: 1048576 },
-  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra", types: ["raisonnement", "outils"], ctx: 1000000 },
+  { id: "inclusionai/ling-3.0-flash-fin:free", name: "Ling 3.0 Flash Fin", types: ["rapide"], ctx: 262144 },
+  { id: "dots-studio/dots-3-note-preview:free", name: "Dots3 Note Preview", types: ["rapide"], ctx: 512000 },
+  { id: "liquid/lfm-2.5-2.6b:free", name: "LFM 2.5 2.6B", types: ["rapide"], ctx: 65536 },
   { id: "nvidia/nemotron-3.5-lightning:free", name: "Nemotron 3.5 Lightning", types: ["rapide"], ctx: 1000000 },
+  { id: "thinkingmachines/inkling-small:free", name: "Inkling Small", types: ["rapide"], ctx: 1048576 },
   { id: "poolside/laguna-s-2.1:free", name: "Laguna S 2.1", types: ["code", "outils"], ctx: 262144 },
+  { id: "thinkingmachines/inkling:free", name: "Inkling", types: ["raisonnement", "outils"], ctx: 1048576 },
   { id: "poolside/laguna-xs-2.1:free", name: "Laguna XS 2.1", types: ["code", "rapide"], ctx: 262144 },
   { id: "cohere/north-mini-code:free", name: "North Mini Code", types: ["code"], ctx: 256000 },
   { id: "z-ai/glm-5.2:free", name: "GLM 5.2", types: ["raisonnement", "outils"], ctx: 256000 },
-  { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "Nemotron 3 Super", types: ["raisonnement"], ctx: 262144 },
-  { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B", types: ["multimodal", "vision"], ctx: 262144 },
-  { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B A4B", types: ["multimodal", "vision", "rapide"], ctx: 262144 },
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 3 Ultra", types: ["raisonnement", "outils"], ctx: 1000000 },
+  { id: "minimax/minimax-m3:free", name: "MiniMax M3", types: ["raisonnement", "outils"], ctx: 1048576 },
   { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", name: "Nemotron 3 Nano Omni", types: ["multimodal", "raisonnement"], ctx: 256000 },
-  { id: "dots-studio/dots-3-note-preview:free", name: "Dots3 Note Preview", types: ["rapide"], ctx: 512000 },
+  { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B A4B", types: ["multimodal", "vision", "rapide"], ctx: 262144 },
+  { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B", types: ["multimodal", "vision"], ctx: 262144 },
+  { id: "minimax/minimax-m2.7:free", name: "MiniMax M2.7", types: ["rapide"], ctx: 196608 },
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "Nemotron 3 Super", types: ["raisonnement"], ctx: 262144 },
   { id: "openrouter/free", name: "Free Models Router", types: ["rapide", "outils"], ctx: 200000 },
-  { id: "nvidia/nemotron-nano-12b-v2-vl:free", name: "Nemotron Nano 12B VL", types: ["vision"], ctx: 128000 },
-  { id: "openai/gpt-oss-20b:free", name: "GPT-OSS 20B", types: ["raisonnement", "outils"], ctx: 131072 },
-  { id: "nvidia/nemotron-3-nano-30b-a3b:free", name: "Nemotron 3 Nano 30B", types: ["rapide"], ctx: 256000 },
-  { id: "nvidia/nemotron-nano-9b-v2:free", name: "Nemotron Nano 9B v2", types: ["rapide"], ctx: 128000 },
-  { id: "liquid/lfm-2.5-2.6b:free", name: "LFM 2.5 2.6B", types: ["rapide"], ctx: 65536 },
 ].map((m) => ({ ...m, provider: "openrouter" }));
 
 export const SNAPSHOT = [
@@ -94,4 +94,11 @@ export function inferTypes(model) {
 export function formatCtx(ctx) {
   if (!ctx) return "—";
   return ctx >= 1000000 ? `${(ctx / 1000000).toFixed(1)}M` : `${Math.round(ctx / 1024)}k`;
+}
+
+/* Version courte d'un id de modèle : retire le préfixe provider
+   ("nvidia/…") et le suffixe ":free" — le badge affiche déjà le provider
+   et le tooltip du composant garde l'id complet. */
+export function shortId(id = "") {
+  return id.replace(/^[^/]+\//, "").replace(/:free$/, "");
 }

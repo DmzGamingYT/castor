@@ -21,6 +21,7 @@
     "lint:fix": "eslint src cli --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
     "test": "vitest run",
+    "test:cli": "node --test \"cli/tests/*.test.js\"",
     "test:watch": "vitest"
   },
   "dependencies": {
