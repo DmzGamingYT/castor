@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 import DownloadModal from "./components/DownloadModal.jsx";
+import CastorBot from "./components/CastorBot.jsx";
 import { PRODUCTS } from "./data/products.jsx";
 import useHistoryRoute from "./lib/useHistoryRoute.js";
 import { NavigationProvider } from "./lib/NavigationContext.jsx";
@@ -77,6 +78,7 @@ export default function App() {
         </main>
         <Footer onDownload={openDownload} />
         <DownloadModal open={downloadOpen} onClose={() => setDownloadOpen(false)} />
+        <CastorBot />
       </div>
     </NavigationProvider>
   );
