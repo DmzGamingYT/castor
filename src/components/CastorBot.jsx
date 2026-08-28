@@ -8,11 +8,13 @@ import "./CastorBot.css";
 
 const HISTORY_STORE = "castor-bot-history";
 const AI_STORE = "castor-bot-ai";
+const OPEN_EVENT = "castor-bot:open";
 
-/* ---------- moteur local : base de connaissance ---------- */
+/* ============================================================
+   Moteur local — base de connaissance
+   ============================================================ */
 
-const norm = (s) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 function roadmapText(cat) {
   const block = ROADMAP[cat];
@@ -24,13 +26,20 @@ function roadmapText(cat) {
 
 const KB = [
   {
-    keys: ["roadmap", "a venir", "avenir", "bientot", "nouveaute", "nouveautes", "prochain", "futur", "planning", "chantier a venir"],
+    keys: ["roadmap", "a venir", "avenir", "bientot", "nouveaute", "nouveautes", "prochain", "futur", "planning", "avancement"],
     reply: () =>
       `Voici les chantiers en cours chez Castor 🔨\n\n` +
       Object.keys(ROADMAP)
-        .map((k) => `**${ROADMAP[k].label}** : ${ROADMAP[k].items.filter((i) => i.status !== "livré").slice(0, 2).map((i) => i.title).join(" · ")}`)
+        .map(
+          (k) =>
+            `**${ROADMAP[k].label}** : ${ROADMAP[k].items
+              .filter((i) => i.status !== "livré")
+              .slice(0, 2)
+              .map((i) => i.title)
+              .join(" · ")}`
+        )
         .join("\n\n") +
-      `\n\nDemande-moi **app**, **site** ou **modèles** pour le détail !`,
+      `\n\nDemande-moi **app**, **site** ou **modèles** pour le détail — ou explore la section « Avancement » du site !`,
     chips: ["📱 App Desktop", "🌐 Site", "🧠 Modèles"],
   },
   {
@@ -50,17 +59,20 @@ const KB = [
   },
   {
     keys: ["telecharger", "telechargement", "installer", "installation", "download", "install"],
-    reply: () => `📥 **C'est par ici :**\n\n${SITE_HINTS.install}\n\nSur la page **Desktop** tu trouveras les 3 installateurs avec la détection de ton OS.`,
+    reply: () =>
+      `📥 **C'est par ici :**\n\n${SITE_HINTS.install}\n\nSur la page **Desktop** tu trouveras les 3 installateurs avec la détection de ton OS.`,
     chips: ["📱 App Desktop", "💰 Prix"],
   },
   {
     keys: ["prix", "gratuit", "abonnement", "payant", "cout", "argent", "tarif"],
-    reply: () => `💰 **0 €, pour toujours.**\n\nOpen source (MIT), sans compte, sans limite. Les studios passent par le tier gratuit d'OpenRouter avec ta propre clé — aucun serveur à financer, donc aucun abonnement.`,
+    reply: () =>
+      `💰 **0 €, pour toujours.**\n\nOpen source (MIT), sans compte, sans limite. Les studios passent par le tier gratuit d'OpenRouter avec ta propre clé — aucun serveur à financer, donc aucun abonnement.`,
     chips: ["🔒 Vie privée", "🧠 Modèles"],
   },
   {
     keys: ["provider", "providers", "openrouter", "groq", "ollama", "lm studio", "opencode", "\\bcle\\b", "\\bapi\\b"],
-    reply: () => `🔌 **Branche le cerveau que tu veux :**\n\n• **OpenRouter** — des dizaines de modèles gratuits\n• **Groq** — inférence ultra-rapide\n• **Ollama / LM Studio** — 100% local, même hors ligne\n• **OpenCode Zen** — spécialisé code\n\nTa clé se crée en 30 s sur openrouter.ai et reste dans ton navigateur. Réutilisable dans les studios Web, Chat et le bot !`,
+    reply: () =>
+      `🔌 **Branche le cerveau que tu veux :**\n\n• **OpenRouter** — des dizaines de modèles gratuits\n• **Groq** — inférence ultra-rapide\n• **Ollama / LM Studio** — 100% local, même hors ligne\n• **OpenCode Zen** — spécialisé code\n\nTa clé se crée en 30 s sur openrouter.ai et reste dans ton navigateur.`,
     chips: ["🧠 Modèles", "🔒 Vie privée"],
   },
   {
@@ -85,17 +97,19 @@ const KB = [
   },
   {
     keys: ["bonjour", "salut", "hello", "\\bhi\\b", "coucou", "\\byo\\b", "hey", "\\bcc\\b"],
-    reply: () => `🦫 Salut ! Je suis **Castor Bot**, l'assistant du chantier — en ligne 24/7.\n\nJe peux te parler des **choses à venir** (roadmap app/site/modèles), du **téléchargement**, des **modèles gratuits** ou de la **vie privée**. Que veux-tu savoir ?`,
+    reply: () =>
+      `🦫 Salut ! Je suis **Castor Bot** — en ligne 24/7.\n\nJe connais les **choses à venir** de Castor sur le bout des pattes. Que veux-tu savoir ?`,
     chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles"],
   },
   {
     keys: ["merci", "super", "genial", "top", "cool", "parfait"],
-    reply: () => `🦫 Avec plaisir ! Je reste ici 24/7 si tu as d'autres questions — bon chantier ! ⚒️`,
+    reply: () => `🦫 Avec plaisir ! Je reste ici 24/7 — bon chantier ! ⚒️`,
     chips: ["🚀 Roadmap"],
   },
   {
     keys: ["qui es tu", "tu es qui", "castor bot", "t'es quoi", "helper", "assistant"],
-    reply: () => `🦫 Je suis **Castor Bot** — un petit script local (et parfois un LLM si tu branches ta clé OpenRouter). Je connais la roadmap sur le bout des pattes et je ne quitte jamais le chantier : **24/7, même hors ligne**.`,
+    reply: () =>
+      `🦫 Je suis **Castor Bot** — un script local (et un LLM si tu branches ta clé OpenRouter). Je connais la roadmap par cœur et je ne quitte jamais le chantier : **24/7, même hors ligne**.`,
     chips: ["🚀 Roadmap", "🔌 Providers"],
   },
 ];
@@ -104,26 +118,22 @@ function answerLocal(text) {
   const n = norm(text);
   for (const entry of KB) {
     for (const key of entry.keys) {
-      if (new RegExp(key).test(n)) {
-        return { text: entry.reply(), chips: entry.chips };
-      }
+      if (new RegExp(key).test(n)) return { text: entry.reply(), chips: entry.chips };
     }
   }
   return null;
 }
 
 const FALLBACK = {
-  text: `🦫 Hmm, celle-là n'est pas dans ma tête de castor.\n\nEssaie l'une des suggestions ci-dessous — ou active le **mode IA** (en haut du panneau) pour une vraie conversation !`,
+  text: `🦫 Celle-là n'est pas dans ma tête de castor.\n\nEssaie une suggestion — ou active le **mode IA** pour une vraie conversation !`,
   chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles", "💰 Prix"],
 };
 
 const WELCOME = {
   role: "bot",
-  text: `🦫 Salut, je suis **Castor Bot** !\n\nEn ligne 24/7 pour te parler des **choses à venir** de Castor : app, site, modèles. Pose ta question ou clique sur une suggestion 👇`,
+  text: `🦫 Salut ! **Castor Bot** à ton service.\n\nJe te garde au courant des **choses à venir** : app, site, modèles. Clique sur une suggestion 👇`,
   chips: ["🚀 Roadmap", "📱 App Desktop", "🧠 Modèles", "📥 Télécharger"],
 };
-
-/* ---------- prompt système pour le mode IA ---------- */
 
 function systemPrompt() {
   const rm = Object.keys(ROADMAP)
@@ -135,9 +145,9 @@ function systemPrompt() {
   const prod = Object.entries(PRODUCT_NOTES).map(([k, v]) => `- ${k}: ${v}`).join("\n");
   return (
     `Tu es Castor Bot, l'assistant discret du site de Castor (agent de code gratuit, open source MIT, par DmzGamingYT). ` +
-    `Tu réponds en français, ton amical et concis (max 120 mots), avec des emojis castor avec parcimonie. ` +
-    `Tu connais la roadmap officielle — présente-la comme "les chantiers à venir". Ne promets jamais de dates précises. ` +
-    `Si on te demande où télécharger : page Desktop du site (GitHub Pages). gratuit pour toujours, pas de compte.\n\n` +
+    `Réponds en français, amical et concis (max 120 mots). ` +
+    `Tu connais la roadmap officielle — présente-la comme les chantiers à venir, sans jamais promettre de dates précises. ` +
+    `Téléchargement : page Desktop du site, gratuit pour toujours, sans compte.\n\n` +
     `ROADMAP OFFICIELLE :\n${rm}\n\nPRODUITS :\n${prod}\n\nVIE PRIVÉE : ${SITE_HINTS.privacy}`
   );
 }
@@ -166,7 +176,9 @@ function RichText({ text }) {
   );
 }
 
-/* ---------- composant principal ---------- */
+/* ============================================================
+   Composant
+   ============================================================ */
 
 export default function CastorBot() {
   const [open, setOpen] = useState(false);
@@ -189,48 +201,51 @@ export default function CastorBot() {
   const scrollRef = useRef(null);
   const abortRef = useRef(null);
 
-  /* persistance */
   useEffect(() => {
     try { localStorage.setItem(HISTORY_STORE, JSON.stringify(messages.slice(-40))); } catch { /* ok */ }
   }, [messages]);
 
-  /* auto-scroll */
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, open]);
+  }, [messages, open, busy]);
 
-  /* stoppe le stream à la fermeture */
+  /* coupure du stream à la fermeture */
   useEffect(() => {
     if (!open) abortRef.current?.abort?.();
   }, [open]);
+
+  /* ouverture pilotée depuis le site (section Avancement) */
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, []);
 
   const send = useCallback(
     async (raw) => {
       const text = (typeof raw === "string" ? raw : input).trim();
       if (!text || busy) return;
       setInput("");
+
       const userMsg = { role: "user", text };
-      const botMsg = { role: "bot", text: "", chips: [] };
-      setMessages((m) => [...m, userMsg, botMsg]);
+      setMessages((m) => [...m, userMsg, { role: "bot", text: "", chips: [] }]);
       setBusy(true);
 
       const useAI = aiMode && apiKey;
 
-      /* 1) moteur local d'abord (instantané, hors ligne) */
       if (!useAI) {
         const local = answerLocal(text);
-        await new Promise((r) => setTimeout(r, 350 + Math.random() * 350)); // effet frappe discret
+        await new Promise((r) => setTimeout(r, 400 + Math.random() * 350));
         setMessages((m) => {
           const copy = [...m];
-          copy[copy.length - 1] = { ...botMsg, ...(local || FALLBACK) };
+          copy[copy.length - 1] = { role: "bot", ...(local || FALLBACK) };
           return copy;
         });
         setBusy(false);
         return;
       }
 
-      /* 2) mode IA — LLM via OpenRouter avec roadmap en contexte */
       const controller = new AbortController();
       abortRef.current = controller;
       const history = [...messages, userMsg]
@@ -245,19 +260,21 @@ export default function CastorBot() {
           onDelta: (delta) => {
             setMessages((m) => {
               const copy = [...m];
-              copy[copy.length - 1] = { ...copy[copy.length - 1], text: copy[copy.length - 1].text + delta };
+              const last = copy[copy.length - 1];
+              copy[copy.length - 1] = { ...last, text: last.text + delta };
               return copy;
             });
           },
         });
       } catch (e) {
         if (e.name !== "AbortError") {
+          const local = answerLocal(text);
           setMessages((m) => {
             const copy = [...m];
             copy[copy.length - 1] = {
-              ...botMsg,
-              text: `⚠️ Le modèle est indisponible (${String(e.message).slice(0, 60)}…) — je repasse en mode local.\n\n` + (answerLocal(text)?.text || FALLBACK.text),
-              chips: (answerLocal(text)?.chips) || FALLBACK.chips,
+              role: "bot",
+              text: `⚠️ Modèle indisponible — je repasse en mode local.\n\n` + (local?.text || FALLBACK.text),
+              chips: local?.chips || FALLBACK.chips,
             };
             return copy;
           });
@@ -278,65 +295,70 @@ export default function CastorBot() {
   };
 
   const hasKey = Boolean(apiKey);
+  const lastIsBotTyping = busy && messages[messages.length - 1]?.role === "bot" && !messages[messages.length - 1]?.text;
 
   return (
     <div className={`cbot ${open ? "cbot--open" : ""}`}>
-      {/* Panneau */}
-      <section className="cbot__panel" role="dialog" aria-label="Castor Bot — assistant 24/7" aria-hidden={!open}>
-        <header className="cbot__head">
-          <span className="cbot__avatar" aria-hidden="true"><BeaverMark size={22} /></span>
-          <div className="cbot__id">
+      {/* ── Panneau ── */}
+      <section className="cbot-panel" role="dialog" aria-label="Castor Bot — assistant 24/7" aria-hidden={!open}>
+        <header className="cbot-panel__head">
+          <span className="cbot-panel__avatar" aria-hidden="true"><BeaverMark size={24} /></span>
+          <div className="cbot-panel__id">
             <strong>Castor Bot</strong>
-            <span className="cbot__status">
-              <i className="cbot__dot" aria-hidden="true" /> En ligne · 24/7
-            </span>
+            <span className="cbot-panel__status"><i aria-hidden="true" /> En ligne · 24/7</span>
           </div>
           <button
             type="button"
-            className={`cbot__ai-toggle ${aiMode ? "on" : ""} ${!hasKey ? "disabled" : ""}`}
+            className={`cbot-switch ${aiMode ? "cbot-switch--on" : ""} ${!hasKey ? "cbot-switch--off-dis" : ""}`}
             onClick={toggleAi}
             disabled={!hasKey}
-            title={hasKey ? (aiMode ? "IA activée — cliquer pour repasser en local" : "Activer le mode IA (ta clé OpenRouter)") : "Ajoute ta clé OpenRouter dans Castor Chat pour activer l'IA"}
+            title={hasKey ? "Basculer entre mode local et mode IA (OpenRouter)" : "Ajoute ta clé OpenRouter dans Castor Chat pour activer l'IA"}
+            aria-pressed={aiMode}
           >
-            🧠 IA {aiMode ? "ON" : "OFF"}
+            <span className="cbot-switch__track"><span className="cbot-switch__thumb" /></span>
+            <span className="cbot-switch__label">IA</span>
           </button>
-          <button type="button" className="cbot__close" onClick={() => setOpen(false)} aria-label="Fermer l'assistant">×</button>
+          <button type="button" className="cbot-panel__close" onClick={() => setOpen(false)} aria-label="Fermer l'assistant">×</button>
         </header>
 
         {!hasKey && (
-          <p className="cbot__key-hint">
-            💡 Astuce : colle ta clé OpenRouter gratuite dans <strong>Castor Chat</strong> pour débloquer le mode IA.
+          <p className="cbot-panel__hint">
+            💡 Colle ta clé OpenRouter gratuite dans <strong>Castor Chat</strong> pour débloquer le mode IA.
           </p>
         )}
 
-        <div className="cbot__messages" ref={scrollRef} aria-live="polite">
+        <div className="cbot-panel__scroll" ref={scrollRef} aria-live="polite">
           {messages.map((m, i) => (
-            <div key={i} className={`cbot__msg cbot__msg--${m.role}`}>
+            <div key={i} className={`cbot-msg cbot-msg--${m.role}`}>
               {m.role === "bot" && (
-                <span className="cbot__msg-avatar" aria-hidden="true">
-                  <BeaverMark size={18} />
-                </span>
+                <span className="cbot-msg__avatar" aria-hidden="true"><BeaverMark size={18} /></span>
               )}
-              <div className="cbot__bubble">
-                <RichText text={m.text || (busy && i === messages.length - 1 ? "▊" : "")} />
+              <div className="cbot-msg__col">
+                {!(lastIsBotTyping && i === messages.length - 1) && (
+                  <div className="cbot-msg__bubble">
+                    <RichText text={m.text} />
+                  </div>
+                )}
+                {lastIsBotTyping && i === messages.length - 1 && (
+                  <div className="cbot-msg__bubble cbot-msg__bubble--typing" aria-label="Castor Bot écrit">
+                    <span /><span /><span />
+                  </div>
+                )}
+                {m.role === "bot" && m.chips?.length > 0 && i === messages.length - 1 && !busy && (
+                  <div className="cbot-msg__chips">
+                    {m.chips.map((c) => (
+                      <button key={c} type="button" className="cbot-chip" onClick={() => send(c)}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {m.role === "bot" && m.chips?.length > 0 && i === messages.length - 1 && !busy && (
-                <div className="cbot__chips">
-                  {m.chips.map((c) => (
-                    <button key={c} type="button" className="cbot__chip" onClick={() => send(c)}>
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>
 
-        <form
-          className="cbot__input-row"
-          onSubmit={(e) => { e.preventDefault(); send(); }}
-        >
+        <form className="cbot-panel__input" onSubmit={(e) => { e.preventDefault(); send(); }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -344,24 +366,23 @@ export default function CastorBot() {
             aria-label="Message pour Castor Bot"
             spellCheck="false"
           />
-          <button type="submit" className="cbot__send" disabled={busy || !input.trim()} aria-label="Envoyer">
+          <button type="submit" className="cbot-panel__send" disabled={busy || !input.trim()} aria-label="Envoyer">
             ➤
           </button>
         </form>
       </section>
 
-      {/* Bulle discrète */}
+      {/* ── Bulle ── */}
       <button
         type="button"
-        className="cbot__bubble-btn"
+        className="cbot-bubble"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Fermer Castor Bot" : "Ouvrir Castor Bot — assistant 24/7"}
       >
-        <span className="cbot__bubble-face" aria-hidden="true">
+        <span className="cbot-bubble__face" aria-hidden="true">
           {open ? "×" : <BeaverMark size={26} />}
         </span>
-        {!open && <span className="cbot__online" aria-hidden="true" />}
-        {!open && <span className="cbot__tooltip" aria-hidden="true">Une question ? 🦫</span>}
+        {!open && <span className="cbot-bubble__dot" aria-hidden="true" />}
       </button>
     </div>
   );

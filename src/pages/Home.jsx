@@ -5,6 +5,7 @@ import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
 import HeroParticles from "../components/HeroParticles.jsx";
 import DownloadSection from "../components/DownloadSection.jsx";
+import ProjectProgress from "../components/ProjectProgress.jsx";
 import AnimatedHeading from "../components/AnimatedHeading.jsx";
 import { BeaverMark } from "../components/Icon.jsx";
 
@@ -342,6 +343,7 @@ export default function Home({ onDownload }) {
       <Steps />
       <DemoSection />
       <Testimonials />
+      <ProjectProgress />
       <DownloadSection onDownload={onDownload} />
     </>
   );
