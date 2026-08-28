@@ -11,11 +11,9 @@ import { BeaverMark } from "./components/Icon.jsx";
 const Home = lazy(() => import("./pages/Home.jsx"));
 const ProductPage = lazy(() => import("./pages/ProductPage.jsx"));
 const Models = lazy(() => import("./pages/Models.jsx"));
-const WebStudio = lazy(() => import("./pages/WebStudio.jsx"));
 const ChatStudio = lazy(() => import("./pages/ChatStudio.jsx"));
 
 const PRODUCT_SLUGS = new Set(PRODUCTS.map((p) => `/${p.slug}`));
-const PRODUCT_BY_PATH = Object.fromEntries(PRODUCTS.map((p) => [`/${p.slug}`, p]));
 
 function PageFallback() {
   return (
@@ -28,17 +26,6 @@ function PageFallback() {
       </span>
     </div>
   );
-}
-
-function titleFor(path) {
-  const product = PRODUCT_BY_PATH[path];
-  if (product) return `${product.name} — Castor`;
-  const titles = {
-    "/": "Castor — le castor qui code pour toi",
-    "/models": "Modèles gratuits — Castor",
-    "/chat": "Castor Chat — le studio de dialogue — Castor",
-  };
-  return titles[path] || titles["/"];
 }
 
 export default function App() {

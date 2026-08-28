@@ -1,9 +1,7 @@
 import Hills from "./Hills.jsx";
 import { BeaverMark } from "./Icon.jsx";
-import { useNavigate } from "../lib/NavigationContext.jsx";
 
 export default function Footer({ onDownload }) {
-  const navigate = useNavigate();
   return (
     <footer className="footer">
       <div className="footer__cta">
@@ -27,12 +25,7 @@ export default function Footer({ onDownload }) {
           </span>
           castor
         </span>
-        <nav className="footer__nav">
-          <a href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>Accueil</a>
-          <a href="/castor/desktop" onClick={(e) => { e.preventDefault(); navigate("/desktop"); }}>Desktop</a>
-          <a href="/castor/cloud" onClick={(e) => { e.preventDefault(); navigate("/cloud"); }}>Cloud</a>
-          <a href="/castor/chat" onClick={(e) => { e.preventDefault(); navigate("/chat"); }}>Chat</a>
-        </nav>
+
         <span className="footer__copy">© 2026 Castor. Créé par <strong>Alessio Innangi</strong>.</span>
       </div>
     </footer>

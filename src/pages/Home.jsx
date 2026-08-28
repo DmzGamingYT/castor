@@ -4,9 +4,8 @@ import Testimonials from "../components/Testimonials.jsx";
 import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
 import HeroParticles from "../components/HeroParticles.jsx";
-import AnimatedHeading from "../components/AnimatedHeading.jsx";
 import DownloadSection from "../components/DownloadSection.jsx";
-import Icon, { BeaverMark } from "../components/Icon.jsx";
+import { BeaverMark } from "../components/Icon.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 
 /* révèle un élément quand il entre dans le viewport */
@@ -168,7 +167,6 @@ function StepsMockup() {
   const [phase, setPhase] = useState(0);
   const [inputVal, setInputVal] = useState("");
   const [building, setBuilding] = useState([]);
-  const [done, setDone] = useState(false);
 
   const prompt = "un blog de recettes végé";
 
@@ -205,15 +203,11 @@ function StepsMockup() {
           }
         }, 700);
       }, 3200),
-      setTimeout(() => {
-        setDone(true);
-      }, 6500),
       /* Reset loop */
       setTimeout(() => {
         setPhase(0);
         setInputVal("");
         setBuilding([]);
-        setDone(false);
       }, 10000),
     ];
     return () => timers.forEach(clearTimeout);
