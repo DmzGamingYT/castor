@@ -2093,7 +2093,9 @@ main:focus { outline: none; }
 
 .dl-modal {
   position: relative;
-  width: min(520px, 100%);
+  width: min(980px, 100%);
+  max-height: calc(100vh - 2.4rem);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 24px;
@@ -2102,6 +2104,23 @@ main:focus { outline: none; }
   box-shadow: 0 48px 100px rgba(30, 25, 8, 0.40),
               0 0 0 1px rgba(226, 149, 42, 0.06);
   animation: dlPop 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* grille de cartes OS — même design que dl-compare sur la page */
+.dl-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  text-align: left;
+  margin-bottom: 0.4rem;
+}
+
+/* dans la modale, les cartes ne lèvent pas au survol (pas cliquables en entier) */
+.dl-modal .dl-compare__card:hover { transform: none; }
+
+@media (max-width: 860px) {
+  .dl-modal { padding: 1.6rem 1.1rem 1.2rem; }
+  .dl-modal__grid { grid-template-columns: 1fr; }
 }
 
 @keyframes dlPop {
@@ -2318,13 +2337,8 @@ main:focus { outline: none; }
   font-family: var(--font-mono);
   letter-spacing: 0.01em;
 }
-  color: var(--accent-deep);
-  transition: transform 0.15s;
-}
-.os-row:hover .os-row__action { transform: translateY(3px); }
 
 /* (anciens styles dl-note / dl-foot supprimés — remplacés par dl-success / dl-footer-note) */
-}
 
 /* ---------- page Modèles ---------- */
 .models__hero { padding-bottom: 4rem; }
@@ -2537,6 +2551,183 @@ main:focus { outline: none; }
   background: #d9eff7;
   border-radius: 999px;
   padding: 0.12rem 0.5rem;
+}
+
+/* ============================================================
+   Models v2 — provider stats + enriched cards + context bars
+   ============================================================ */
+
+/* Provider stats bar */
+.model-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1.8rem;
+}
+
+.model-stats__card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.model-stats__card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-dim);
+  box-shadow: 0 8px 24px rgba(96, 82, 34, 0.1);
+}
+.model-stats__card--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  box-shadow: 0 4px 16px rgba(226, 149, 42, 0.12);
+}
+
+.model-stats__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.model-stats__info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.model-stats__info strong {
+  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.model-stats__info small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Enriched model card */
+.model-card--v2 {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s, box-shadow 0.25s;
+}
+.model-card--v2:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-dim);
+  box-shadow: 0 16px 40px rgba(96, 82, 34, 0.14);
+}
+
+.model-card__accent {
+  height: 3px;
+  width: 100%;
+  opacity: 0.7;
+}
+
+.model-card__body {
+  padding: 1rem 1.15rem 1.15rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.model-card--v2 .model-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.model-card--v2 .model-card__head h3 {
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.model-card__provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  flex-shrink: 0;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.model-card--v2 .model-card__id {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-card--v2 .model-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+/* Context bar */
+.ctx-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ctx-bar__track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-soft);
+  overflow: hidden;
+}
+.ctx-bar__fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ctx-bar__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 2.2em;
+  text-align: right;
+}
+
+/* Grid v2 */
+.models__grid--v2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .model-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .models__grid--v2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* icône dans les titres de pages produits */
@@ -3890,6 +4081,24 @@ main:focus { outline: none; }
   transform: translateX(0);
 }
 
+/* version bouton (navigate / scroll) — reset de l'apparence native */
+.desktop-compare__link--btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* liens toujours visibles au clavier */
+.desktop-compare__link:focus-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* Desktop Comparison */
 .desktop-compare {
   text-align: center;
@@ -4987,4 +5196,252 @@ main:focus { outline: none; }
     grid-template-columns: 1fr;
     max-width: 420px;
   }
+}
+
+/* ========== Cloud Page ========== */
+
+/* Workflow mockup */
+.cloud-workflow { text-align: center; }
+
+.cloud-workflow__mockup {
+  max-width: 720px;
+  margin: 2rem auto 0;
+  background: var(--dark-bg, #1a1d14);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--dark-border, #2a2d22);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.cloud-workflow__bar {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.72rem; color: #8a8d80; font-style: normal;
+}
+.cloud-workflow__bar em { margin-left: auto; font-style: normal; }
+
+.cloud-workflow__body { display: flex; min-height: 240px; }
+
+.cloud-workflow__sidebar {
+  width: 180px; background: rgba(0, 0, 0, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1rem 0; flex-shrink: 0;
+}
+
+.cloud-workflow__repo {
+  display: block; padding: 0.5rem 1rem; font-size: 0.7rem;
+  color: #6a6d60; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.5rem;
+}
+
+.cloud-workflow__step {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 1rem; font-size: 0.68rem; color: #6a6d60;
+  position: relative; transition: all 0.2s;
+}
+.cloud-workflow__step.active { color: #c8c9bc; }
+.cloud-workflow__step.current { background: rgba(255, 255, 255, 0.04); }
+
+.cloud-workflow__step-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.cloud-workflow__pulse {
+  position: absolute; right: 0.8rem;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; animation: pulse 1.5s infinite;
+}
+
+.cloud-workflow__main { flex: 1; padding: 1.2rem; }
+
+.cloud-workflow__status {
+  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;
+}
+.cloud-workflow__status strong { font-size: 0.85rem; color: #c8c9bc; }
+
+.cloud-workflow__code {
+  background: rgba(0, 0, 0, 0.3); border-radius: 8px;
+  padding: 0.6rem 0.75rem; font-family: var(--font-mono);
+  font-size: 0.68rem; line-height: 1.7; margin-bottom: 0.8rem;
+}
+.cloud-workflow__code .ln { display: block; color: #a0a398; }
+.cloud-workflow__code .ln--add { color: #7ec97e; background: rgba(126, 201, 126, 0.08); }
+.cloud-workflow__code .ln--del { color: #e07a6a; text-decoration: line-through; }
+
+.cloud-workflow__tabs {
+  display: flex; gap: 0.3rem; font-size: 0.65rem;
+}
+.cloud-workflow__tabs span {
+  padding: 0.3rem 0.65rem; border-radius: 6px;
+  color: #6a6d60; background: rgba(255, 255, 255, 0.04);
+}
+.cloud-workflow__tabs span.on {
+  color: #d0d1c8; background: rgba(255, 255, 255, 0.08);
+}
+
+.cloud-workflow__steps-legend {
+  display: flex; justify-content: center; gap: 1.5rem;
+  margin-top: 1.5rem; flex-wrap: wrap;
+}
+
+.cloud-workflow__legend-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; color: var(--muted); opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.cloud-workflow__legend-item.active { opacity: 1; }
+
+.cloud-workflow__legend-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  font-size: 0.65rem; font-weight: 700; color: var(--ink);
+  transition: background 0.3s;
+}
+
+/* Architecture */
+.cloud-arch { text-align: center; }
+
+.cloud-arch__diagram {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;
+}
+
+.cloud-arch__layer {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.2rem 1.5rem;
+  text-align: center; min-width: 140px; transition: transform 0.2s;
+}
+.cloud-arch__layer:hover { transform: translateY(-3px); }
+
+.cloud-arch__layer--main {
+  border-color: var(--accent-dim);
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.cloud-arch__icon {
+  display: flex; justify-content: center; margin-bottom: 0.5rem;
+  color: var(--accent);
+}
+
+.cloud-arch__layer strong { display: block; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.cloud-arch__desc { font-size: 0.72rem; color: var(--muted); }
+
+.cloud-arch__arrow { color: var(--accent); opacity: 0.5; flex-shrink: 0; }
+
+/* Waitlist */
+.cloud-waitlist { text-align: center; }
+
+.cloud-waitlist__inner {
+  max-width: 480px; margin: 0 auto;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--panel)) 0%, var(--panel) 100%);
+  border: 1px solid var(--accent-dim); border-radius: 16px;
+  padding: 2.5rem 2rem;
+}
+
+.cloud-waitlist__counter {
+  margin: 1.2rem 0;
+}
+.cloud-waitlist__counter strong {
+  display: block; font-size: 2rem; color: var(--accent);
+  font-family: var(--font-mono);
+}
+.cloud-waitlist__counter span { font-size: 0.8rem; color: var(--muted); }
+
+.cloud-waitlist__form {
+  display: flex; gap: 0.5rem; margin-top: 1rem;
+}
+.cloud-waitlist__form input {
+  flex: 1; padding: 0.65rem 0.85rem;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); font-size: 0.85rem; color: var(--ink);
+  outline: none;
+}
+.cloud-waitlist__form input:focus { border-color: var(--accent); }
+
+.cloud-waitlist__done {
+  margin-top: 1rem;
+}
+.cloud-waitlist__done-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(40, 200, 64, 0.12); color: #28c840;
+  font-size: 1.2rem; margin-bottom: 0.6rem;
+}
+.cloud-waitlist__done strong { display: block; margin-bottom: 0.2rem; }
+.cloud-waitlist__done p { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* Roadmap */
+.cloud-roadmap { text-align: center; }
+
+.cloud-roadmap__track {
+  max-width: 480px; margin: 2rem auto 0; text-align: left;
+}
+
+.cloud-roadmap__item {
+  display: flex; gap: 1rem; position: relative;
+}
+
+.cloud-roadmap__marker {
+  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; width: 20px;
+}
+
+.cloud-roadmap__dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--border); border: 2px solid var(--bg);
+  flex-shrink: 0; z-index: 1; transition: background 0.3s;
+}
+.cloud-roadmap__item.done .cloud-roadmap__dot { background: var(--accent); }
+
+.cloud-roadmap__line {
+  width: 2px; flex: 1;
+  background: var(--border); margin: 4px 0;
+}
+
+.cloud-roadmap__content { padding-bottom: 1.5rem; }
+.cloud-roadmap__date { font-size: 0.7rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.cloud-roadmap__content h3 { font-size: 1rem; margin: 0.2rem 0; }
+.cloud-roadmap__content p { color: var(--muted); font-size: 0.82rem; margin: 0; }
+.cloud-roadmap__item.done .cloud-roadmap__content h3 { color: var(--accent); }
+
+/* Comparison table */
+.cloud-compare { text-align: center; }
+
+.cloud-compare__table {
+  max-width: 600px; margin: 2rem auto 0;
+  border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden;
+}
+
+.cloud-compare__header, .cloud-compare__row {
+  display: grid; grid-template-columns: 1.2fr 1fr 1fr;
+  padding: 0.7rem 1rem; align-items: center;
+}
+
+.cloud-compare__header {
+  background: var(--panel); font-weight: 600; font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cloud-compare__row {
+  font-size: 0.82rem; border-bottom: 1px solid var(--border-soft, var(--border));
+}
+.cloud-compare__row:last-child { border-bottom: none; }
+.cloud-compare__row:nth-child(even) { background: color-mix(in srgb, var(--panel) 40%, transparent); }
+
+.cloud-compare__feat { text-align: left; color: var(--muted); }
+.cloud-compare__prod { display: flex; align-items: center; gap: 0.3rem; justify-content: center; }
+.cloud-compare__prod--highlight { color: var(--accent); }
+.cloud-compare__val { text-align: center; }
+.cloud-compare__val--hl { font-weight: 600; }
+
+@media (max-width: 700px) {
+  .cloud-workflow__sidebar { display: none; }
+  .cloud-workflow__steps-legend { flex-direction: column; align-items: center; }
+  .cloud-arch__diagram { flex-direction: column; }
+  .cloud-arch__arrow { transform: rotate(90deg); }
+  .cloud-compare__header, .cloud-compare__row { grid-template-columns: 1fr 1fr 1fr; font-size: 0.7rem; }
+  .cloud-waitlist__form { flex-direction: column; }
 }

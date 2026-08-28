@@ -3,8 +3,8 @@ import Mockup from "../components/Mockups.jsx";
 import Hills from "../components/Hills.jsx";
 import Icon from "../components/Icon.jsx";
 import DownloadCompare from "../components/DownloadCompare.jsx";
-import FeatureVisual, { StepVisual } from "../components/FeatureVisuals.jsx";
-import { PRODUCTS, bySlug } from "../data/products.jsx";
+import { StepVisual } from "../components/FeatureVisuals.jsx";
+import { bySlug } from "../data/products.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 function PlatformBadge({ os, icon }) {
   return (
@@ -148,6 +148,7 @@ function DesktopHowItWorks() {
 }
 
 function DesktopComparison() {
+  const navigate = useNavigate();
   const products = [
     {
       name: "Desktop",
@@ -209,9 +210,32 @@ function DesktopComparison() {
                 </li>
               ))}
             </ul>
-            <span className="desktop-compare__link">
-              {p.highlight ? "Découvrir →" : p.tag === "Bientôt" ? "Reste informé →" : "En savoir plus →"}
-            </span>
+            {p.highlight ? (
+              <button
+                type="button"
+                className="desktop-compare__link desktop-compare__link--btn"
+                onClick={() => document.getElementById("telecharger")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                Découvrir →
+              </button>
+            ) : p.tag === "Bientôt" ? (
+              <a
+                className="desktop-compare__link"
+                href="https://github.com/DmzGamingYT/castor"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Suivre le projet →
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="desktop-compare__link desktop-compare__link--btn"
+                onClick={() => navigate("/chat")}
+              >
+                Essayer Castor Chat →
+              </button>
+            )}
           </article>
         ))}
       </div>
@@ -234,8 +258,208 @@ function DesktopCta({ onDownload }) {
   );
 }
 
+function CloudWorkflow() {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setStep((s) => (s + 1) % 4);
+    }, 2500);
+    return () => clearInterval(iv);
+  }, []);
+
+  const steps = [
+    { label: "Ouvre un repo GitHub", icon: "branch", color: "var(--accent)" },
+    { label: "Castor crée une branche", icon: "branch", color: "var(--wood)" },
+    { label: "L'agent code en sandbox", icon: "hammer", color: "var(--river)" },
+    { label: "Preview live + push", icon: "rocket", color: "var(--sage)" },
+  ];
+
+  return (
+    <section className="section cloud-workflow">
+      <span className="dl-compare__badge"><Icon name="zap" size={14} /> Workflow automatisé</span>
+      <h2>De GitHub à la production.</h2>
+      <p className="section-sub">Ouvre un repo, Castor fait le reste.</p>
+      <div className="cloud-workflow__mockup">
+        <div className="cloud-workflow__bar">
+          <span className="dot dot--red" /><span className="dot dot--yellow" /><span className="dot dot--green" />
+          <em>castor cloud — acme/storefront</em>
+        </div>
+        <div className="cloud-workflow__body">
+          <div className="cloud-workflow__sidebar">
+            <span className="cloud-workflow__repo">⎇ main</span>
+            {steps.map((s, i) => (
+              <div key={i} className={`cloud-workflow__step ${i <= step ? "active" : ""} ${i === step ? "current" : ""}`}>
+                <span className="cloud-workflow__step-dot" style={{ background: i <= step ? s.color : "var(--border)" }} />
+                <span>{s.label}</span>
+                {i === step && <span className="cloud-workflow__pulse" />}
+              </div>
+            ))}
+          </div>
+          <div className="cloud-workflow__main">
+            <div className="cloud-workflow__status">
+              <span className="pulse-dot" style={{ background: steps[step].color }} />
+              <strong>{steps[step].label}</strong>
+            </div>
+            <div className="cloud-workflow__code">
+              <span className="ln ln--add">+ import {'{'} rateLimit {'}'} from "./rateLimit"</span>
+              <span className="ln">export async function POST(req) {'{'}</span>
+              <span className="ln ln--add">+   await rateLimit(req, {'{'} max: 20 {'}'})</span>
+              <span className="ln ln--del">-   const body = await req.json()</span>
+              <span className="ln">{'}'}</span>
+            </div>
+            <div className="cloud-workflow__tabs">
+              <span className={step === 2 ? "on" : ""}>Preview</span>
+              <span>Code</span>
+              <span className={step === 3 ? "on" : ""}>Diff</span>
+              <span>Terminal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="cloud-workflow__steps-legend">
+        {steps.map((s, i) => (
+          <div key={i} className={`cloud-workflow__legend-item ${i <= step ? "active" : ""}`}>
+            <span className="cloud-workflow__legend-num" style={{ background: i <= step ? s.color : "var(--border)" }}>{i + 1}</span>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CloudWaitlist() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (email) setSubmitted(true);
+  }
+
+  return (
+    <section className="section cloud-waitlist">
+      <div className="cloud-waitlist__inner">
+        <span className="dl-compare__badge"><Icon name="spark" size={14} /> Bientôt disponible</span>
+        <h2>Rejoins la liste d'attente.</h2>
+        <p className="section-sub">Soyez les premiers à tester Castor Cloud dès sa sortie.</p>
+        {submitted ? (
+          <div className="cloud-waitlist__done">
+            <span className="cloud-waitlist__done-icon">✓</span>
+            <strong>Tu es sur la liste !</strong>
+            <p>On te prévient dès que Cloud est prêt.</p>
+          </div>
+        ) : (
+          <form className="cloud-waitlist__form" onSubmit={handleSubmit}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ton@email.com"
+              required
+              aria-label="Adresse email"
+            />
+            <button type="submit" className="btn btn--primary">Notifier-moi</button>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CloudRoadmap() {
+  const milestones = [
+    { date: "Q3 2026", title: "Alpha privée", desc: "Sandbox basique, éditeur, terminal.", done: true },
+    { date: "Q4 2026", title: "Beta publique", desc: "Preview live, GitHub sync, multi-branche.", done: false },
+    { date: "Q1 2027", title: "Agent intégré", desc: "L'agent code directement dans le sandbox cloud.", done: false },
+    { date: "2027", title: "Launch", desc: "Multi-collaborateur, CI/CD intégré, monitoring.", done: false },
+  ];
+
+  return (
+    <section className="section cloud-roadmap">
+      <h2>Roadmap.</h2>
+      <p className="section-sub">Un produit qui avance, pas un vaporware.</p>
+      <div className="cloud-roadmap__track">
+        {milestones.map((m, i) => (
+          <div key={i} className={`cloud-roadmap__item ${m.done ? "done" : ""}`}>
+            <div className="cloud-roadmap__marker">
+              <span className="cloud-roadmap__dot" />
+              {i < milestones.length - 1 && <span className="cloud-roadmap__line" />}
+            </div>
+            <div className="cloud-roadmap__content">
+              <span className="cloud-roadmap__date">{m.date}</span>
+              <h3>{m.title}</h3>
+              <p>{m.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CloudArchitecture() {
+  return (
+    <section className="section cloud-arch">
+      <h2>Comment ça marche.</h2>
+      <p className="section-sub">De ton GitHub à ton navigateur, en 3 couches.</p>
+      <div className="cloud-arch__diagram">
+        <div className="cloud-arch__layer">
+          <span className="cloud-arch__icon"><Icon name="branch" size={28} /></span>
+          <strong>GitHub</strong>
+          <span className="cloud-arch__desc">Ton repo, tes branches</span>
+        </div>
+        <div className="cloud-arch__arrow"><svg width="48" height="24" viewBox="0 0 48 24"><path d="M0,12 L40,12 M34,6 L40,12 L34,18" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" /></svg></div>
+        <div className="cloud-arch__layer cloud-arch__layer--main">
+          <span className="cloud-arch__icon"><Icon name="cloud" size={28} /></span>
+          <strong>Castor Cloud</strong>
+          <span className="cloud-arch__desc">Sandbox isolé · Agent IA · Dev server</span>
+        </div>
+        <div className="cloud-arch__arrow"><svg width="48" height="24" viewBox="0 0 48 24"><path d="M0,12 L40,12 M34,6 L40,12 L34,18" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" /></svg></div>
+        <div className="cloud-arch__layer">
+          <span className="cloud-arch__icon"><Icon name="globe" size={28} /></span>
+          <strong>Preview live</strong>
+          <span className="cloud-arch__desc">Résultat instantané</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CloudComparison() {
+  const items = [
+    { feature: "Installation", desktop: "Requise", cloud: "Aucune" },
+    { feature: "Espace de travail", desktop: "Local", cloud: "Cloud isolé" },
+    { feature: "GitHub sync", desktop: "Manuel", cloud: "Automatique" },
+    { feature: "Multi-collaborateur", desktop: "Non", cloud: "Oui (bientôt)" },
+    { feature: "Offline", desktop: "Oui", cloud: "Non" },
+    { feature: "Gratuit", desktop: "Oui", cloud: "Oui" },
+  ];
+
+  return (
+    <section className="section cloud-compare">
+      <h2>Desktop vs Cloud.</h2>
+      <p className="section-sub">Deux façons de coder, même philosophie : gratuit et open source.</p>
+      <div className="cloud-compare__table">
+        <div className="cloud-compare__header">
+          <span className="cloud-compare__feat">Fonctionnalité</span>
+          <span className="cloud-compare__prod"><Icon name="desktop" size={16} /> Desktop</span>
+          <span className="cloud-compare__prod cloud-compare__prod--highlight"><Icon name="cloud" size={16} /> Cloud</span>
+        </div>
+        {items.map((row, i) => (
+          <div key={i} className="cloud-compare__row">
+            <span className="cloud-compare__feat">{row.feature}</span>
+            <span className="cloud-compare__val">{row.desktop}</span>
+            <span className="cloud-compare__val cloud-compare__val--hl">{row.cloud}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function ProductPage({ slug, onDownload }) {
-  const navigate = useNavigate();
   // hook toujours appelé, avant tout retour anticipé
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -243,8 +467,6 @@ export default function ProductPage({ slug, onDownload }) {
 
   const product = bySlug(slug);
   if (!product) return null;
-
-  const others = PRODUCTS.filter((p) => p.slug !== slug);
 
   const isDesktop = slug === "desktop";
 
@@ -254,6 +476,8 @@ export default function ProductPage({ slug, onDownload }) {
 
       {isDesktop && <DownloadCompare onDownload={onDownload} />}
       {isDesktop && <DesktopHowItWorks />}
+      {slug === "cloud" && <CloudWorkflow />}
+      {slug === "cloud" && <CloudArchitecture />}
 
       <section className="section">
         <h2>{product.desc.split(".")[0]}.</h2>
@@ -268,35 +492,20 @@ export default function ProductPage({ slug, onDownload }) {
                 <h3>{f.title}</h3>
               </div>
               <p>{f.desc}</p>
-              <div className="feature-card__visual">
-                <FeatureVisual icon={f.icon} />
-              </div>
+
             </article>
           ))}
         </div>
       </section>
 
       {isDesktop && <DesktopComparison />}
+      {slug === "cloud" && <CloudComparison />}
 
       {isDesktop && <DesktopCta onDownload={onDownload} />}
+      {slug === "cloud" && <CloudWaitlist />}
+      {slug === "cloud" && <CloudRoadmap />}
 
-      <section className="section section--tight">
-        <div className="next-products">
-          <h3>Continuer l'exploration</h3>
-          <div className="next-products__row">
-            {others.map((p) => (
-              <a
-                key={p.slug}
-                className="next-link"
-                href={`/castor/${p.slug}`}
-                onClick={(e) => { e.preventDefault(); navigate(`/${p.slug}`); }}
-              >
-                <Icon name={p.icon} size={16} /> {p.name}
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
+
     </>
   );
 }

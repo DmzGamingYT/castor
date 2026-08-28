@@ -21,6 +21,20 @@ const TYPE_CLASS = {
   outils: "tag--outils",
 };
 
+const PROVIDER_COLORS = {
+  openrouter: "var(--accent)",
+  groq: "var(--river)",
+  zen: "var(--sage)",
+  local: "var(--text)",
+};
+
+const PROVIDER_ICONS = {
+  openrouter: "zap",
+  groq: "zap",
+  zen: "code",
+  local: "desktop",
+};
+
 const SORT_OPTIONS = [
   { key: "default", label: "Par défaut" },
   { key: "name", label: "Nom A→Z" },
@@ -28,9 +42,119 @@ const SORT_OPTIONS = [
   { key: "provider", label: "Par provider" },
 ];
 
-/* cache module : évite de re-fetch à chaque visite de la page */
-let liveCache = null; // { entries }
+/* cache module */
+let liveCache = null;
 
+/* ─── Provider Stats Bar ─── */
+function ProviderStats({ entries, activeTab, onSelect }) {
+  const counts = useMemo(() => {
+    const c = {};
+    for (const e of entries) {
+      c[e.provider] = (c[e.provider] || 0) + 1;
+    }
+    return c;
+  }, [entries]);
+
+  const total = entries.length;
+
+  return (
+    <div className="model-stats">
+      <button
+        type="button"
+        className={`model-stats__card ${activeTab === "all" ? "model-stats__card--active" : ""}`}
+        onClick={() => onSelect("all")}
+      >
+        <span className="model-stats__icon" style={{ background: "linear-gradient(135deg, var(--accent), var(--river))" }}>
+          <Icon name="layers" size={18} />
+        </span>
+        <span className="model-stats__info">
+          <strong>{total}</strong>
+          <small>Tous les modèles</small>
+        </span>
+      </button>
+      {Object.entries(PROVIDERS).map(([key, p]) => (
+        <button
+          key={key}
+          type="button"
+          className={`model-stats__card ${activeTab === key ? "model-stats__card--active" : ""}`}
+          onClick={() => onSelect(key)}
+        >
+          <span
+            className="model-stats__icon"
+            style={{ background: `color-mix(in srgb, ${PROVIDER_COLORS[key]} 18%, transparent)` }}
+          >
+            <Icon name={PROVIDER_ICONS[key]} size={18} style={{ color: PROVIDER_COLORS[key] }} />
+          </span>
+          <span className="model-stats__info">
+            <strong>{counts[key] || 0}</strong>
+            <small>{p.label}</small>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Context Bar ─── */
+function ContextBar({ ctx }) {
+  const maxCtx = 1048576; // 1M
+  const pct = Math.min(100, (ctx / maxCtx) * 100);
+  const label = formatCtx(ctx);
+  return (
+    <div className="ctx-bar" title={`Fenêtre de contexte : ${label}`}>
+      <div className="ctx-bar__track">
+        <div
+          className="ctx-bar__fill"
+          style={{
+            width: `${pct}%`,
+            background: pct > 60
+              ? "linear-gradient(90deg, var(--sage), var(--sage-deep))"
+              : pct > 30
+                ? "linear-gradient(90deg, var(--accent-2), var(--accent))"
+                : "linear-gradient(90deg, var(--river), var(--river-deep))",
+          }}
+        />
+      </div>
+      <span className="ctx-bar__label">{label}</span>
+    </div>
+  );
+}
+
+/* ─── Model Card ─── */
+function ModelCard({ model }) {
+  const color = PROVIDER_COLORS[model.provider] || "var(--muted)";
+  return (
+    <article className="model-card model-card--v2">
+      <div className="model-card__accent" style={{ background: color }} />
+      <div className="model-card__body">
+        <header className="model-card__head">
+          <h3>{model.name}</h3>
+          <span
+            className="model-card__provider"
+            style={{ color, borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }}
+          >
+            <Icon name={PROVIDER_ICONS[model.provider] || "zap"} size={12} />
+            {PROVIDERS[model.provider]?.label || model.provider}
+          </span>
+        </header>
+        <code className="model-card__id" title={model.id}>
+          {shortId(model.id)}
+        </code>
+        <ContextBar ctx={model.ctx} />
+        <div className="model-card__tags">
+          {model.types.map((t) => (
+            <span key={t} className={`tag ${TYPE_CLASS[t]}`}>
+              {TYPES[t] || t}
+            </span>
+          ))}
+        </div>
+      </div>
+      {model.live && <span className="model-card__live">live</span>}
+    </article>
+  );
+}
+
+/* ─── Main Page ─── */
 export default function Models() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState(liveCache ? liveCache.entries : SNAPSHOT);
@@ -51,7 +175,7 @@ export default function Models() {
     setStatus((s) => ({ ...s, loading: true, error: null }));
     try {
       const live = await fetchFreeOpenRouter();
-      if (!aliveRef.current || reqRef.current !== myReq) return; // démontage ou requête plus récente
+      if (!aliveRef.current || reqRef.current !== myReq) return;
       liveCache = { entries: [...live, ...SNAPSHOT.filter((e) => e.provider !== "openrouter")] };
       setEntries(liveCache.entries);
       setStatus({ loading: false, live: true, error: null, count: live.length });
@@ -63,9 +187,7 @@ export default function Models() {
 
   useEffect(() => {
     if (!liveCache) refresh();
-    return () => {
-      aliveRef.current = false;
-    };
+    return () => { aliveRef.current = false; };
   }, []);
 
   const filtered = useMemo(() => {
@@ -73,19 +195,15 @@ export default function Models() {
     const providerOrder = Object.keys(PROVIDERS);
     const list = entries.filter((e) => {
       if (tab !== "all" && e.provider !== tab) return false;
-      if (activeTypes.size && ![...activeTypes].some((t) => e.types.includes(t)))
-        return false;
+      if (activeTypes.size && ![...activeTypes].some((t) => e.types.includes(t))) return false;
       if (query && !`${e.name} ${e.id}`.toLowerCase().includes(query)) return false;
       return true;
     });
-    if (sort === "name")
-      return [...list].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    if (sort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "fr"));
     if (sort === "ctx") return [...list].sort((a, b) => b.ctx - a.ctx);
     if (sort === "provider")
       return [...list].sort(
-        (a, b) =>
-          providerOrder.indexOf(a.provider) - providerOrder.indexOf(b.provider) ||
-          a.name.localeCompare(b.name, "fr")
+        (a, b) => providerOrder.indexOf(a.provider) - providerOrder.indexOf(b.provider) || a.name.localeCompare(b.name, "fr")
       );
     return list;
   }, [entries, tab, q, sort, activeTypes]);
@@ -102,6 +220,7 @@ export default function Models() {
     <div className="models">
       <section className="hero hero--product models__hero">
         <div className="hero__glow hero__glow--lime" aria-hidden="true" />
+        <div className="hero__glow hero__glow--river" aria-hidden="true" />
         <Hills />
         <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
         <h1>
@@ -109,49 +228,32 @@ export default function Models() {
         </h1>
         <p className="hero__sub">
           Ce que tu peux utiliser pour 0 € sur chaque provider — avec son type
-          (multimodal, code, raisonnement…) et sa fenêtre de contexte.
+          et sa fenêtre de contexte.
         </p>
 
         <div className="models__status">
-          <button
-            className="btn btn--ghost btn--sm"
-            onClick={refresh}
-            disabled={status.loading}
-          >
+          <button className="btn btn--ghost btn--sm" onClick={refresh} disabled={status.loading}>
             ↻ Actualiser
           </button>
           {status.loading ? (
             <span role="status">Actualisation…</span>
           ) : status.live ? (
             <span className="ok" role="status">
-              ● Live OpenRouter : {status.count} modèles gratuits · autres providers :
-              vérifié le {SNAPSHOT_DATE}
+              ● Live OpenRouter : {status.count} modèles gratuits · snapshot {SNAPSHOT_DATE}
             </span>
           ) : (
             <span className={status.error ? "ko" : ""} role="status">
-              {status.error
-                ? `Live indisponible (${status.error}) — instantané du ${SNAPSHOT_DATE}`
-                : `Instantané du ${SNAPSHOT_DATE}`}
+              {status.error ? `Erreur (${status.error})` : `Snapshot ${SNAPSHOT_DATE}`}
             </span>
           )}
         </div>
       </section>
 
       <section className="section section--tight models__controls">
-        <div className="tabs" role="tablist" aria-label="Filtrer par provider">
-          {["all", ...Object.keys(PROVIDERS)].map((key) => (
-            <button
-              key={key}
-              className={`tab ${tab === key ? "tab--on" : ""}`}
-              onClick={() => setTab(key)}
-              role="tab"
-              aria-selected={tab === key}
-            >
-              {key === "all" ? "Tous" : PROVIDERS[key].label}
-            </button>
-          ))}
-        </div>
+        {/* Provider stats */}
+        <ProviderStats entries={entries} activeTab={tab} onSelect={setTab} />
 
+        {/* Filters */}
         <div className="models__filters">
           <label className="models__search">
             <Icon name="search" size={16} />
@@ -165,15 +267,9 @@ export default function Models() {
           </label>
           <label className="models__sort">
             <span aria-hidden="true">↕</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              aria-label="Trier les modèles"
-            >
+            <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Trier les modèles">
               {SORT_OPTIONS.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.label}
-                </option>
+                <option key={o.key} value={o.key}>{o.label}</option>
               ))}
             </select>
           </label>
@@ -181,9 +277,7 @@ export default function Models() {
             {Object.entries(TYPES).map(([key, label]) => (
               <button
                 key={key}
-                className={`chip-btn ${TYPE_CLASS[key]} ${
-                  activeTypes.has(key) ? "chip-btn--on" : ""
-                }`}
+                className={`chip-btn ${TYPE_CLASS[key]} ${activeTypes.has(key) ? "chip-btn--on" : ""}`}
                 onClick={() => toggleType(key)}
                 aria-pressed={activeTypes.has(key)}
               >
@@ -197,28 +291,10 @@ export default function Models() {
           {filtered.length} modèle{filtered.length > 1 ? "s" : ""}
         </p>
 
-        <div className="models__grid">
+        {/* Model grid */}
+        <div className="models__grid models__grid--v2">
           {filtered.map((m) => (
-            <article key={m.id} className="model-card">
-              <header className="model-card__head">
-                <h3>{m.name}</h3>
-                <span className={`provider-badge provider-badge--${m.provider}`}>
-                  {PROVIDERS[m.provider]?.label || m.provider}
-                </span>
-              </header>
-              <code className="model-card__id" title={m.id}>
-                {shortId(m.id)}
-              </code>
-              <div className="model-card__tags">
-                {m.types.map((t) => (
-                  <span key={t} className={`tag ${TYPE_CLASS[t]}`}>
-                    {TYPES[t] || t}
-                  </span>
-                ))}
-                <span className="tag tag--ctx">contexte {formatCtx(m.ctx)}</span>
-              </div>
-              {m.live && <span className="model-card__live">live</span>}
-            </article>
+            <ModelCard key={m.id} model={m} />
           ))}
           {!filtered.length && (
             <p className="empty-note">Aucun modèle ne correspond — essaie un autre filtre.</p>
