@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld("castor", {
   workspaceReadFile: (p) => ipcRenderer.invoke("workspace:readFile", p),
   workspaceChanges: () => ipcRenderer.invoke("workspace:changes"),
   workspaceFileDiff: (p) => ipcRenderer.invoke("workspace:fileDiff", p),
+  undoWrite: (callId) => ipcRenderer.invoke("workspace:undo", callId),
+  onWorkspaceChanged: (cb) => ipcRenderer.on("workspace:changed", () => cb()),
+  openExternal: (url) => ipcRenderer.invoke("app:openExternal", url),
   pathForFile: (file) => webUtils.getPathForFile(file),
   respondApproval: (callId, approved) =>
     ipcRenderer.invoke("approval:respond", callId, approved),

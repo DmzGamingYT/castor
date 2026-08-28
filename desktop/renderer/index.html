@@ -190,6 +190,7 @@
         <footer class="composer">
           <div id="slash-menu" class="slash-menu hidden"></div>
           <div id="queue-zone" class="queue-zone hidden" title="Envoyés dès que le castor a fini"></div>
+          <div id="attach-zone" class="attach-zone hidden" title="Fichiers joints au prochain message"></div>
           <button id="scroll-bottom" class="scroll-bottom" title="Revenir en bas" aria-label="Revenir en bas de la conversation">↓</button>
           <div class="mode-toggle" role="group" title="Build : l'agent peut lire, écrire et lancer des commandes · Plan : lecture seule">
             <button id="mode-build" class="mode-btn active">Build</button>
@@ -416,8 +417,55 @@
         </header>
         <pre id="diff-body" class="diff-modal__body"></pre>
         <footer class="diff-modal__actions">
+          <button id="diff-undo" class="btn-ghost hidden">↩︎ Annuler l'écriture</button>
           <button id="diff-reject" class="btn-ghost">Refuser</button>
           <button id="diff-approve" class="btn-primary">Approuver</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- palette de commandes (⌘K) -->
+    <div id="cmdk" class="cmdk hidden" role="dialog" aria-label="Palette de commandes">
+      <div class="cmdk__backdrop"></div>
+      <div class="cmdk__panel">
+        <input id="cmdk-input" placeholder="Tape une commande… (conversation, modèle, projet, thème)" spellcheck="false" />
+        <ul id="cmdk-list" role="listbox" aria-label="Commandes"></ul>
+        <footer class="cmdk__foot">
+          <span><kbd>↑↓</kbd> naviguer</span>
+          <span><kbd>↵</kbd> exécuter</span>
+          <span><kbd>esc</kbd> fermer</span>
+        </footer>
+      </div>
+    </div>
+
+    <!-- onboarding guidé (premier lancement) -->
+    <div id="onboard" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <div class="diff-modal__card onboard">
+        <div class="onboard__steps" aria-hidden="true">
+          <span data-step="1"></span><span data-step="2"></span><span data-step="3"></span>
+        </div>
+        <section class="ob-step" data-step="1">
+          <h2>Bienvenue chez Castor 🦫</h2>
+          <p>Trois pattes et c'est parti : choisis ton cerveau IA, branche ta clé, ouvre un chantier.</p>
+          <div id="ob-providers" class="ob-providers"></div>
+        </section>
+        <section class="ob-step hidden" data-step="2">
+          <h2>Branche ta clé</h2>
+          <p id="ob-key-hint">…</p>
+          <label id="ob-key-input-wrap" class="ob-key-row">
+            Clé API
+            <input id="ob-key" type="password" placeholder="sk-…" spellcheck="false" />
+          </label>
+          <a id="ob-key-link" class="key-link hidden" target="_blank" rel="noreferrer" href="#">Obtenir une clé gratuite ↗</a>
+        </section>
+        <section class="ob-step hidden" data-step="3">
+          <h2>Ouvre ton premier chantier</h2>
+          <p>Choisis le dossier d'un projet : le castor pourra l'explorer, te proposer des diffs et coder avec toi. Tu pourras aussi glisser un dossier dans la fenêtre quand tu veux.</p>
+        </section>
+        <footer class="diff-modal__actions">
+          <button id="ob-skip" class="btn-ghost">Passer</button>
+          <button id="ob-next" class="btn-primary">Suivant</button>
         </footer>
       </div>
     </div>

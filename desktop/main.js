@@ -16,6 +16,7 @@ const {
 let win = null;
 let reqSeq = 0;
 const streams = new Map(); // reqId -> AbortController
+const writeBackups = new Map(); // callId -> { abs, prevContent, isNew } — undo des écritures
 
 // ---------- stockage des clés (chiffré via safeStorage) ----------
 const keysPath = () => path.join(app.getPath("userData"), "keys.json");
@@ -231,6 +232,7 @@ ipcMain.handle("workspace:open", async () => {
   });
   if (r.canceled || !r.filePaths[0]) return { ok: false };
   WORKSPACE = r.filePaths[0];
+  startWatcher(WORKSPACE);
   const store = readStore();
   store.workspace = WORKSPACE;
   writeStore(store);
@@ -241,6 +243,7 @@ ipcMain.handle("workspace:restore", () => {
   const saved = readStore().workspace;
   if (saved && fs.existsSync(saved)) {
     WORKSPACE = saved;
+    startWatcher(WORKSPACE);
     return { ok: true, path: WORKSPACE, name: path.basename(WORKSPACE) };
   }
   return { ok: false };
@@ -251,6 +254,7 @@ ipcMain.handle("workspace:openPath", (_e, p) => {
     const abs = path.resolve(String(p || ""));
     if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) return { ok: false };
     WORKSPACE = abs;
+    startWatcher(WORKSPACE);
     const store = readStore();
     store.workspace = WORKSPACE;
     writeStore(store);
@@ -261,6 +265,7 @@ ipcMain.handle("workspace:openPath", (_e, p) => {
 });
 
 ipcMain.handle("workspace:close", () => {
+  stopWatcher();
   WORKSPACE = null;
   const store = readStore();
   delete store.workspace;
@@ -455,7 +460,22 @@ async function executeTool(call, reqId) {
       });
       if (!approved)
         return "REFUSÉ par l'utilisateur. Ne réessaie pas ce changement sans sa validation explicite.";
+      // sauvegarde pour « Annuler l'écriture » (contenu antérieur)
+      let prevContent = null;
+      if (!prev.isNew) {
+        try {
+          prevContent = fs.readFileSync(safeResolve(WORKSPACE, args.path), "utf8");
+        } catch {
+          prevContent = null;
+        }
+      }
       applyWrite(WORKSPACE, args.path, args.content);
+      writeBackups.set(call.id, {
+        abs: safeResolve(WORKSPACE, args.path),
+        prevContent,
+        isNew: prev.isNew,
+      });
+      if (writeBackups.size > 20) writeBackups.delete(writeBackups.keys().next().value);
       meta = { kind: "write", path: args.path };
       return `Écrit : ${args.path} (${args.content.split("\n").length} lignes)`;
     }
@@ -734,6 +754,70 @@ ipcMain.handle("chat:cancel", (_e, reqId) => {
   streams.get(reqId)?.abort();
 });
 
+// ---------- undo des écritures (backup avant chaque write approuvé) ----------
+ipcMain.handle("workspace:undo", (_e, callId) => {
+  const b = writeBackups.get(String(callId || ""));
+  if (!b)
+    return {
+      ok: false,
+      error: "sauvegarde introuvable (déjà annulée ou session antérieure)",
+    };
+  try {
+    if (b.isNew || b.prevContent == null) fs.rmSync(b.abs, { force: true });
+    else fs.writeFileSync(b.abs, b.prevContent);
+    writeBackups.delete(String(callId));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// ouverture de liens externes depuis le markdown (jamais de navigation interne)
+ipcMain.handle("app:openExternal", (_e, url) => {
+  if (/^https?:\/\//i.test(String(url || ""))) shell.openExternal(String(url));
+  return true;
+});
+
+// ---------- surveillance live du chantier (fs.watch) ----------
+let watcher = null;
+let watcherDebounce = null;
+
+function stopWatcher() {
+  if (watcher) {
+    try {
+      watcher.close();
+    } catch {}
+    watcher = null;
+  }
+  if (watcherDebounce) {
+    clearTimeout(watcherDebounce);
+    watcherDebounce = null;
+  }
+}
+
+function startWatcher(dir) {
+  stopWatcher();
+  const onEvent = () => {
+    if (watcherDebounce) clearTimeout(watcherDebounce);
+    watcherDebounce = setTimeout(() => {
+      watcherDebounce = null;
+      if (win && !win.isDestroyed()) win.webContents.send("workspace:changed", {});
+    }, 400);
+  };
+  try {
+    // macOS / Windows : récursif natif
+    watcher = fs.watch(dir, { recursive: true }, onEvent);
+  } catch {
+    try {
+      // repli (Linux) : surveillance du niveau racine uniquement
+      watcher = fs.watch(dir, onEvent);
+    } catch {
+      watcher = null;
+    }
+  }
+  if (watcher) watcher.on("error", stopWatcher);
+}
+
 // ---------- fenêtre ----------
 function createWindow() {
   win = new BrowserWindow({
@@ -766,6 +850,10 @@ function createWindow() {
 Menu.setApplicationMenu(null);
 
 app.whenReady().then(() => {
+  // en dev, le dock affiche l'icône Electron générique — on met le castor
+  if (!app.isPackaged && process.platform === "darwin" && app.dock) {
+    app.dock.setIcon(path.join(__dirname, "build", "icon.png"));
+  }
   createWindow();
   setupAutoUpdater();
   app.on("activate", () => {

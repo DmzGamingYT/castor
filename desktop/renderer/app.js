@@ -12,18 +12,22 @@ const DEFAULT_SKILLS = [
   { name: "explique", body: "Explique pas à pas, avec une analogie simple, puis un résumé en 3 points." },
 ];
 
-/* logo castor dessiné main (tuile de marque + accueil) */
+/* logo castor raffiné (aligné sur l'icône de l'app et du site) */
 const LOGO_SVG =
   `<svg class="beaver-ico" viewBox="0 0 24 24" aria-hidden="true">
-    <circle class="b-fur" cx="6.9" cy="7.1" r="2" />
-    <circle class="b-fur" cx="17.1" cy="7.1" r="2" />
-    <path class="b-fur" d="M12 4.4c4.4 0 7.3 2.9 7.3 6.8 0 2-.7 3.7-2 4.9-1 .9-1.6 2-1.6 3.2v.8h-7.4v-.8c0-1.2-.6-2.3-1.6-3.2-1.3-1.2-2-2.9-2-4.9 0-3.9 2.9-6.8 7.3-6.8Z" />
-    <path class="b-muz" d="M8.7 12.4c0-1.4 1.5-2.4 3.3-2.4s3.3 1 3.3 2.4-1.5 3-3.3 3-3.3-1.6-3.3-3Z" />
-    <path class="b-tooth" d="M10.9 13.9h2.2v1.9a.6.6 0 0 1-.6.6h-1a.6.6 0 0 1-.6-.6v-1.9Z" />
-    <path class="b-nose" d="M10.8 10.9h2.4l-.8 1.3c-.2.3-.6.3-.8 0l-.8-1.3Z" />
-    <circle class="b-eye" cx="9.1" cy="9.2" r=".85" />
-    <circle class="b-eye" cx="14.9" cy="9.2" r=".85" />
-    <path class="b-wh" d="M7.1 11.5l1.6.5M7.1 13l1.6-.2M16.9 11.5l-1.6.5M16.9 13l-1.6-.2" />
+    <circle class="b-ear" cx="5.4" cy="5.6" r="1.8" />
+    <circle class="b-ear" cx="18.6" cy="5.6" r="1.8" />
+    <circle class="b-earin" cx="5.4" cy="5.6" r="0.9" />
+    <circle class="b-earin" cx="18.6" cy="5.6" r="0.9" />
+    <path class="b-fur" d="M12 3.4c5 0 8.2 3.3 8.2 7.7 0 2.3-.8 4.2-2.3 5.5-1.1 1-1.7 2.2-1.7 3.5v1H7.8v-1c0-1.3-.6-2.5-1.7-3.5C4.6 15.3 3.8 13.4 3.8 11.1c0-4.4 3.2-7.7 8.2-7.7Z" />
+    <path class="b-muz" d="M8.4 12.5c0-1.7 1.6-2.8 3.6-2.8s3.6 1.1 3.6 2.8-1.6 3.3-3.6 3.3-3.6-1.6-3.6-3.3Z" />
+    <path class="b-tooth" d="M10.7 14.2h2.6v2.2a.7.7 0 0 1-.7.7h-1.2a.7.7 0 0 1-.7-.7v-2.2Z" />
+    <path class="b-nose" d="M10.6 10.8h2.8l-1 1.5a.55.55 0 0 1-.9 0l-.9-1.5Z" />
+    <circle class="b-eye" cx="8.8" cy="8.9" r=".95" />
+    <circle class="b-eye" cx="15.2" cy="8.9" r=".95" />
+    <circle class="b-shine" cx="9.1" cy="8.6" r=".32" />
+    <circle class="b-shine" cx="15.5" cy="8.6" r=".32" />
+    <path class="b-wh" d="M4.8 11l2 .55M4.6 12.8l2-.25M19.2 11l-2 .55M19.4 12.8l-2-.25" />
   </svg>`;
 
 /* icônes SVG dessinées main — même trait que le thème (stroke courant) */
@@ -50,6 +54,7 @@ const ICONS = {
   restore:icoSVG(`<path d="M9 6 3.5 11.5 9 17"/><path d="M3.5 11.5H15a5.5 5.5 0 0 1 5.5 5.5"/>`),
   sparkle:icoSVG(`<path d="M12 3.5l1.6 3.9 3.9 1.6-3.9 1.6L12 14.5l-1.6-3.9-3.9-1.6 3.9-1.6L12 3.5Z"/>`),
   checkList: icoSVG(`<rect x="3.5" y="4.5" width="17" height="15" rx="2.4"/><path d="M7.5 9.5l2 2 3.5-3.5M7.5 15.5l2 2 3.5-3.5"/>`),
+  user: icoSVG(`<circle cx="12" cy="8.2" r="3.4"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/>`),
 };
 
 const state = {
@@ -80,6 +85,8 @@ const state = {
 
   chatMode: "build", // build : outils actifs · plan : lecture seule
   queue: [], // messages en attente pendant un stream
+  attachments: [], // fichiers glissés, joints au prochain message
+  attachErrors: [], // notes d'erreur transitoires (trop gros, binaire…)
   convTab: "active",
   convSearch: "",
   panelOpen: false,
@@ -144,10 +151,12 @@ async function setTheme(theme) {
   applyTheme(theme);
 }
 
-$("#theme-toggle").addEventListener("click", async () => {
-  const next = resolveTheme(await loadPersisted()) === "dark" ? "light" : "dark";
-  setTheme(next);
-});
+async function toggleTheme() {
+  const next = resolveTheme(loadPersisted()) === "dark" ? "light" : "dark";
+  await setTheme(next);
+}
+
+$("#theme-toggle").addEventListener("click", toggleTheme);
 
 // Suit le changement de préférence système tant que l'utilisateur n'a pas choisi.
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", async (e) => {
@@ -218,13 +227,8 @@ async function initProviders() {
   renderProviderList();
   selectProvider(last || state.providers[0].id);
 
-  // première utilisation sans clé cloud : ouvrir les réglages une seule fois
-  // (les providers locaux n'ont pas besoin de clé, on ne les compte pas)
-  if (!state.providers.some((p) => p.needsKey && p.configured) && !prefs.onboarded) {
-    persist({ onboarded: true });
-    const cloud = state.providers.find((p) => p.needsKey);
-    openProviderSettings(cloud?.id || state.activeId);
-  }
+  // premier lancement : onboarding guidé (provider → clé → chantier)
+  if (!prefs.onboarded) openOnboard();
 }
 
 function renderProviderList() {
@@ -277,6 +281,28 @@ function fillModelOptions(models) {
 /* ---------- picker de modèles ---------- */
 const asModelObj = (m) =>
   typeof m === "string" ? { id: m, free: undefined, context: null } : m;
+
+/* cache des modèles par provider (30 min) — évite le fetch /models à chaque ouverture */
+const MODELS_TTL = 30 * 60 * 1000;
+
+async function getModels(provider, { force = false, baseURL = "" } = {}) {
+  const key = "models:" + provider.id + (baseURL ? "@" + baseURL : "");
+  if (!force) {
+    try {
+      const c = JSON.parse(localStorage.getItem(key) || "null");
+      if (c && Date.now() - c.t < MODELS_TTL && Array.isArray(c.models) && c.models.length) {
+        return { ok: true, models: c.models, cached: true };
+      }
+    } catch {}
+  }
+  const res = await window.castor.refreshModels(provider.id, baseURL);
+  if (res.ok && res.models?.length) {
+    try {
+      localStorage.setItem(key, JSON.stringify({ t: Date.now(), models: res.models }));
+    } catch {}
+  }
+  return res;
+}
 
 function fmtCtx(n) {
   return n >= 1000000 ? Math.round(n / 100000) / 10 + "M" : Math.round(n / 1000) + "k";
@@ -433,10 +459,9 @@ function openProviderSettings(id) {
   $("#pm-title").textContent = "Réglages · " + p.label;
   $("#pm-provider").textContent = p.id;
   $("#provider-modal").classList.remove("hidden");
-  // liste statique → enrichir en silence depuis l'API (gratuité + contexte)
+  // liste statique → enrichir depuis l'API (cache 30 min côté renderer)
   if (p.models?.length && typeof p.models[0] === "string") {
-    window.castor
-      .refreshModels(p.id, $("#baseurl-input").value.trim())
+    getModels(p, { baseURL: $("#baseurl-input").value.trim() })
       .then((res) => {
         if (res.ok && res.models?.length) {
           p.models = res.models;
@@ -467,6 +492,102 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+/* ---------- onboarding guidé (provider → clé → chantier) ---------- */
+let obStep = 1;
+
+function openOnboard() {
+  persist({ onboarded: true }); // montré une fois, revisitable via ⌘K
+  obStep = 1;
+  const cloud =
+    state.providers.find((p) => p.needsKey && !p.configured) || currentProvider();
+  if (cloud) selectProvider(cloud.id);
+  renderObProviders();
+  showObStep(1);
+  $("#onboard").classList.remove("hidden");
+}
+
+function renderObProviders() {
+  const box = $("#ob-providers");
+  box.innerHTML = "";
+  for (const p of state.providers) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "ob-provider" + (p.id === state.activeId ? " sel" : "");
+    const dot = document.createElement("span");
+    dot.className =
+      "dot " + (!p.needsKey ? "dot--local" : p.configured ? "dot--on" : "dot--off");
+    b.append(
+      dot,
+      document.createTextNode(p.label + (!p.needsKey ? " · local, sans clé" : ""))
+    );
+    b.addEventListener("click", () => {
+      selectProvider(p.id);
+      renderObProviders();
+    });
+    box.appendChild(b);
+  }
+}
+
+function updateObKeyStep() {
+  const p = currentProvider();
+  const need = Boolean(p?.needsKey);
+  $("#ob-key-input-wrap").classList.toggle("hidden", !need);
+  $("#ob-key-hint").textContent = need
+    ? `Une clé ${p.label} gratuite débloque le mode IA. Elle reste sur ta machine, chiffrée par le coffre de l'OS.`
+    : `${p.label} tourne en local — aucune clé nécessaire, passe à la suite.`;
+  const link = $("#ob-key-link");
+  if (need && p.keyUrl) {
+    link.href = p.keyUrl;
+    link.classList.remove("hidden");
+  } else {
+    link.classList.add("hidden");
+  }
+}
+
+function showObStep(n) {
+  obStep = n;
+  document.querySelectorAll(".ob-step").forEach((el) =>
+    el.classList.toggle("hidden", Number(el.dataset.step) !== n)
+  );
+  document.querySelectorAll(".onboard__steps span").forEach((el) =>
+    el.classList.toggle("on", Number(el.dataset.step) <= n)
+  );
+  $("#ob-skip").textContent = n === 3 ? "Plus tard" : "Passer";
+  $("#ob-next").textContent = n === 3 ? "📁 Choisir un dossier" : "Suivant";
+  if (n === 2) updateObKeyStep();
+  if (n === 2 && !currentProvider()?.needsKey) return;
+}
+
+function closeOnboard() {
+  $("#onboard").classList.add("hidden");
+  $("#input").focus();
+}
+
+$("#ob-next").addEventListener("click", async () => {
+  if (obStep === 2) {
+    const key = $("#ob-key").value.trim();
+    const p = currentProvider();
+    if (p?.needsKey && key) {
+      await window.castor.setKey(p.id, key);
+      p.configured = true;
+      $("#ob-key").value = "";
+      renderProviderList();
+    }
+    return showObStep(3);
+  }
+  if (obStep === 3) {
+    const res = await window.castor.openWorkspace();
+    if (res.ok) {
+      applyWorkspace(res);
+      refreshFileTree();
+    }
+    closeOnboard();
+    return;
+  }
+  showObStep(obStep + 1);
+});
+$("#ob-skip").addEventListener("click", closeOnboard);
+
 $("#save-key").addEventListener("click", async () => {
   const key = $("#key-input").value.trim();
   if (!key) return;
@@ -482,10 +603,10 @@ $("#refresh-models").addEventListener("click", async () => {
   const note = $("#test-result");
   note.className = "test-result";
   note.textContent = "Récupération…";
-  const res = await window.castor.refreshModels(
-    state.activeId,
-    $("#baseurl-input").value.trim()
-  );
+  const res = await getModels(currentProvider(), {
+    force: true,
+    baseURL: $("#baseurl-input").value.trim(),
+  });
   if (res.ok && res.models.length) {
     currentProvider().models = res.models;
     fillModelOptions(res.models);
@@ -1426,6 +1547,120 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     if (state.activeId) openProviderSettings(state.activeId);
   }
+  if (k === "k") {
+    e.preventDefault();
+    openCmdk();
+  }
+});
+
+/* ---------- palette de commandes (⌘K) ---------- */
+let cmdkSel = 0;
+
+function cmdkActions() {
+  const dark = resolveTheme(loadPersisted()) === "dark";
+  const actions = [
+    { icon: ICONS.sparkle, label: "Nouvelle conversation", hint: "⌘N", run: () => { if (!state.streaming) resetChatView(); } },
+    { icon: ICONS.gear, label: "Changer de modèle / provider", hint: "⌘,", run: () => openProviderSettings(state.activeId) },
+    { icon: ICONS.folder, label: "Ouvrir un projet…", hint: "⌘O", run: () => $("#open-workspace").click() },
+    { icon: ICONS.clock, label: dark ? "☀ Passer en mode jour" : "🌙 Passer en mode nuit", run: () => toggleTheme() },
+    { icon: ICONS.panel, label: state.panelOpen ? "Fermer le panneau latéral" : "Ouvrir le panneau (Changes · Plan · Terminal)", run: () => setPanel(!state.panelOpen) },
+    { icon: ICONS.checkList, label: "Mode Build — agent actif", hint: state.chatMode === "build" ? "actif" : "", run: () => setChatMode("build") },
+    { icon: ICONS.file, label: "Mode Plan — lecture seule", hint: state.chatMode === "plan" ? "actif" : "", run: () => setChatMode("plan") },
+    { icon: ICONS.sparkle, label: "Revoir l'introduction", run: () => openOnboard() },
+  ];
+  for (const p of state.projects) {
+    actions.push({
+      icon: ICONS.folder,
+      label: "Projet : " + p.name,
+      hint: p.path === state.wsPath ? "ouvert" : "",
+      run: () => switchToProject(p),
+    });
+  }
+  for (const p of state.providers) {
+    actions.push({
+      icon: ICONS.gear,
+      label: "Provider : " + p.label,
+      hint: !p.needsKey || p.configured ? "" : "clé manquante",
+      run: () => openProviderSettings(p.id),
+    });
+  }
+  return actions;
+}
+
+function openCmdk() {
+  if (!$("#cmdk")) return;
+  $("#cmdk").classList.remove("hidden");
+  const input = $("#cmdk-input");
+  input.value = "";
+  renderCmdkList("");
+  input.focus();
+}
+
+function closeCmdk() {
+  $("#cmdk").classList.add("hidden");
+  $("#input").focus();
+}
+
+function renderCmdkList(q) {
+  const list = $("#cmdk-list");
+  const ql = q.trim().toLowerCase();
+  const hits = cmdkActions()
+    .filter((a) => !ql || a.label.toLowerCase().includes(ql))
+    .slice(0, 9);
+  cmdkSel = 0;
+  list.innerHTML = "";
+  hits.forEach((a, i) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cmdk-item" + (i === 0 ? " sel" : "");
+    const ic = document.createElement("span");
+    ic.className = "cmdk-ico";
+    ic.innerHTML = a.icon;
+    const lb = document.createElement("span");
+    lb.textContent = a.label;
+    btn.append(ic, lb);
+    if (a.hint) {
+      const h = document.createElement("small");
+      h.textContent = a.hint;
+      btn.appendChild(h);
+    }
+    btn.addEventListener("click", () => {
+      closeCmdk();
+      a.run();
+    });
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+  if (!hits.length) {
+    const li = document.createElement("li");
+    li.className = "cmdk-empty";
+    li.textContent = "Aucune commande.";
+    list.appendChild(li);
+  }
+}
+
+$("#cmdk-input").addEventListener("input", (e) => renderCmdkList(e.target.value));
+$("#cmdk-input").addEventListener("keydown", (e) => {
+  const items = [...document.querySelectorAll("#cmdk-list .cmdk-item")];
+  if (e.key === "Escape") return closeCmdk();
+  if (!items.length) return;
+  const idx = items.findIndex((it) => it.classList.contains("sel"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    const next =
+      e.key === "ArrowDown"
+        ? (idx + 1) % items.length
+        : (idx - 1 + items.length) % items.length;
+    items.forEach((it, i) => it.classList.toggle("sel", i === next));
+    items[next].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    items[idx]?.click();
+  }
+});
+$("#cmdk").addEventListener("click", (e) => {
+  if (e.target.classList.contains("cmdk__backdrop")) closeCmdk();
 });
 
 /* ---------- compétences ---------- */
@@ -1833,12 +2068,21 @@ function buildPayloadMessages() {
 }
 
 /* ---------- chat ---------- */
-function addMessageEl(role) {
+function makeMessageEl(role) {
   const wrap = document.createElement("div");
   wrap.className = `msg msg--${role}`;
+  const av = document.createElement("span");
+  av.className = "msg__avatar";
+  av.innerHTML = role === "assistant" ? LOGO_SVG : ICONS.user;
+  av.title = role === "assistant" ? "Castor" : "Toi";
   const bubble = document.createElement("div");
   bubble.className = "msg__bubble";
-  wrap.appendChild(bubble);
+  wrap.append(av, bubble);
+  return { wrap, bubble };
+}
+
+function addMessageEl(role) {
+  const { wrap, bubble } = makeMessageEl(role);
   $("#messages").appendChild(wrap);
   return bubble;
 }
@@ -2127,7 +2371,10 @@ $("#scroll-bottom").addEventListener("click", () => {
   }
 });
 
-/* ---------- markdown minimal (échappé, jamais de HTML brut) ---------- */
+/* ---------- markdown riche, rendu par blocs (incrémental) ----------
+   Toujours échappé (jamais de HTML brut du modèle). Le rendu découpe la
+   source en blocs (code, titres, listes, citations, paragraphes) et ne
+   re-rend que les blocs changés : les réponses longues ne jankent plus. */
 function escapeHtml(s) {
   return s
     .replaceAll("&", "&amp;")
@@ -2135,23 +2382,171 @@ function escapeHtml(s) {
     .replaceAll(">", "&gt;");
 }
 
-function renderMarkdown(src) {
-  const escaped = escapeHtml(src);
-  const parts = escaped.split(/```/);
+/* highlighting maison (~60 lignes) : commentaires, chaînes, nombres,
+   mots-clés et appels de fonction pour js/ts/json/py/sh/css */
+const HL_KEYWORDS = {
+  js: "const let var function return if else for while class new extends import export from default try catch finally throw async await typeof instanceof of in switch case break continue yield static get set this super null undefined true false delete debugger void do",
+  py: "def class return if elif else for while import from as try except finally raise with lambda yield async await pass break continue global nonlocal assert del None True False and or not is in self print",
+  sh: "if then else elif fi for while do done case esac function echo exit return export source local cd sudo apt brew npm npx git node python pip curl mkdir rm cp mv cat grep sed awk chmod ls which set",
+  css: "important media supports keyframes import from to and not only root var",
+};
+
+function codeFamily(lang) {
+  const l = (lang || "").toLowerCase();
+  if (/^(js|ts|jsx|tsx|mjs|cjs|javascript|typescript|json)$/.test(l)) return "js";
+  if (/^(py|python)$/.test(l)) return "py";
+  if (/^(sh|bash|zsh|shell|console)$/.test(l)) return "sh";
+  if (l === "css") return "css";
+  return null;
+}
+
+function highlight(code, family) {
+  const kws = new Set((HL_KEYWORDS[family] || HL_KEYWORDS.js).split(" "));
+  const re =
+    /(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*\b)/g;
   let out = "";
+  let last = 0;
+  let m;
+  while ((m = re.exec(code))) {
+    out += escapeHtml(code.slice(last, m.index));
+    const [tok, com, str, num, word] = m;
+    if (com) {
+      // '#' n'est un commentaire qu'en python / shell
+      if (com.startsWith("#") && family !== "py" && family !== "sh") {
+        out += escapeHtml(tok);
+      } else {
+        out += `<span class="tok-com">${escapeHtml(tok)}</span>`;
+      }
+    } else if (str) {
+      out += `<span class="tok-str">${escapeHtml(tok)}</span>`;
+    } else if (num) {
+      out += `<span class="tok-num">${escapeHtml(tok)}</span>`;
+    } else if (word) {
+      const isFn = code[re.lastIndex] === "(";
+      if (kws.has(word)) out += `<span class="tok-kw">${escapeHtml(tok)}</span>`;
+      else if (isFn) out += `<span class="tok-fn">${escapeHtml(tok)}</span>`;
+      else out += escapeHtml(tok);
+    }
+    last = re.lastIndex;
+  }
+  out += escapeHtml(code.slice(last));
+  return out;
+}
+
+/* inline : gras, italique, code, liens http(s) uniquement */
+function mdInline(s) {
+  return escapeHtml(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+      '<a href="$2" title="$2">$1</a>'
+    );
+}
+
+/* découpe la source en blocs typés */
+function mdBlocks(src) {
+  const blocks = [];
+  const parts = src.split(/```/);
   for (let i = 0; i < parts.length; i++) {
     if (i % 2 === 1) {
       const nl = parts[i].indexOf("\n");
+      const lang = nl >= 0 ? parts[i].slice(0, nl).trim() : "";
       const code = nl >= 0 ? parts[i].slice(nl + 1) : parts[i];
-      out += `<pre>${code}</pre>`;
-    } else {
-      let seg = parts[i];
-      seg = seg.replace(/`([^`]+)`/g, "<code>$1</code>");
-      seg = seg.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-      out += seg;
+      blocks.push({ type: "code", lang, code, raw: "```" + parts[i] });
+      continue;
+    }
+    for (const chunk of parts[i].split(/\n{2,}/)) {
+      if (!chunk.trim()) continue;
+      blocks.push({ type: "text", raw: chunk });
     }
   }
-  return out;
+  return blocks;
+}
+
+function renderTextBlock(chunk) {
+  const lines = chunk.split("\n");
+  // titre # .. ####
+  const h = chunk.match(/^(#{1,4})\s+(.+)$/);
+  if (h && lines.length === 1) {
+    const lvl = Math.min(h[1].length + 2, 5); // h3..h5 dans le chat
+    return `<h${lvl} class="md-h">${mdInline(h[2])}</h${lvl}>`;
+  }
+  // filet horizontal
+  if (chunk.replace(/[\s\-*_=]/g, "") === "" && /[-*_=]{3}/.test(chunk)) return "<hr />";
+  // citation
+  if (lines.every((l) => /^\s*>/.test(l))) {
+    return `<blockquote>${lines
+      .map((l) => mdInline(l.replace(/^\s*>\s?/, "")))
+      .join("<br />")}</blockquote>`;
+  }
+  // listes (puces / numérotées / cases à cocher)
+  const isUl = lines.every((l) => /^\s*[-*+]\s+/.test(l));
+  const isOl = lines.every((l) => /^\s*\d+[.)]\s+/.test(l));
+  if ((isUl || isOl) && lines.length) {
+    const tag = isUl ? "ul" : "ol";
+    const items = lines
+      .map((l) => {
+        const body = l.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, "");
+        const todo = body.match(/^\[([ xX])\]\s+(.*)$/);
+        if (todo) {
+          return `<li class="md-todo ${todo[1].toLowerCase() === "x" ? "done" : ""}">${
+            todo[1].toLowerCase() === "x" ? "☑" : "☐"
+          } ${mdInline(todo[2])}</li>`;
+        }
+        return `<li>${mdInline(body)}</li>`;
+      })
+      .join("");
+    return `<${tag} class="md-list">${items}</${tag}>`;
+  }
+  return `<p>${chunk.split("\n").map(mdInline).join("<br />")}</p>`;
+}
+
+function renderCodeBlock(b) {
+  const fam = codeFamily(b.lang);
+  const body = fam ? highlight(b.code, fam) : escapeHtml(b.code);
+  return `<pre data-lang="${escapeHtml(b.lang || "")}"><code>${body}</code></pre>`;
+}
+
+function blockHtml(b) {
+  return b.type === "code" ? renderCodeBlock(b) : renderTextBlock(b.raw);
+}
+
+/* rendu incrémental : un bloc inchangé n'est jamais re-rendu ; seul le
+   dernier bloc (en pleine écriture pendant le stream) est refait */
+function renderMarkdownInto(el, src) {
+  const blocks = mdBlocks(src);
+  const kids = el.children;
+  while (kids.length > blocks.length) kids[kids.length - 1].remove();
+  blocks.forEach((b, i) => {
+    const isLast = i === blocks.length - 1;
+    const node = kids[i];
+    if (!isLast && node && node.__raw === b.raw) return; // inchangé → rien à faire
+    const html = blockHtml(b);
+    if (!isLast && node && node.__html === html) {
+      node.__raw = b.raw;
+      return;
+    }
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const fresh = tmp.firstChild;
+    if (!fresh) {
+      if (node) node.remove();
+      return;
+    }
+    fresh.__raw = b.raw;
+    fresh.__html = html;
+    if (node) el.replaceChild(fresh, node);
+    else el.appendChild(fresh);
+  });
+}
+
+/* version string (aperçu des notes, …) */
+function renderMarkdown(src) {
+  return mdBlocks(src)
+    .map(blockHtml)
+    .join("");
 }
 
 /* ---------- menu slash (/) ---------- */
@@ -2478,11 +2873,7 @@ function openConversation(id) {
   disarmDel();
 
   const box = $("#messages");
-  box.innerHTML = "";
-  for (const m of state.messages) {
-    const bubble = addMessageEl(m.role);
-    bubble.innerHTML = m.content ? renderMarkdown(m.content) : "";
-  }
+  renderConversationWindow();
   const lastAssistant = [...state.messages].reverse().find((m) => m.role === "assistant");
   renderTodos(parseTodos(lastAssistant?.content || ""));
   scrollDown(true);
@@ -2514,6 +2905,58 @@ function resetChatView() {
 
 $("#new-chat").addEventListener("click", resetChatView);
 
+/* ---------- fenêtrage des messages (conversations très longues) ----------
+   On n'affiche que les 60 derniers messages ; un bouton remonte les
+   anciens par lots en conservant la position de scroll. */
+const MSG_WINDOW = 60;
+let renderedFrom = 0;
+
+function renderConversationWindow() {
+  const box = $("#messages");
+  box.innerHTML = "";
+  const total = state.messages.length;
+  renderedFrom = Math.max(0, total - MSG_WINDOW);
+  if (renderedFrom > 0) {
+    const more = document.createElement("button");
+    more.className = "load-earlier";
+    more.addEventListener("click", loadEarlier);
+    box.appendChild(more);
+    updateLoadEarlierLabel(more);
+  }
+  for (let i = renderedFrom; i < total; i++) {
+    const m = state.messages[i];
+    const { wrap, bubble } = makeMessageEl(m.role);
+    if (m.content) renderMarkdownInto(bubble, m.content);
+    box.appendChild(wrap);
+  }
+}
+
+function updateLoadEarlierLabel(btn) {
+  const n = renderedFrom;
+  btn.textContent = `↑ Charger ${n} message${n > 1 ? "s" : ""} plus ancien${n > 1 ? "s" : ""}`;
+}
+
+function loadEarlier() {
+  const box = $("#messages");
+  const newFrom = Math.max(0, renderedFrom - MSG_WINDOW);
+  if (newFrom === renderedFrom) return;
+  const prevH = box.scrollHeight;
+  const btn = box.querySelector(".load-earlier");
+  const anchor = btn ?? box.firstChild;
+  for (let i = renderedFrom - 1; i >= newFrom; i--) {
+    const m = state.messages[i];
+    const { wrap, bubble } = makeMessageEl(m.role);
+    if (m.content) renderMarkdownInto(bubble, m.content);
+    box.insertBefore(wrap, anchor);
+  }
+  renderedFrom = newFrom;
+  if (btn) {
+    if (renderedFrom > 0) updateLoadEarlierLabel(btn);
+    else btn.remove();
+  }
+  box.scrollTop += box.scrollHeight - prevH;
+}
+
 function welcomeHTML() {
   return `
     <div class="welcome">
@@ -2527,9 +2970,10 @@ function welcomeHTML() {
         <code>refactore ce fichier en TypeScript</code>
       </div>
       <div class="welcome__keys">
+        <span><kbd>⌘K</kbd> palette de commandes</span>
         <span><kbd>⌘N</kbd> nouvelle conversation</span>
         <span><kbd>⌘O</kbd> ouvrir un chantier</span>
-        <span>ou glisse un dossier dans la fenêtre</span>
+        <span>glisse un dossier ou des fichiers dans la fenêtre</span>
       </div>
     </div>`;
 }
