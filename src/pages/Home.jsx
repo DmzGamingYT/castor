@@ -5,8 +5,8 @@ import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
 import HeroParticles from "../components/HeroParticles.jsx";
 import DownloadSection from "../components/DownloadSection.jsx";
+import AnimatedHeading from "../components/AnimatedHeading.jsx";
 import { BeaverMark } from "../components/Icon.jsx";
-import { useNavigate } from "../lib/NavigationContext.jsx";
 
 /* révèle un élément quand il entre dans le viewport */
 function useReveal() {
@@ -58,7 +58,6 @@ function useParallax() {
 }
 
 function Hero({ onDownload }) {
-  const navigate = useNavigate();
   const parallaxRef = useParallax();
   return (
     <section className="hero" ref={parallaxRef}>
@@ -90,10 +89,13 @@ function Hero({ onDownload }) {
         </button>
         <a
           className="btn btn--ghost btn--lg"
-          href="/castor/#produits"
-          onClick={(e) => { e.preventDefault(); navigate("/", "produits"); }}
+          href="/castor/#demo"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" });
+          }}
         >
-          Découvrir les produits
+          Voir la démo
         </a>
       </div>
 
@@ -171,46 +173,58 @@ function StepsMockup() {
   const prompt = "un blog de recettes végé";
 
   useEffect(() => {
-    /* Auto-play sequence */
-    const timers = [
-      setTimeout(() => {
-        /* Phase 1: type the prompt */
-        let i = 0;
-        const ty = setInterval(() => {
-          i++;
-          setInputVal(prompt.slice(0, i));
-          if (i >= prompt.length) {
-            clearInterval(ty);
-            setTimeout(() => setPhase(1), 600);
-          }
-        }, 50);
-      }, 800),
-      setTimeout(() => {
-        /* Phase 2: building */
-        const files = [
-          "> Structure index.html...",
-          "> Styles.css appliqués...",
-          "> Composants montés...",
-          "> Tests passés ✔",
-        ];
-        let f = 0;
-        const build = setInterval(() => {
-          setBuilding((prev) => [...prev, files[f]]);
-          f++;
-          if (f >= files.length) {
-            clearInterval(build);
-            setTimeout(() => setPhase(2), 500);
-          }
-        }, 700);
-      }, 3200),
-      /* Reset loop */
-      setTimeout(() => {
-        setPhase(0);
-        setInputVal("");
-        setBuilding([]);
-      }, 10000),
-    ];
-    return () => timers.forEach(clearTimeout);
+    /* Auto-play sequence — tous les timers/intervalles trackés pour un cleanup propre */
+    const timers = new Set();
+    const later = (fn, ms) => {
+      const t = setTimeout(() => { timers.delete(t); fn(); }, ms);
+      timers.add(t);
+    };
+    const every = (fn, ms) => {
+      const t = setInterval(fn, ms);
+      timers.add(t);
+      return t;
+    };
+
+    later(() => {
+      /* Phase 1: type the prompt */
+      let i = 0;
+      const ty = every(() => {
+        i++;
+        setInputVal(prompt.slice(0, i));
+        if (i >= prompt.length) {
+          clearInterval(ty);
+          later(() => setPhase(1), 600);
+        }
+      }, 50);
+    }, 800);
+
+    later(() => {
+      /* Phase 2: building */
+      const files = [
+        "> Structure index.html...",
+        "> Styles.css appliqués...",
+        "> Composants montés...",
+        "> Tests passés ✔",
+      ];
+      let f = 0;
+      const build = every(() => {
+        setBuilding((prev) => [...prev, files[f]]);
+        f++;
+        if (f >= files.length) {
+          clearInterval(build);
+          later(() => setPhase(2), 500);
+        }
+      }, 700);
+    }, 3200);
+
+    /* Reset loop */
+    later(() => {
+      setPhase(0);
+      setInputVal("");
+      setBuilding([]);
+    }, 10000);
+
+    return () => timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
   }, [phase]);
 
   return (
@@ -313,7 +327,7 @@ function StepsMockup() {
 function Steps() {
   return (
     <section className="section steps">
-      <h2>Le chantier en trois coups de patte</h2>
+      <AnimatedHeading variant="letters">Le chantier en trois coups de patte</AnimatedHeading>
       <p className="section-sub">Pas de tunnel magique : tu vois chaque étape.</p>
       <StepsMockup />
     </section>
@@ -326,9 +340,9 @@ export default function Home({ onDownload }) {
       <Hero onDownload={onDownload} />
       <Manifesto />
       <Steps />
+      <DemoSection />
       <Testimonials />
       <DownloadSection onDownload={onDownload} />
-      <DemoSection />
     </>
   );
 }

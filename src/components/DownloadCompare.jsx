@@ -2,7 +2,7 @@ import Icon from "./Icon.jsx";
 const RELEASE_BASE =
   "https://github.com/DmzGamingYT/castor/releases/latest/download";
 
-const PLATFORMS = [
+export const PLATFORMS = [
   {
     os: "mac",
     name: "macOS",
