@@ -2,6 +2,8 @@ import { memo, useEffect, useRef, useState } from "react";
 import { fetchFreeModels } from "../lib/openrouter.js";
 import { useApiKey } from "../lib/useApiKey.js";
 import ModelSelect from "../components/ModelSelect.jsx";
+import AnimatedHeading from "../components/AnimatedHeading.jsx";
+import { BeaverMark } from "../components/Icon.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 import {
   DEFAULT_MODEL,
@@ -45,6 +47,9 @@ function store(key, value) {
 const Message = memo(function Message({ role, content }) {
   return (
     <div className={`cmsg cmsg--${role}`}>
+      <span className="cmsg__avatar" aria-hidden="true">
+        {role === "assistant" ? <BeaverMark size={20} /> : "👤"}
+      </span>
       <div className="cmsg__bubble">
         {role === "assistant" ? (
           <span dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
@@ -289,6 +294,13 @@ export default function ChatStudio() {
   return (
     <div className={`chatapp ${sideOpen ? "chatapp--menu" : ""}`}>
       <aside className="chatapp__side">
+        <div className="chatapp__brand">
+          <span className="chatapp__brand-tile" aria-hidden="true"><BeaverMark size={22} /></span>
+          <div>
+            <strong>Castor Chat</strong>
+            <span className="chatapp__brand-sub">gratuit · sans compte</span>
+          </div>
+        </div>
         <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
         <button className="newchat-btn" onClick={newChat}>＋ Nouvelle conversation</button>
 
@@ -344,6 +356,9 @@ export default function ChatStudio() {
           <span className="chatapp__topbar-title">
             {activeChat ? activeChat.title : "Nouvelle conversation"}
           </span>
+          <span className={`chatapp__mode-pill ${aiReady ? "chatapp__mode-pill--ai" : ""}`} title={aiReady ? `Modèle : ${modelId}` : "Mode démo — ajoute une clé OpenRouter pour l'IA"}>
+            <i aria-hidden="true" /> {aiReady ? "IA connectée" : "Démo locale"}
+          </span>
         </div>
 
         {!aiReady && (
@@ -355,9 +370,13 @@ export default function ChatStudio() {
 
         {!activeChat ? (
           <div className="chatapp__welcome">
-            <h1>
-              Sur quoi je t'<span className="hero__accent">aide ?</span>
-            </h1>
+            <div className="chatapp__welcome-glow" aria-hidden="true" />
+            <span className="chatapp__welcome-logo" aria-hidden="true">
+              <BeaverMark size={52} />
+            </span>
+            <AnimatedHeading variant="gradient" tag="h1">
+              Sur quoi je t'aide ?
+            </AnimatedHeading>
             <Composer {...composerProps} />
             <ul className="studio__chips">
               {[

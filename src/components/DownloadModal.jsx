@@ -1,15 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import Icon from "./Icon.jsx";
-import { BeaverMark } from "./Icon.jsx";
+import Icon, { BeaverMark } from "./Icon.jsx";
+import { PLATFORMS } from "./DownloadCompare.jsx";
 
 const RELEASE_BASE =
   "https://github.com/DmzGamingYT/castor/releases/latest/download";
-
-const HINTS = {
-  mac: "Ouvre le .dmg et glisse Castor.app dans tes Applications. Si macOS bloque : Réglages → Confidentialité et sécurité → « Ouvrir même ainsi ».",
-  win: "Lance l'installateur, choisis ton dossier : Castor s'installe avec un raccourci bureau et menu démarrer.",
-  linux: "Deb : sudo apt install ./Castor-Linux-arm64.deb (ou gdebi). AppImage : chmod +x puis double-clic.",
-};
 
 const UNINSTALL = {
   mac: "scripts/uninstall-macos.sh du dépôt",
@@ -26,30 +20,31 @@ function detectOS() {
   return null;
 }
 
+/* fichiers liés à l'architecture détectée */
 function buildFiles(os, arch) {
   const a = os === "win" && arch === "x86" ? "x64" : "arm64";
   switch (os) {
     case "mac":
       return {
-        installer: { file: `Castor-macOS-arm64.dmg`, sub: "Apple Silicon · glisser-déposer", size: "~96 Mo" },
+        installer: { file: `Castor-macOS-arm64.dmg`, sub: "Apple Silicon", size: "~96 Mo" },
         alts: [
-          { file: `Castor-macOS-arm64.zip`, label: "Version portable (zip)" },
-          { file: `Castor-macOS-x64.dmg`, label: "Mac Intel (x64)" },
+          { file: `Castor-macOS-arm64.zip`, label: "Portable (zip)" },
+          { file: `Castor-macOS-x64.dmg`, label: "Intel (x64)" },
         ],
       };
     case "win":
       return {
-        installer: { file: `Castor-Windows-${a}-setup.exe`, sub: `${a === "x64" ? "Intel/AMD (x64)" : "ARM"} · installateur`, size: "~115 Mo" },
+        installer: { file: `Castor-Windows-${a}-setup.exe`, sub: a === "x64" ? "Intel/AMD (x64)" : "ARM64", size: "~115 Mo" },
         alts: [
-          { file: `Castor-Windows-${a}-portable.zip`, label: "Version portable (zip)" },
+          { file: `Castor-Windows-${a}-portable.zip`, label: "Portable (zip)" },
           a === "arm64"
-            ? { file: `Castor-Windows-x64-setup.exe`, label: "PC Intel/AMD (x64)" }
-            : { file: `Castor-Windows-arm64-setup.exe`, label: "PC ARM" },
+            ? { file: `Castor-Windows-x64-setup.exe`, label: "Intel/AMD (x64)" }
+            : { file: `Castor-Windows-arm64-setup.exe`, label: "ARM64" },
         ],
       };
     case "linux":
       return {
-        installer: { file: `Castor-Linux-arm64.deb`, sub: "Debian / Ubuntu · .deb", size: "~95 Mo" },
+        installer: { file: `Castor-Linux-arm64.deb`, sub: "Debian / Ubuntu", size: "~95 Mo" },
         alts: [
           { file: `Castor-Linux-arm64.AppImage`, label: "AppImage (toutes distros)" },
           { file: `Castor-Linux-arm64.tar.gz`, label: "Archive tar.gz" },
@@ -59,12 +54,6 @@ function buildFiles(os, arch) {
       return null;
   }
 }
-
-const OS_META = {
-  mac: { label: "macOS", icon: "apple", color: "var(--accent)" },
-  win: { label: "Windows", icon: "windows", color: "var(--river)" },
-  linux: { label: "Linux", icon: "linux", color: "var(--sage)" },
-};
 
 export default function DownloadModal({ open, onClose }) {
   const [started, setStarted] = useState(null);
@@ -89,6 +78,7 @@ export default function DownloadModal({ open, onClose }) {
     return () => { alive = false; };
   }, [open]);
 
+  /* focus trap + Échap + restauration du focus */
   useEffect(() => {
     if (!open) return;
     restoreRef.current = document.activeElement;
@@ -121,80 +111,97 @@ export default function DownloadModal({ open, onClose }) {
       <div className="dl-modal" onClick={(e) => e.stopPropagation()} ref={panelRef} tabIndex={-1}>
         <button className="dl-close" onClick={onClose} aria-label="Fermer">×</button>
 
-        {/* Header avec logo castor */}
         <div className="dl-modal__header">
-          <span className="dl-modal__logo">
-            <BeaverMark size={36} />
-          </span>
+          <span className="dl-modal__logo"><BeaverMark size={36} /></span>
           <h3>Télécharger Castor Desktop</h3>
           <p className="dl-sub">
             {detected && detected !== "ios"
-              ? "Ta plateforme est détectée — un clic et c'est parti."
+              ? "Ton OS est détecté — un clic et c'est parti."
               : detected === "ios"
                 ? "Castor Desktop n'existe pas sur iOS — ouvre-le depuis Safari sur Mac."
-                : "Choisis ta plateforme :"}
+                : "Choisis ton habitat :"}
           </p>
         </div>
 
         {detected !== "ios" && (
-          <div className="dl-list">
-            {["mac", "win", "linux"].map((os) => {
-              const files = buildFiles(os, arch);
+          <div className="dl-modal__grid">
+            {PLATFORMS.map((p) => {
+              const files = buildFiles(p.os, arch);
               if (!files) return null;
-              const rec = detected === os;
-              const meta = OS_META[os];
+              const rec = detected === p.os;
               return (
-                <div key={os} className="dl-os">
-                  <a
-                    className={`os-row ${rec ? "os-row--rec" : ""}`}
-                    href={`${RELEASE_BASE}/${files.installer.file}`}
-                    download
-                    onClick={() => setStarted(os)}
-                  >
-                    <span className="os-row__icon" aria-hidden="true">
-                      <Icon name={meta.icon} size={22} />
+                <article
+                  key={p.os}
+                  className={`dl-compare__card ${rec ? "dl-compare__card--detected" : ""}`}
+                >
+                  {rec && <span className="dl-compare__detected">Ton OS ✓</span>}
+
+                  <div className="dl-compare__header">
+                    <span
+                      className="dl-compare__icon"
+                      style={{ background: `color-mix(in srgb, ${p.color} 14%, transparent)` }}
+                    >
+                      <Icon name={p.icon} size={28} />
                     </span>
-                    <span className="os-row__meta">
-                      <strong>
-                        {meta.label}
-                        {rec && <em className="os-row__badge">Recommandé</em>}
-                      </strong>
-                      <small>{files.installer.sub} · {files.installer.size}</small>
-                    </span>
-                    <span className="os-row__action" aria-hidden="true">⬇</span>
-                  </a>
-                  <div className="os-row__alts">
+                    <div>
+                      <h3>{p.name}</h3>
+                      <span className="dl-compare__size">{files.installer.size}</span>
+                    </div>
+                  </div>
+
+                  <ul className="dl-compare__features">
+                    {p.features.map((f) => (
+                      <li key={f}>
+                        <span className="dl-compare__check" style={{ color: p.color }}>✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="dl-compare__actions">
+                    <a
+                      className="btn btn--primary btn--sm"
+                      href={`${RELEASE_BASE}/${files.installer.file}`}
+                      download
+                      onClick={() => setStarted(p.os)}
+                    >
+                      <Icon name="download" size={16} />
+                      {files.installer.sub}
+                    </a>
                     {files.alts.map((alt) => (
-                      <a key={alt.file} href={`${RELEASE_BASE}/${alt.file}`} download onClick={() => setStarted(os)}>
+                      <a
+                        key={alt.file}
+                        className="dl-compare__alt"
+                        href={`${RELEASE_BASE}/${alt.file}`}
+                        download
+                        onClick={() => setStarted(p.os)}
+                      >
                         {alt.label}
                       </a>
                     ))}
                   </div>
-                  {started === os && (
-                    <div className="dl-success" role="status">
-                      <span className="dl-success__icon">✓</span>
-                      <div>
-                        <strong>Téléchargement lancé</strong>
-                        <p>{HINTS[os]}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+
+                  <p className="dl-compare__install">
+                    <Icon name="terminal" size={13} />
+                    <code>{p.install}</code>
+                  </p>
+                </article>
               );
             })}
           </div>
         )}
 
         {started && (
-          <div className="dl-uninstall">
-            <Icon name="trash" size={14} />
-            <span>Désinstallation : {UNINSTALL[started]}</span>
+          <div className="dl-success" role="status">
+            <span className="dl-success__icon">✓</span>
+            <div>
+              <strong>Téléchargement lancé</strong>
+              <p>Pour désinstaller plus tard : {UNINSTALL[started]}</p>
+            </div>
           </div>
         )}
 
-        <p className="dl-footer-note">
-          Multi-providers · Clés chiffrées · 100% gratuit
-        </p>
+        <p className="dl-footer-note">Gratuit · Open source · Multi-providers</p>
       </div>
     </div>
   );
