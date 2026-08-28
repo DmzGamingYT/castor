@@ -27,6 +27,11 @@ export const ROADMAP = {
       },
       {
         status: "bientôt",
+        title: "Assistant IA embarqué",
+        desc: "Le chatbot 24/7 directement dans l'app Desktop : roadmap, aide et astuces sans quitter ton chantier.",
+      },
+      {
+        status: "bientôt",
         title: "Synchronisation multi-postes",
         desc: "Tes chantiers et réglages suivis entre ta machine de bureau et ton laptop.",
       },
@@ -45,11 +50,6 @@ export const ROADMAP = {
   site: {
     label: "🌐 Site",
     items: [
-      {
-        status: "en cours",
-        title: "Assistant 24/7",
-        desc: "Le castor-bot que tu utilises en ce moment — roadmap, aide, téléchargement.",
-      },
       {
         status: "bientôt",
         title: "Page CLI dédiée",

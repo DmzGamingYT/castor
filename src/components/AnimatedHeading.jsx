@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { Fragment, useEffect, useRef, useState, useMemo } from "react";
 import "./AnimatedHeading.css";
 
 /**
@@ -50,13 +50,16 @@ export default function AnimatedHeading({
     return (
       <Tag ref={ref} className={`ah ah--words ${className}`}>
         {words.map((w, i) => (
-          <span
-            key={i}
-            className={`ah__word ${visible ? "ah__word--in" : ""}`}
-            style={{ transitionDelay: `${delay + i * 0.08}s` }}
-          >
-            {w}{" "}
-          </span>
+          <Fragment key={i}>
+            <span
+              className={`ah__word ${visible ? "ah__word--in" : ""}`}
+              style={{ transitionDelay: `${delay + i * 0.08}s` }}
+            >
+              {w}
+            </span>
+            {/* l'espace doit être HORS du span inline-block, sinon il s'effondre */}
+            {i < words.length - 1 ? " " : null}
+          </Fragment>
         ))}
       </Tag>
     );

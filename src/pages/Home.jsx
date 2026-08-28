@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import DemoSection from "../components/DemoSection.jsx";
-import Testimonials from "../components/Testimonials.jsx";
 import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
 import HeroParticles from "../components/HeroParticles.jsx";
@@ -342,7 +341,6 @@ export default function Home({ onDownload }) {
       <Manifesto />
       <Steps />
       <DemoSection />
-      <Testimonials />
       <ProjectProgress />
       <DownloadSection onDownload={onDownload} />
     </>
