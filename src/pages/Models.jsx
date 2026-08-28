@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
 import Icon from "../components/Icon.jsx";
+import AnimatedHeading from "../components/AnimatedHeading.jsx";
 import { fetchFreeOpenRouter } from "../lib/openrouter.js";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 import {
@@ -121,36 +122,64 @@ function ContextBar({ ctx }) {
 }
 
 /* ─── Model Card ─── */
-function ModelCard({ model }) {
+function ModelCard({ model, index }) {
   const color = PROVIDER_COLORS[model.provider] || "var(--muted)";
   return (
-    <article className="model-card model-card--v2">
-      <div className="model-card__accent" style={{ background: color }} />
+    <article
+      className="model-card model-card--v2"
+      style={{ "--mc-color": color, animationDelay: `${Math.min(index, 11) * 0.05}s` }}
+    >
+      <div className="model-card__accent" />
       <div className="model-card__body">
         <header className="model-card__head">
-          <h3>{model.name}</h3>
-          <span
-            className="model-card__provider"
-            style={{ color, borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }}
-          >
-            <Icon name={PROVIDER_ICONS[model.provider] || "zap"} size={12} />
+          <span className="model-card__tile" aria-hidden="true">
+            <Icon name={PROVIDER_ICONS[model.provider] || "zap"} size={18} />
+          </span>
+          <div className="model-card__idblock">
+            <h3>{model.name}</h3>
+            <code className="model-card__id" title={model.id}>
+              {shortId(model.id)}
+            </code>
+          </div>
+          <span className="model-card__provider">
             {PROVIDERS[model.provider]?.label || model.provider}
           </span>
         </header>
-        <code className="model-card__id" title={model.id}>
-          {shortId(model.id)}
-        </code>
         <ContextBar ctx={model.ctx} />
-        <div className="model-card__tags">
-          {model.types.map((t) => (
-            <span key={t} className={`tag ${TYPE_CLASS[t]}`}>
-              {TYPES[t] || t}
-            </span>
-          ))}
+        <div className="model-card__foot">
+          <div className="model-card__tags">
+            {model.types.map((t) => (
+              <span key={t} className={`tag ${TYPE_CLASS[t]}`}>
+                {TYPES[t] || t}
+              </span>
+            ))}
+          </div>
+          {model.live && <span className="model-card__live">live</span>}
         </div>
       </div>
-      {model.live && <span className="model-card__live">live</span>}
     </article>
+  );
+}
+
+/* ─── Skeleton de chargement ─── */
+function SkeletonCard() {
+  return (
+    <div className="model-card model-card--skeleton" aria-hidden="true">
+      <div className="model-card__body">
+        <div className="skel skel--row">
+          <div className="skel skel--tile" />
+          <div className="skel skel--lines">
+            <div className="skel skel--line" style={{ width: "80%" }} />
+            <div className="skel skel--line" style={{ width: "55%" }} />
+          </div>
+        </div>
+        <div className="skel skel--bar" />
+        <div className="skel skel--row">
+          <div className="skel skel--chip" />
+          <div className="skel skel--chip" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -223,9 +252,9 @@ export default function Models() {
         <div className="hero__glow hero__glow--river" aria-hidden="true" />
         <Hills />
         <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Accueil</a>
-        <h1>
-          Modèles <span className="hero__accent">gratuits</span>
-        </h1>
+        <AnimatedHeading variant="gradient" tag="h1">
+          Modèles gratuits
+        </AnimatedHeading>
         <p className="hero__sub">
           Ce que tu peux utiliser pour 0 € sur chaque provider — avec son type
           et sa fenêtre de contexte.
@@ -236,14 +265,16 @@ export default function Models() {
             ↻ Actualiser
           </button>
           {status.loading ? (
-            <span role="status">Actualisation…</span>
+            <span className="models__pill" role="status">
+              <i className="models__pill-dot models__pill-dot--load" aria-hidden="true" /> Actualisation…
+            </span>
           ) : status.live ? (
-            <span className="ok" role="status">
-              ● Live OpenRouter : {status.count} modèles gratuits · snapshot {SNAPSHOT_DATE}
+            <span className="models__pill models__pill--live" role="status">
+              <i className="models__pill-dot" aria-hidden="true" /> Live OpenRouter · {status.count} modèles gratuits
             </span>
           ) : (
-            <span className={status.error ? "ko" : ""} role="status">
-              {status.error ? `Erreur (${status.error})` : `Snapshot ${SNAPSHOT_DATE}`}
+            <span className={`models__pill ${status.error ? "models__pill--ko" : ""}`} role="status">
+              <i className="models__pill-dot models__pill-dot--ko" aria-hidden="true" /> {status.error ? `Hors ligne — snapshot ${SNAPSHOT_DATE}` : `Snapshot ${SNAPSHOT_DATE}`}
             </span>
           )}
         </div>
@@ -288,16 +319,22 @@ export default function Models() {
         </div>
 
         <p className="models__count" role="status">
-          {filtered.length} modèle{filtered.length > 1 ? "s" : ""}
+          <strong>{filtered.length}</strong> modèle{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""}
         </p>
 
         {/* Model grid */}
         <div className="models__grid models__grid--v2">
-          {filtered.map((m) => (
-            <ModelCard key={m.id} model={m} />
+          {status.loading && !entries.some((e) => e.live)
+            ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={`skel-${i}`} />)
+            : null}
+          {filtered.map((m, i) => (
+            <ModelCard key={m.id} model={m} index={i} />
           ))}
-          {!filtered.length && (
-            <p className="empty-note">Aucun modèle ne correspond — essaie un autre filtre.</p>
+          {!filtered.length && !status.loading && (
+            <div className="models__empty">
+              <span className="models__empty-icon" aria-hidden="true">🦫</span>
+              <p>Aucun modèle ne correspond — essaie un autre filtre.</p>
+            </div>
           )}
         </div>
       </section>
