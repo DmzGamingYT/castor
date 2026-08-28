@@ -1,9 +1,13 @@
-import { useEffect, useRef } from "react";
-import Products from "../components/Products.jsx";
-import FAQ from "../components/FAQ.jsx";
+import { useEffect, useRef, useState } from "react";
+import DemoSection from "../components/DemoSection.jsx";
+import Testimonials from "../components/Testimonials.jsx";
 import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
+import HeroParticles from "../components/HeroParticles.jsx";
+import AnimatedHeading from "../components/AnimatedHeading.jsx";
+import DownloadSection from "../components/DownloadSection.jsx";
 import Icon, { BeaverMark } from "../components/Icon.jsx";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 
 /* révèle un élément quand il entre dans le viewport */
 function useReveal() {
@@ -26,9 +30,40 @@ function useReveal() {
   return ref;
 }
 
+function useParallax() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const y = window.scrollY;
+          const glows = el.querySelectorAll(".hero__glow");
+          const particles = el.querySelector(".hero__particles");
+          glows.forEach((g, i) => {
+            const speed = 0.12 + i * 0.06;
+            g.style.transform = `translateY(${y * speed}px) ${g.classList.contains("hero__glow--lime") ? "translateX(-88%)" : g.classList.contains("hero__glow--wood") ? "translateX(-6%)" : "translateX(-52%)"}`;
+          });
+          if (particles) particles.style.transform = `translateY(${y * 0.04}px)`;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return ref;
+}
+
 function Hero({ onDownload }) {
+  const navigate = useNavigate();
+  const parallaxRef = useParallax();
   return (
-    <section className="hero">
+    <section className="hero" ref={parallaxRef}>
+      <HeroParticles />
       <div className="hero__glow hero__glow--lime" aria-hidden="true" />
       <div className="hero__glow hero__glow--wood" aria-hidden="true" />
       <div className="hero__glow hero__glow--river" aria-hidden="true" />
@@ -54,7 +89,11 @@ function Hero({ onDownload }) {
         <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
           Télécharger Desktop
         </button>
-        <a className="btn btn--ghost btn--lg" href="#/#produits">
+        <a
+          className="btn btn--ghost btn--lg"
+          href="/castor/#produits"
+          onClick={(e) => { e.preventDefault(); navigate("/", "produits"); }}
+        >
           Découvrir les produits
         </a>
       </div>
@@ -80,8 +119,38 @@ function MLine({ variant, children }) {
 }
 
 function Manifesto() {
+  const progressRef = useRef(null);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const bar = progressRef.current;
+    if (!section || !bar) return;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const rect = section.getBoundingClientRect();
+          const viewH = window.innerHeight;
+          const start = viewH * 0.8;
+          const end = -rect.height * 0.2;
+          const progress = Math.min(1, Math.max(0, (start - rect.top) / (start - end)));
+          bar.style.setProperty("--manifesto-progress", progress);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <section className="manifesto">
+    <section className="manifesto" ref={sectionRef}>
+      <div className="manifesto__track" aria-hidden="true">
+        <div className="manifesto__bar" ref={progressRef} />
+      </div>
       {MANIFESTO.map((m, i) => (
         <MLine key={i} variant={i + 1}>
           {m.pre}
@@ -95,44 +164,164 @@ function Manifesto() {
   );
 }
 
-const STEPS = [
-  {
-    num: "01",
-    icon: "clipboard",
-    title: "Tu donnes un chantier",
-    desc: "Une phrase suffit. Pas de configuration, pas de scaffold à écrire.",
-  },
-  {
-    num: "02",
-    icon: "hammer",
-    title: "Le castor construit",
-    desc: "Structure, styles, tests : il monte tout, bloc par bloc, devant toi.",
-  },
-  {
-    num: "03",
-    icon: "checkCircle",
-    title: "Tu valides, c'est à toi",
-    desc: "Chaque brique est lisible et modifiable. Le code t'appartient, point.",
-  },
-];
+function StepsMockup() {
+  const [phase, setPhase] = useState(0);
+  const [inputVal, setInputVal] = useState("");
+  const [building, setBuilding] = useState([]);
+  const [done, setDone] = useState(false);
+
+  const prompt = "un blog de recettes végé";
+
+  useEffect(() => {
+    /* Auto-play sequence */
+    const timers = [
+      setTimeout(() => {
+        /* Phase 1: type the prompt */
+        let i = 0;
+        const ty = setInterval(() => {
+          i++;
+          setInputVal(prompt.slice(0, i));
+          if (i >= prompt.length) {
+            clearInterval(ty);
+            setTimeout(() => setPhase(1), 600);
+          }
+        }, 50);
+      }, 800),
+      setTimeout(() => {
+        /* Phase 2: building */
+        const files = [
+          "> Structure index.html...",
+          "> Styles.css appliqués...",
+          "> Composants montés...",
+          "> Tests passés ✔",
+        ];
+        let f = 0;
+        const build = setInterval(() => {
+          setBuilding((prev) => [...prev, files[f]]);
+          f++;
+          if (f >= files.length) {
+            clearInterval(build);
+            setTimeout(() => setPhase(2), 500);
+          }
+        }, 700);
+      }, 3200),
+      setTimeout(() => {
+        setDone(true);
+      }, 6500),
+      /* Reset loop */
+      setTimeout(() => {
+        setPhase(0);
+        setInputVal("");
+        setBuilding([]);
+        setDone(false);
+      }, 10000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [phase]);
+
+  return (
+    <div className="steps-mockup">
+      <div className="steps-mockup__window">
+        <div className="steps-mockup__bar">
+          <span className="dot dot--red" />
+          <span className="dot dot--yellow" />
+          <span className="dot dot--green" />
+          <em>Castor Desktop</em>
+        </div>
+        <div className="steps-mockup__body">
+          {/* Sidebar */}
+          <div className="steps-mockup__sidebar">
+            <div className="steps-mockup__sidebar-logo">🦫</div>
+            <div className={`steps-mockup__sidebar-item ${phase >= 0 ? "active" : ""}`}>
+              <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 0 ? "var(--accent)" : "var(--border)" }} />
+              <span>Chantier</span>
+            </div>
+            <div className={`steps-mockup__sidebar-item ${phase >= 1 ? "active" : ""}`}>
+              <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 1 ? "var(--wood)" : "var(--border)" }} />
+              <span>Construction</span>
+            </div>
+            <div className={`steps-mockup__sidebar-item ${phase >= 2 ? "active" : ""}`}>
+              <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 2 ? "#28c840" : "var(--border)" }} />
+              <span>Validation</span>
+            </div>
+          </div>
+          {/* Main area */}
+          <div className="steps-mockup__main">
+            {phase === 0 && (
+              <div className="steps-mockup__prompt">
+                <span className="steps-mockup__prompt-label">Décris ton chantier</span>
+                <div className="steps-mockup__input">
+                  <span className="steps-mockup__cursor">▸</span>
+                  <span>{inputVal}</span>
+                  <span className="steps-mockup__blinker">▊</span>
+                </div>
+              </div>
+            )}
+            {phase === 1 && (
+              <div className="steps-mockup__build">
+                <div className="steps-mockup__build-header">
+                  <span className="pulse-dot" />
+                  <strong>Le castor construit…</strong>
+                </div>
+                <div className="steps-mockup__build-log">
+                  {building.map((line, i) => (
+                    <span key={i} className="steps-mockup__build-line">{line}</span>
+                  ))}
+                </div>
+                <div className="steps-mockup__progress">
+                  <div className="steps-mockup__progress-fill" style={{ width: `${Math.min(100, building.length * 25)}%` }} />
+                </div>
+              </div>
+            )}
+            {phase === 2 && (
+              <div className="steps-mockup__done">
+                <div className="steps-mockup__done-icon">✔</div>
+                <strong>Chantier terminé</strong>
+                <span className="steps-mockup__done-sub">Le blog de recettes végé est prêt à exporter.</span>
+                <div className="steps-mockup__done-files">
+                  <span>📄 index.html</span>
+                  <span>🎨 styles.css</span>
+                  <span>🧪 tests.html</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Steps legend below */}
+      <div className="steps-legend">
+        <div className={`steps-legend__item ${phase >= 0 ? "steps-legend__item--active" : ""}`}>
+          <span className="steps-legend__num">01</span>
+          <div>
+            <strong>Tu donnes un chantier</strong>
+            <p>Une phrase suffit. Pas de config.</p>
+          </div>
+        </div>
+        <div className={`steps-legend__item ${phase >= 1 ? "steps-legend__item--active" : ""}`}>
+          <span className="steps-legend__num">02</span>
+          <div>
+            <strong>Le castor construit</strong>
+            <p>Structure, styles, tests, bloc par bloc.</p>
+          </div>
+        </div>
+        <div className={`steps-legend__item ${phase >= 2 ? "steps-legend__item--active" : ""}`}>
+          <span className="steps-legend__num">03</span>
+          <div>
+            <strong>Tu valides, c'est à toi</strong>
+            <p>Le code t'appartient, point.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Steps() {
   return (
     <section className="section steps">
       <h2>Le chantier en trois coups de patte</h2>
       <p className="section-sub">Pas de tunnel magique : tu vois chaque étape.</p>
-      <div className="steps__grid">
-        {STEPS.map((s) => (
-          <article key={s.num} className="step-card">
-            <span className="step-card__num">{s.num}</span>
-            <span className="step-card__icon" aria-hidden="true">
-              <Icon name={s.icon} size={26} />
-            </span>
-            <h3>{s.title}</h3>
-            <p>{s.desc}</p>
-          </article>
-        ))}
-      </div>
+      <StepsMockup />
     </section>
   );
 }
@@ -143,8 +332,9 @@ export default function Home({ onDownload }) {
       <Hero onDownload={onDownload} />
       <Manifesto />
       <Steps />
-      <Products />
-      <FAQ />
+      <Testimonials />
+      <DownloadSection onDownload={onDownload} />
+      <DemoSection />
     </>
   );
 }

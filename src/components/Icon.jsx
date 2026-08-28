@@ -1,5 +1,11 @@
 /* Set d'icônes Castor — dessinées à la main, trait 1.8, viewBox 24. */
 const PATHS = {
+  home: (
+    <>
+      <path d="M3.5 10.5L12 3l8.5 7.5V20a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 20z" />
+      <path d="M9 21.5V13h6v8.5" />
+    </>
+  ),
   clipboard: (
     <>
       <rect x="5" y="4.5" width="14" height="16.5" rx="2.5" />
@@ -172,20 +178,60 @@ export default function Icon({ name, size = 22, className = "" }) {
   );
 }
 
-/* Marque castor pleine (pour tuiles de logo) */
+/* Marque castor raffinée (pour tuiles de logo et header) */
 export function BeaverMark({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <g fill="#33260a">
-        <ellipse cx="45" cy="42" rx="15" ry="8" transform="rotate(-20 45 42)" />
-        <circle cx="27" cy="30" r="17" />
-        <circle cx="14.5" cy="15" r="5.5" />
-        <circle cx="34.5" cy="11" r="5.5" />
+    <svg width={size} height={size} viewBox="0 0 128 128" aria-hidden="true">
+      <defs>
+        <linearGradient id="bm-fur" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#5c3d0e" />
+          <stop offset="100%" stopColor="#3d2808" />
+        </linearGradient>
+        <linearGradient id="bm-belly" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fffdf6" />
+          <stop offset="100%" stopColor="#f5edd6" />
+        </linearGradient>
+      </defs>
+      {/* queue */}
+      <ellipse cx="92" cy="88" rx="20" ry="9.5" fill="#4a3210" transform="rotate(-18 92 88)" />
+      {/* corps */}
+      <ellipse cx="62" cy="82" rx="28" ry="22" fill="url(#bm-fur)" />
+      <ellipse cx="58" cy="85" rx="16" ry="14" fill="url(#bm-belly)" opacity="0.9" />
+      {/* bras */}
+      <ellipse cx="38" cy="78" rx="8" ry="6" fill="#4a3210" transform="rotate(-15 38 78)" />
+      <ellipse cx="84" cy="72" rx="8" ry="6" fill="#4a3210" transform="rotate(25 84 72)" />
+      {/* tête */}
+      <circle cx="60" cy="52" r="24" fill="url(#bm-fur)" />
+      {/* oreilles */}
+      <circle cx="40" cy="34" r="8" fill="#4a3210" />
+      <circle cx="40" cy="34" r="5" fill="#c98820" opacity="0.6" />
+      <circle cx="78" cy="34" r="8" fill="#4a3210" />
+      <circle cx="78" cy="34" r="5" fill="#c98820" opacity="0.6" />
+      {/* yeux */}
+      <ellipse cx="50" cy="48" rx="6.5" ry="7" fill="#fffdf6" />
+      <ellipse cx="70" cy="48" rx="6.5" ry="7" fill="#fffdf6" />
+      <circle cx="51.5" cy="48.5" r="4" fill="#1a0f02" />
+      <circle cx="71.5" cy="48.5" r="4" fill="#1a0f02" />
+      <circle cx="53" cy="47" r="1.5" fill="#fff" opacity="0.9" />
+      <circle cx="73" cy="47" r="1.5" fill="#fff" opacity="0.9" />
+      {/* nez */}
+      <ellipse cx="60" cy="57" rx="4.5" ry="3.5" fill="#1a0f02" />
+      {/* bouche + dents */}
+      <path d="M55 61 Q60 65 65 61" fill="none" stroke="#1a0f02" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="56.5" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6" />
+      <rect x="61" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6" />
+      {/* moustaches */}
+      <g stroke="#fffdf6" strokeWidth="0.8" opacity="0.5" strokeLinecap="round">
+        <line x1="36" y1="54" x2="48" y2="56" />
+        <line x1="35" y1="58" x2="48" y2="58" />
+        <line x1="36" y1="62" x2="48" y2="60" />
+        <line x1="72" y1="56" x2="84" y2="54" />
+        <line x1="72" y1="58" x2="84" y2="58" />
+        <line x1="72" y1="60" x2="84" y2="62" />
       </g>
-      <rect x="23.5" y="38" width="5" height="10" rx="2" fill="#fffdf6" />
-      <circle cx="21" cy="27" r="2.4" fill="#fffdf6" />
-      <circle cx="32.5" cy="25" r="2.4" fill="#fffdf6" />
-      <path d="M26.5 33.5l-2.6 3h5.6z" fill="#fffdf6" opacity="0.55" />
+      {/* joues roses */}
+      <circle cx="42" cy="58" r="4" fill="#e2952a" opacity="0.35" />
+      <circle cx="78" cy="58" r="4" fill="#e2952a" opacity="0.35" />
     </svg>
   );
 }

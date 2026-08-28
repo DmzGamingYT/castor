@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
-import { BeaverMark } from "./Icon.jsx";
+import Icon, { BeaverMark } from "./Icon.jsx";
 import { useTheme } from "../lib/useTheme.js";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 
 const LINKS = [
-  { href: "#/", route: "/", label: "Accueil" },
-  { href: "#/models", route: "/models", label: "Modèles" },
-  { href: "#/desktop", route: "/desktop", label: "Desktop" },
-  { href: "#/cli", route: "/cli", label: "CLI" },
-  { href: "#/#produits", route: null, label: "Produits" },
-  { href: "#/#faq", route: null, label: "FAQ" },
+  { path: "/", route: "/", label: "Accueil", icon: "home" },
+  { path: "/models", route: "/models", label: "Modèles", icon: "layers" },
+  { path: "/desktop", route: "/desktop", label: "Desktop", icon: "desktop" },
 ];
 
 export default function Header({ route, onDownload }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -29,22 +28,33 @@ export default function Header({ route, onDownload }) {
 
   return (
     <header className={`header ${scrolled ? "header--scrolled" : ""}`}>
-      <a className="logo" href="#/">
+      {/* decorative accent line at top */}
+      <div className="header__accent-bar" aria-hidden="true" />
+
+      <a className="logo" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>
         <span className="logo__tile" aria-hidden="true">
           <BeaverMark size={18} />
+          <span className="logo__glow" aria-hidden="true" />
         </span>
         <span className="logo__name">castor</span>
+        <span className="logo__badge">beta</span>
       </a>
 
       <nav id="site-nav" className={`nav ${menuOpen ? "nav--open" : ""}`} aria-label="Navigation principale">
         {LINKS.map((l) => (
           <a
-            key={l.href}
+            key={l.label}
             className={l.route && route === l.route ? "nav__link--active" : ""}
-            href={l.href}
-            onClick={() => setMenuOpen(false)}
+            href={`/castor${l.path}`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(l.path, l.anchor);
+              setMenuOpen(false);
+            }}
           >
+            <Icon name={l.icon} size={15} className="nav__link-icon" />
             {l.label}
+            <span className="nav__underline" aria-hidden="true" />
           </a>
         ))}
       </nav>
@@ -57,9 +67,10 @@ export default function Header({ route, onDownload }) {
           aria-label={theme === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
           title={theme === "dark" ? "Thème clair" : "Thème sombre"}
         >
-          {theme === "dark" ? "☀" : "☾"}
+          <span className="theme-btn__icon">{theme === "dark" ? "☀" : "☾"}</span>
         </button>
-        <button type="button" className="btn btn--primary btn--sm" onClick={onDownload}>
+        <button type="button" className="btn btn--primary btn--sm header__cta" onClick={onDownload}>
+          <span className="btn__shimmer" aria-hidden="true" />
           Télécharger
         </button>
         <button
@@ -70,7 +81,9 @@ export default function Header({ route, onDownload }) {
           aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
           onClick={() => setMenuOpen(!menuOpen)}
         >
-          {menuOpen ? "✕" : "☰"}
+          <span className="nav-burger__bar" />
+          <span className="nav-burger__bar" />
+          <span className="nav-burger__bar" />
         </button>
       </div>
     </header>

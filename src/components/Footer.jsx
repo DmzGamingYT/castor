@@ -1,7 +1,9 @@
 import Hills from "./Hills.jsx";
 import { BeaverMark } from "./Icon.jsx";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 
 export default function Footer({ onDownload }) {
+  const navigate = useNavigate();
   return (
     <footer className="footer">
       <div className="footer__cta">
@@ -15,7 +17,7 @@ export default function Footer({ onDownload }) {
           <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
             Télécharger Castor Desktop
           </button>
-          <code className="footer__cmd">ou : npm i -g castor-cli</code>
+
         </div>
       </div>
       <div className="footer__bottom">
@@ -26,14 +28,12 @@ export default function Footer({ onDownload }) {
           castor
         </span>
         <nav className="footer__nav">
-          <a href="#/">Accueil</a>
-          <a href="#/desktop">Desktop</a>
-          <a href="#/cli">CLI</a>
-          <a href="#/web">Web</a>
-          <a href="#/cloud">Cloud</a>
-          <a href="#/chat">Chat</a>
+          <a href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>Accueil</a>
+          <a href="/castor/desktop" onClick={(e) => { e.preventDefault(); navigate("/desktop"); }}>Desktop</a>
+          <a href="/castor/cloud" onClick={(e) => { e.preventDefault(); navigate("/cloud"); }}>Cloud</a>
+          <a href="/castor/chat" onClick={(e) => { e.preventDefault(); navigate("/chat"); }}>Chat</a>
         </nav>
-        <span className="footer__copy">© 2026 Castor. Bâti avec 🦫 en France.</span>
+        <span className="footer__copy">© 2026 Castor. Créé par <strong>Alessio Innangi</strong>.</span>
       </div>
     </footer>
   );
