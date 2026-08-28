@@ -362,10 +362,13 @@ export default function ChatStudio() {
         </div>
 
         {!aiReady && (
-          <p className="demo-note" role="status">
-            🦫 Mode démo locale — ajoute une clé OpenRouter gratuite (« clé ? ») pour
-            parler à un vrai modèle. Rien ne sort de ton navigateur.
-          </p>
+          <div className="demo-note" role="status">
+            <span className="demo-note__beaver" aria-hidden="true">🦫</span>
+            <span>
+              <strong>Mode démo locale.</strong> Ajoute une clé OpenRouter gratuite
+              (« clé ? » en bas) pour parler à un vrai modèle — rien ne sort de ton navigateur.
+            </span>
+          </div>
         )}
 
         {!activeChat ? (
@@ -391,6 +394,12 @@ export default function ChatStudio() {
                 </li>
               ))}
             </ul>
+            <div className="chatapp__welcome-perks" aria-hidden="true">
+              <span className="chatapp__perk">🔍 Réponses sourcées</span>
+              <span className="chatapp__perk">🧠 Mode réflexion</span>
+              <span className="chatapp__perk">📎 Fichiers & code</span>
+              <span className="chatapp__perk">🔒 100% local</span>
+            </div>
           </div>
         ) : (
           <>

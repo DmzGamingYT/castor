@@ -2864,6 +2864,7 @@ main:focus { outline: none; }
   border-radius: 20px;
   padding: 1.1rem 1.1rem 0.9rem;
   text-align: left;
+  box-shadow: 0 14px 36px rgba(96, 82, 34, 0.10);
   box-shadow: 0 24px 60px rgba(96, 82, 34, 0.14);
   transition: border-color 0.15s;
 }
@@ -3430,6 +3431,26 @@ main:focus { outline: none; }
   text-align: center;
 }
 
+/* pills de capacités sous les suggestions */
+.chatapp__welcome-perks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.chatapp__perk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  border-radius: 999px;
+  padding: 0.28rem 0.75rem;
+}
+
 .cchat-composer { width: min(620px, 100%); }
 
 .chatapp__thread {
@@ -3561,13 +3582,23 @@ main:focus { outline: none; }
 
 /* bandeau mode démo (pas de clé) */
 .demo-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
   margin: 0.6rem 1.2rem 0;
-  padding: 0.55rem 0.95rem;
-  border: 1px dashed var(--border);
+  padding: 0.6rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border-soft));
   border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
   color: var(--muted);
   font-size: 0.8rem;
+  line-height: 1.5;
+}
+.demo-note strong { color: var(--accent-deep); }
+.demo-note__beaver {
+  font-size: 1.1rem;
+  line-height: 1.3;
+  animation: welcomeFloat 3.2s ease-in-out infinite;
 }
 
 /* curseur de stream — ancré sous la dernière bulle, pas dans une bulle */

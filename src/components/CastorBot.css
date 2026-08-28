@@ -240,6 +240,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  margin-top: 0.15rem;
 }
 .cbot__chip {
   font-family: var(--font-body);
@@ -295,18 +296,53 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  transition: transform 0.2s, filter 0.2s;
+  box-shadow: 0 4px 12px rgba(226, 149, 42, 0.30);
+  transition: transform 0.2s, filter 0.2s, opacity 0.2s;
 }
 .cbot__send:hover:not(:disabled) { transform: scale(1.08); filter: brightness(1.05); }
-.cbot__send:disabled { opacity: 0.45; cursor: not-allowed; }
+.cbot__send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-/* mobile : panneau en bottom-sheet */
+/* messages : avatar castor + bulle */
+.cbot__msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+.cbot__msg--bot { justify-content: flex-start; }
+.cbot__msg--user { justify-content: flex-end; }
+
+.cbot__msg-avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  flex-shrink: 0;
+  align-self: flex-end;
+  box-shadow: 0 3px 8px rgba(226, 149, 42, 0.25);
+}
+
+.cbot__msg--bot .cbot__bubble {
+  border-bottom-left-radius: 5px;
+}
+.cbot__msg--user .cbot__bubble {
+  border-bottom-right-radius: 5px;
+}
+
+/* colonne chips sous la bulle bot : alignée après l avatar */
+.cbot__msg .cbot__chips {
+  flex-basis: 100%;
+}
+
+/* mobile : panneau en bottom-sheet, bulle masquée quand ouvert */
 @media (max-width: 480px) {
   .cbot { bottom: 0.8rem; right: 0.8rem; }
   .cbot__panel {
     width: calc(100vw - 1.6rem);
     height: min(62vh, 480px);
   }
+  .cbot--open .cbot__bubble-btn { display: none; }
 }
 
 /* respecte prefers-reduced-motion */

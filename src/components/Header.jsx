@@ -5,7 +5,6 @@ import { useNavigate } from "../lib/NavigationContext.jsx";
 
 const LINKS = [
   { path: "/", route: "/", label: "Accueil", icon: "home" },
-  { path: "/models", route: "/models", label: "Modèles", icon: "layers" },
   { path: "/desktop", route: "/desktop", label: "Desktop", icon: "desktop" },
   { path: "/cloud", route: "/cloud", label: "Cloud", icon: "cloud" },
   { path: "/chat", route: "/chat", label: "Chat", icon: "chat" },

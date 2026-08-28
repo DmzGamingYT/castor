@@ -312,6 +312,11 @@ export default function CastorBot() {
         <div className="cbot__messages" ref={scrollRef} aria-live="polite">
           {messages.map((m, i) => (
             <div key={i} className={`cbot__msg cbot__msg--${m.role}`}>
+              {m.role === "bot" && (
+                <span className="cbot__msg-avatar" aria-hidden="true">
+                  <BeaverMark size={18} />
+                </span>
+              )}
               <div className="cbot__bubble">
                 <RichText text={m.text || (busy && i === messages.length - 1 ? "▊" : "")} />
               </div>
