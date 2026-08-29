@@ -8,7 +8,9 @@ function getInitialLang() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "en" || stored === "fr") return stored;
-  } catch {}
+  } catch {
+    /* localStorage indisponible (mode privé/SSR) → langue par défaut */
+  }
   /* par défaut : français (le site est francophone) */
   return "fr";
 }
@@ -17,7 +19,11 @@ export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(getInitialLang);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, lang); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, lang);
+    } catch {
+      /* localStorage indisponible — on persiste pas, pas grave */
+    }
     document.documentElement.lang = lang;
   }, [lang]);
 
