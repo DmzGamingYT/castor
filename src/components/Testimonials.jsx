@@ -1,69 +1,44 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import AnimatedHeading from "./AnimatedHeading.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 const TESTIMONIALS = [
-  {
-    initials: "ML",
-    name: "Marc L.",
-    role: "Étudiant en info",
-    color: "var(--accent)",
-    quote:
-      "J'ai refait tout mon site de portfolio en une soirée au lieu d'une semaine. Le castor comprend les conventions et respecte la structure — j'ai juste validé les diffs.",
-  },
-  {
-    initials: "SC",
-    name: "Sarah C.",
-    role: "Développeuse indie",
-    color: "var(--river)",
-    quote:
-      "Le mode local est ce qui m'a convaincue. Aucune donnée qui part, les clés restent chez moi, et ça tourne même sans connexion. Enfin un outil IA sans compromis.",
-  },
-  {
-    initials: "TK",
-    name: "Thomas K.",
-    role: "Freelance full-stack",
-    color: "var(--sage)",
-    quote:
-      "Je bascule entre Groq pour le rapide et un modèle local pour le sensible. Le fait de choisir le cerveau à la minute, c'est la vraie liberté — pas un abonnement qui décide pour moi.",
-  },
-  {
-    initials: "AN",
-    name: "Amira N.",
-    role: "Cheffe de projet web",
-    color: "var(--accent-2)",
-    quote:
-      "J'ai recommandé Castor à toute mon équipe. Zéro formation, zéro abonnement, et on a retrouvé notre façon de travailler — juste plus vite. Les clients ont rien changé de leur côté.",
-  },
+  { initials: "ML", name: "Marc L.", roleKey: "tr1", quoteKey: "tq1", color: "var(--accent)" },
+  { initials: "SC", name: "Sarah C.", roleKey: "tr2", quoteKey: "tq2", color: "var(--river)" },
+  { initials: "TK", name: "Thomas K.", roleKey: "tr3", quoteKey: "tq3", color: "var(--sage)" },
+  { initials: "AN", name: "Amira N.", roleKey: "tr4", quoteKey: "tq4", color: "var(--accent-2)" },
 ];
 
-function TestimonialCard({ t, state }) {
+function TestimonialCard({ item, state }) {
+  const { t } = useLanguage();
   return (
     <article className={`testimonial testimonial--${state}`}>
       <div className="testimonial__stars" aria-hidden="true">
         {"★★★★★"}
       </div>
-      <blockquote className="testimonial__quote">{t.quote}</blockquote>
+      <blockquote className="testimonial__quote">{t(item.quoteKey)}</blockquote>
       <div className="testimonial__footer">
         <div className="testimonial__author">
           <span
             className="testimonial__avatar"
-            style={{ background: t.color }}
+            style={{ background: item.color }}
             aria-hidden="true"
           >
-            {t.initials}
+            {item.initials}
           </span>
           <div className="testimonial__meta">
-            <strong>{t.name}</strong>
-            <span>{t.role}</span>
+            <strong>{item.name}</strong>
+            <span>{t(item.roleKey)}</span>
           </div>
         </div>
-        <span className="testimonial__badge">Recommande ✓</span>
+        <span className="testimonial__badge">{t("tests_recommends")}</span>
       </div>
     </article>
   );
 }
 
 export default function Testimonials() {
+  const { t } = useLanguage();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const dragRef = useRef({ startX: 0, startTime: 0, dragging: false });
@@ -112,9 +87,9 @@ export default function Testimonials() {
 
   return (
     <section className="section testimonials">
-      <AnimatedHeading variant="gradient">Ils ont donné un chantier.</AnimatedHeading>
+      <AnimatedHeading variant="gradient">{t("tests_heading")}</AnimatedHeading>
       <p className="section-sub">
-        Retours de vrais utilisateurs — pas de fake, pas de script.
+        {t("tests_sub")}
       </p>
 
       <div
@@ -126,24 +101,24 @@ export default function Testimonials() {
       >
         {/* carte précédente (peek) */}
         <div className="carousel__side carousel__side--left">
-          <TestimonialCard t={TESTIMONIALS[getIdx(-1)]} state="side" />
+          <TestimonialCard item={TESTIMONIALS[getIdx(-1)]} state="side" />
         </div>
 
         {/* carte active */}
         <div className="carousel__center">
-          <TestimonialCard t={TESTIMONIALS[active]} state="active" key={active} />
+          <TestimonialCard item={TESTIMONIALS[active]} state="active" key={active} />
         </div>
 
         {/* carte suivante (peek) */}
         <div className="carousel__side carousel__side--right">
-          <TestimonialCard t={TESTIMONIALS[getIdx(1)]} state="side" />
+          <TestimonialCard item={TESTIMONIALS[getIdx(1)]} state="side" />
         </div>
 
         {/* flèches */}
-        <button className="carousel__arrow carousel__arrow--left" onClick={prev} aria-label="Précédent">
+        <button className="carousel__arrow carousel__arrow--left" onClick={prev} aria-label={t("tests_prev")}>
           ‹
         </button>
-        <button className="carousel__arrow carousel__arrow--right" onClick={next} aria-label="Suivant">
+        <button className="carousel__arrow carousel__arrow--right" onClick={next} aria-label={t("tests_next")}>
           ›
         </button>
       </div>
@@ -155,7 +130,7 @@ export default function Testimonials() {
             key={i}
             className={`testimonials__dot ${i === active ? "testimonials__dot--on" : ""}`}
             onClick={() => setActive(i)}
-            aria-label={`Témoignage ${i + 1}`}
+            aria-label={`${t("tests_dot")} ${i + 1}`}
           />
         ))}
       </div>

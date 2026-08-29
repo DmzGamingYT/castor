@@ -108,11 +108,13 @@ function Hero({ onDownload }) {
   );
 }
 
-const MANIFESTO = [
-  { pre: "Le code n'est pas ", highlight: "un abonnement", post: ".", strike: true },
-  { pre: "Ton modèle, ton choix. ", highlight: "Cloud ou sous ton toit", post: "." },
-  { pre: "0 € n'est pas une promo. ", highlight: "C'est la règle.", post: "" },
-];
+function buildManifesto(t) {
+  return [
+    { pre: t("mani_1_pre"), highlight: t("mani_1_hl"), post: ".", strike: true },
+    { pre: t("mani_2_pre"), highlight: t("mani_2_hl"), post: "." },
+    { pre: t("mani_3_pre"), highlight: t("mani_3_hl"), post: "" },
+  ];
+}
 
 function MLine({ variant, children }) {
   const ref = useReveal();
@@ -124,6 +126,8 @@ function MLine({ variant, children }) {
 }
 
 function Manifesto() {
+  const { t } = useLanguage();
+  const MANIFESTO = buildManifesto(t);
   const progressRef = useRef(null);
   const sectionRef = useRef(null);
 
@@ -255,22 +259,22 @@ function StepsMockup() {
             <div className="steps-mockup__sidebar-logo">🦫</div>
             <div className={`steps-mockup__sidebar-item ${phase >= 0 ? "active" : ""}`}>
               <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 0 ? "var(--accent)" : "var(--border)" }} />
-              <span>Chantier</span>
+              <span>{t("steps_sidebar_0")}</span>
             </div>
             <div className={`steps-mockup__sidebar-item ${phase >= 1 ? "active" : ""}`}>
               <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 1 ? "var(--wood)" : "var(--border)" }} />
-              <span>Construction</span>
+              <span>{t("steps_sidebar_1")}</span>
             </div>
             <div className={`steps-mockup__sidebar-item ${phase >= 2 ? "active" : ""}`}>
               <span className="steps-mockup__sidebar-dot" style={{ background: phase >= 2 ? "#28c840" : "var(--border)" }} />
-              <span>Validation</span>
+              <span>{t("steps_sidebar_2")}</span>
             </div>
           </div>
           {/* Main area */}
           <div className="steps-mockup__main">
             {phase === 0 && (
               <div className="steps-mockup__prompt">
-                <span className="steps-mockup__prompt-label">Décris ton chantier</span>
+                <span className="steps-mockup__prompt-label">{t("steps_prompt_label")}</span>
                 <div className="steps-mockup__input">
                   <span className="steps-mockup__cursor">▸</span>
                   <span>{inputVal}</span>
@@ -282,7 +286,7 @@ function StepsMockup() {
               <div className="steps-mockup__build">
                 <div className="steps-mockup__build-header">
                   <span className="pulse-dot" />
-                  <strong>Le castor construit…</strong>
+                  <strong>{t("steps_build_header")}</strong>
                 </div>
                 <div className="steps-mockup__build-log">
                   {building.map((line, i) => (
@@ -297,7 +301,7 @@ function StepsMockup() {
             {phase === 2 && (
               <div className="steps-mockup__done">
                 <div className="steps-mockup__done-icon">✔</div>
-                <strong>Chantier terminé</strong>
+                <strong>{t("steps_done_title")}</strong>
                 <span className="steps-mockup__done-sub">Le blog de recettes végé est prêt à exporter.</span>
                 <div className="steps-mockup__done-files">
                   <span>📄 index.html</span>
@@ -338,10 +342,11 @@ function StepsMockup() {
 }
 
 function Steps() {
+  const { t } = useLanguage();
   return (
     <section className="section steps" id="chantier">
-      <AnimatedHeading variant="letters">Le chantier en trois coups de patte</AnimatedHeading>
-      <p className="section-sub">Pas de tunnel magique : tu vois chaque étape.</p>
+      <AnimatedHeading variant="letters">{t("steps_heading")}</AnimatedHeading>
+      <p className="section-sub">{t("steps_sub")}</p>
       <StepsMockup />
     </section>
   );
@@ -350,16 +355,14 @@ function Steps() {
 /* aperçu de l'avancement → pointe vers la page dédiée /avancement */
 function ProgressTeaser() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   return (
     <section className="section prog-teaser" id="avancement">
       <div className="prog-teaser__inner">
         <div className="prog-teaser__text">
-          <span className="prog__badge">🔨 Avancement du projet</span>
-          <h2>Le chantier avance, patte après patte</h2>
-          <p className="section-sub">
-            Ce qui est livré, ce qu'on construit et ce qui arrive — sans fausse
-            promesse ni date artificielle.
-          </p>
+          <span className="prog__badge">{t("prog_badge")}</span>
+          <h2>{t("prog_heading")}</h2>
+          <p className="section-sub">{t("prog_sub")}</p>
         </div>
         <a
           className="btn btn--primary btn--lg"
@@ -369,7 +372,7 @@ function ProgressTeaser() {
             navigate("/avancement");
           }}
         >
-          Voir l'avancement du projet →
+          {t("prog_cta")}
         </a>
       </div>
     </section>

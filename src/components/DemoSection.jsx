@@ -1,32 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "./Icon.jsx";
 import AnimatedHeading from "./AnimatedHeading.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 const DEMOS = [
-  {
-    id: "agents",
-    icon: "layers",
-    title: "Agents parallèles",
-    desc: "Trois refactors en même temps ? Chaque agent vit dans son panneau, sans se marcher dessus.",
-  },
-  {
-    id: "providers",
-    icon: "plug",
-    title: "Multi-providers",
-    desc: "Branche OpenRouter, Groq, OpenCode Zen ou un modèle local. Change de cerveau à chaud.",
-  },
-  {
-    id: "keys",
-    icon: "lock",
-    title: "Clés chiffrées",
-    desc: "Tes clés API sont stockées avec le coffre du système. Jamais en clair.",
-  },
-  {
-    id: "speed",
-    icon: "zap",
-    title: "Optimisé",
-    desc: "Démarrage instantané, streaming token par token, stats de latence en direct.",
-  },
+  { id: "agents", icon: "layers", title: "demo_agents_title", desc: "demo_agents_desc" },
+  { id: "providers", icon: "plug", title: "demo_providers_title", desc: "demo_providers_desc" },
+  { id: "keys", icon: "lock", title: "demo_keys_title", desc: "demo_keys_desc" },
+  { id: "speed", icon: "zap", title: "demo_speed_title", desc: "demo_speed_desc" },
 ];
 
 /* ── Mockups interactifs par feature ── */
@@ -95,11 +76,12 @@ function AgentsMockup() {
 }
 
 function ProvidersMockup() {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(0);
   const providers = [
-    { name: "OpenRouter", tag: "Cloud", color: "var(--accent)" },
-    { name: "Groq", tag: "Rapide", color: "var(--river)" },
-    { name: "Ollama", tag: "Local", color: "var(--sage)" },
+    { name: "OpenRouter", tagKey: "demo_prov_cloud", color: "var(--accent)" },
+    { name: "Groq", tagKey: "demo_prov_fast", color: "var(--river)" },
+    { name: "Ollama", tagKey: "demo_prov_local", color: "var(--sage)" },
   ];
 
   return (
@@ -108,7 +90,7 @@ function ProvidersMockup() {
         <span className="dot dot--red" />
         <span className="dot dot--yellow" />
         <span className="dot dot--green" />
-        <em>Castor Desktop — Provider</em>
+        <em>Castor Desktop — {t("demo_provider_bar")}</em>
       </div>
       <div className="demo-mockup__body">
         <div className="demo-providers">
@@ -123,19 +105,19 @@ function ProvidersMockup() {
               <span className="demo-provider__dot" />
               <div>
                 <strong>{p.name}</strong>
-                <span className="demo-provider__tag">{p.tag}</span>
+                <span className="demo-provider__tag">{t(p.tagKey)}</span>
               </div>
               {i === selected && <span className="demo-provider__check">✓</span>}
             </button>
           ))}
         </div>
         <div className="demo-provider-info">
-          <span className="demo-provider-info__label">Cerveau actif</span>
+          <span className="demo-provider-info__label">{t("demo_active_brain")}</span>
           <strong style={{ color: providers[selected].color }}>
             {providers[selected].name}
           </strong>
           <span className="demo-provider-info__change">
-            Change à chaud · aucun restart
+            {t("demo_hot_swap")}
           </span>
         </div>
       </div>
@@ -144,6 +126,7 @@ function ProvidersMockup() {
 }
 
 function KeysMockup() {
+  const { t } = useLanguage();
   const [revealed, setRevealed] = useState(false);
   return (
     <div className="demo-mockup demo-mockup--keys">
@@ -151,14 +134,14 @@ function KeysMockup() {
         <span className="dot dot--red" />
         <span className="dot dot--yellow" />
         <span className="dot dot--green" />
-        <em>Castor Desktop — Sécurité</em>
+        <em>Castor Desktop — {t("demo_secure_bar")}</em>
       </div>
       <div className="demo-mockup__body">
         <div className="demo-keys">
           <div className="demo-vault">
             <span className="demo-vault__icon">🔒</span>
             <div>
-              <strong>Coffre du système</strong>
+              <strong>{t("demo_vault")}</strong>
               <span>safeStorage · AES-256-GCM</span>
             </div>
           </div>
@@ -172,16 +155,16 @@ function KeysMockup() {
               className="demo-key-toggle"
               onClick={() => setRevealed(!revealed)}
             >
-              {revealed ? "Masquer" : "Révéler"}
+              {revealed ? t("demo_hide") : t("demo_reveal")}
             </button>
           </div>
           <div className="demo-key-row">
             <span className="demo-key-label">Groq</span>
             <code className="demo-key-value">••••••••••••••••</code>
-            <span className="demo-key-status">Verrouillé</span>
+            <span className="demo-key-status">{t("demo_locked")}</span>
           </div>
           <div className="demo-key-note">
-            Jamais en clair · Jamais envoyé · Toujours chez toi
+            {t("demo_key_note")}
           </div>
         </div>
       </div>
@@ -190,6 +173,7 @@ function KeysMockup() {
 }
 
 function SpeedMockup() {
+  const { t } = useLanguage();
   const [tokens, setTokens] = useState(0);
   const [latency, setLatency] = useState(42);
   /* temps écoulé et cumul de tokens suivis par ref pour calculer le débit réel */
@@ -215,22 +199,22 @@ function SpeedMockup() {
         <span className="dot dot--red" />
         <span className="dot dot--yellow" />
         <span className="dot dot--green" />
-        <em>Castor Desktop — Performance</em>
+        <em>Castor Desktop — {t("demo_perf_bar")}</em>
       </div>
       <div className="demo-mockup__body">
         <div className="demo-speed">
           <div className="demo-speed__stat">
-            <span className="demo-speed__label">Tokens</span>
+            <span className="demo-speed__label">{t("demo_tokens")}</span>
             <strong className="demo-speed__value">{tokens}</strong>
-            <span className="demo-speed__unit">générés</span>
+            <span className="demo-speed__unit">{t("demo_generated")}</span>
           </div>
           <div className="demo-speed__stat">
-            <span className="demo-speed__label">Latence</span>
+            <span className="demo-speed__label">{t("demo_latency")}</span>
             <strong className="demo-speed__value">{Math.round(latency)}</strong>
             <span className="demo-speed__unit">ms</span>
           </div>
           <div className="demo-speed__stat">
-            <span className="demo-speed__label">Débit</span>
+            <span className="demo-speed__label">{t("demo_throughput")}</span>
             <strong className="demo-speed__value">{tokPerSec}</strong>
             <span className="demo-speed__unit">tok/s</span>
           </div>
@@ -256,14 +240,16 @@ const MOCKUPS = {
 };
 
 export default function DemoSection() {
+  const { t } = useLanguage();
   const [active, setActive] = useState("agents");
   const ActiveMockup = MOCKUPS[active];
+  const current = DEMOS.find((d) => d.id === active);
 
   return (
     <section className="section demo" id="demo">
-      <AnimatedHeading variant="slide">Essaie Castor Desktop</AnimatedHeading>
+      <AnimatedHeading variant="slide">{t("demo_heading")}</AnimatedHeading>
       <p className="section-sub">
-        Explore les fonctionnalités — clique pour voir chaque feature en action.
+        {t("demo_sub")}
       </p>
 
       <div className="demo__tabs">
@@ -275,15 +261,15 @@ export default function DemoSection() {
             onClick={() => setActive(d.id)}
           >
             <Icon name={d.icon} size={18} />
-            <span>{d.title}</span>
+            <span>{t(d.title)}</span>
           </button>
         ))}
       </div>
 
       <div className="demo__content">
         <div className="demo__info">
-          <h3>{DEMOS.find((d) => d.id === active)?.title}</h3>
-          <p>{DEMOS.find((d) => d.id === active)?.desc}</p>
+          <h3>{t(current?.title)}</h3>
+          <p>{t(current?.desc)}</p>
         </div>
         <ActiveMockup />
       </div>

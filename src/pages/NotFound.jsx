@@ -1,13 +1,15 @@
 import { useEffect } from "react";
 import { BeaverMark } from "../components/Icon.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 export default function NotFound() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
-    document.title = "Page introuvable — Castor";
-  }, []);
+    document.title = t("nf_title_doc");
+  }, [t]);
 
   return (
     <section className="section notfound">
@@ -15,28 +17,27 @@ export default function NotFound() {
         <BeaverMark size={64} />
         <span className="notfound__halo" aria-hidden="true" />
       </div>
-      <span className="hero__badge">Erreur 404</span>
+      <span className="hero__badge">{t("nf_badge")}</span>
       <h1 className="notfound__title">
-        Cette page est encore <span className="hero__accent">en chantier</span>.
+        {t("nf_title_pre")}<span className="hero__accent">{t("nf_title_hl")}</span>.
       </h1>
       <p className="section-sub">
-        Le castor n'a rien trouvé ici. La planche a peut-être été déplacée,
-        ou la route n'existe pas (encore).
+        {t("nf_sub")}
       </p>
       <div className="notfound__actions">
         <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate("/")}>
-          Retour à l'accueil
+          {t("nf_home")}
         </button>
         <button
           type="button"
           className="btn btn--ghost btn--lg"
           onClick={() => navigate("/", "demo")}
         >
-          Voir la démo
+          {t("nf_demo")}
         </button>
       </div>
       <p className="notfound__hint">
-        Astuce : demande au 🦫 en bas à droite, il connaît toutes les routes du site.
+        {t("nf_hint")}
       </p>
     </section>
   );

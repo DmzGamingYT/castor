@@ -1,105 +1,73 @@
 import { useState } from "react";
 import AnimatedHeading from "../components/AnimatedHeading.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 /* ── Templates disponibles ── */
 const TEMPLATES = [
   {
     id: "blog",
     icon: "📝",
-    name: "Blog",
-    tag: "Populaire",
-    desc: "Un blog minimaliste avec articles, catégories et recherche.",
-    features: ["Articles MD/HTML", "Catégories & tags", "Page à propos", "RSS intégré"],
+    name: "tpl_blog_name",
+    tag: "tpl_blog_tag",
+    desc: "tpl_blog_desc",
+    features: ["tpl_blog_f1", "tpl_blog_f2", "tpl_blog_f3", "tpl_blog_f4"],
     color: "var(--accent)",
-    prompt: "un blog de recettes végé avec recherche par ingrédients",
+    prompt: "tpl_blog_prompt",
   },
   {
     id: "portfolio",
     icon: "🎨",
-    name: "Portfolio",
-    tag: "Recommandé",
-    desc: "Mets en valeur tes projets avec une galerie interactive.",
-    features: ["Galerie responsive", "Filtres par catégorie", "Page projet détaillée", "Formulaire contact"],
+    name: "tpl_portfolio_name",
+    tag: "tpl_portfolio_tag",
+    desc: "tpl_portfolio_desc",
+    features: ["tpl_portfolio_f1", "tpl_portfolio_f2", "tpl_portfolio_f3", "tpl_portfolio_f4"],
     color: "var(--river)",
-    prompt: "le portfolio d'un illustrateur freelance avec galerie et contact",
+    prompt: "tpl_portfolio_prompt",
   },
   {
     id: "dashboard",
     icon: "📊",
-    name: "Dashboard",
-    tag: "Pro",
-    desc: "Un tableau de bord avec graphiques et statistiques.",
-    features: ["Charts interactifs", "KPIs en temps réel", "Thème sombre", "Export données"],
+    name: "tpl_dashboard_name",
+    tag: "tpl_dashboard_tag",
+    desc: "tpl_dashboard_desc",
+    features: ["tpl_dashboard_f1", "tpl_dashboard_f2", "tpl_dashboard_f3", "tpl_dashboard_f4"],
     color: "var(--sage)",
-    prompt: "un dashboard analytics avec graphiques et KPIs",
+    prompt: "tpl_dashboard_prompt",
   },
   {
     id: "landing",
     icon: "🚀",
-    name: "Landing Page",
-    tag: "Rapide",
-    desc: "Une page de vente efficace avec CTA et témoignages.",
-    features: ["Hero accrocheur", "Section fonctionnalités", "Témoignages", "Pricing & FAQ"],
+    name: "tpl_landing_name",
+    tag: "tpl_landing_tag",
+    desc: "tpl_landing_desc",
+    features: ["tpl_landing_f1", "tpl_landing_f2", "tpl_landing_f3", "tpl_landing_f4"],
     color: "var(--accent)",
-    prompt: "une landing page pour une app de productivité avec pricing",
+    prompt: "tpl_landing_prompt",
   },
   {
     id: "ecommerce",
     icon: "🛒",
-    name: "E-commerce",
-    tag: "Avancé",
-    desc: "Une boutique en ligne avec panier et paiement.",
-    features: ["Catalogue produits", "Panier & checkout", "Compte client", "Gestion stock"],
+    name: "tpl_ecommerce_name",
+    tag: "tpl_ecommerce_tag",
+    desc: "tpl_ecommerce_desc",
+    features: ["tpl_ecommerce_f1", "tpl_ecommerce_f2", "tpl_ecommerce_f3", "tpl_ecommerce_f4"],
     color: "var(--wood)",
-    prompt: "une boutique en ligne de vêtements vintage avec panier",
+    prompt: "tpl_ecommerce_prompt",
   },
   {
     id: "saas",
     icon: "☁️",
-    name: "SaaS",
-    tag: "Business",
-    desc: "Un site pour ton produit SaaS avec auth et dashboard.",
-    features: ["Page marketing", "Inscription/Login", "Dashboard user", "Settings & profil"],
+    name: "tpl_saas_name",
+    tag: "tpl_saas_tag",
+    desc: "tpl_saas_desc",
+    features: ["tpl_saas_f1", "tpl_saas_f2", "tpl_saas_f3", "tpl_saas_f4"],
     color: "var(--river)",
-    prompt: "un site SaaS pour un outil de gestion de projets avec auth",
+    prompt: "tpl_saas_prompt",
   },
 ];
 
-/* ── Aperçu interactif d'un template ── */
-function TemplatePreview({ template }) {
-  return (
-    <div className="tpl-preview">
-      <div className="tpl-preview__bar">
-        <span className="dot dot--red" />
-        <span className="dot dot--yellow" />
-        <span className="dot dot--green" />
-        <em>{template.name.toLowerCase()}.castor.app</em>
-      </div>
-      <div className="tpl-preview__body" style={{ "--tpl-color": template.color }}>
-        {/* Simulated site preview */}
-        <div className="tpl-preview__nav">
-          <span className="tpl-preview__logo">{template.icon}</span>
-          <span className="tpl-preview__links">
-            <span /><span /><span />
-          </span>
-        </div>
-        <div className="tpl-preview__hero">
-          <div className="tpl-preview__h1" />
-          <div className="tpl-preview__sub" />
-          <div className="tpl-preview__cta" />
-        </div>
-        <div className="tpl-preview__cards">
-          <div className="tpl-preview__card" />
-          <div className="tpl-preview__card" />
-          <div className="tpl-preview__card" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Carte template ── */
-function TemplateCard({ template, selected, onSelect }) {
+function TemplateCard({ t, template, selected, onSelect }) {
   return (
     <button
       type="button"
@@ -110,50 +78,78 @@ function TemplateCard({ template, selected, onSelect }) {
       <div className="tpl-card__head">
         <span className="tpl-card__icon">{template.icon}</span>
         <div>
-          <h3 className="tpl-card__name">{template.name}</h3>
-          {template.tag && <span className="tpl-card__tag">{template.tag}</span>}
+          <h3 className="tpl-card__name">{t(template.name)}</h3>
+          {template.tag && <span className="tpl-card__tag">{t(template.tag)}</span>}
         </div>
       </div>
-      <p className="tpl-card__desc">{template.desc}</p>
+      <p className="tpl-card__desc">{t(template.desc)}</p>
       <ul className="tpl-card__features">
         {template.features.map((f) => (
-          <li key={f}>{f}</li>
+          <li key={f}>{t(f)}</li>
         ))}
       </ul>
       <div className="tpl-card__prompt">
-        <span className="tpl-card__prompt-label">Exemple :</span>
-        <code>{template.prompt}</code>
+        <span className="tpl-card__prompt-label">{t("tpl_example")}</span>
+        <code>{t(template.prompt)}</code>
       </div>
     </button>
   );
 }
 
 export default function TemplatesPage() {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState("blog");
-  const active = TEMPLATES.find((t) => t.id === selected);
+  const active = TEMPLATES.find((tp) => tp.id === selected);
 
   return (
     <section className="section templates-page">
       <div className="templates-page__head">
-        <span className="prog__badge">🏗️ Templates</span>
+        <span className="prog__badge">{t("tpl_badge")}</span>
         <AnimatedHeading variant="words">
-          Points de départ générés par Castor
+          {t("tpl_heading")}
         </AnimatedHeading>
         <p className="section-sub">
-          Choisis un template, décris ton projet, et Castor construit la base en quelques secondes.
+          {t("tpl_sub")}
         </p>
       </div>
 
       <div className="templates-page__grid">
         {/* Colonne gauche : carte template sélectionnée + aperçu */}
         <div className="templates-page__preview">
-          {active && <TemplatePreview template={active} />}
+          {active && (
+            <div className="tpl-preview">
+              <div className="tpl-preview__bar">
+                <span className="dot dot--red" />
+                <span className="dot dot--yellow" />
+                <span className="dot dot--green" />
+                <em>{t(active.name).toLowerCase()}.castor.app</em>
+              </div>
+              <div className="tpl-preview__body" style={{ "--tpl-color": active.color }}>
+                <div className="tpl-preview__nav">
+                  <span className="tpl-preview__logo">{active.icon}</span>
+                  <span className="tpl-preview__links">
+                    <span /><span /><span />
+                  </span>
+                </div>
+                <div className="tpl-preview__hero">
+                  <div className="tpl-preview__h1" />
+                  <div className="tpl-preview__sub" />
+                  <div className="tpl-preview__cta" />
+                </div>
+                <div className="tpl-preview__cards">
+                  <div className="tpl-preview__card" />
+                  <div className="tpl-preview__card" />
+                  <div className="tpl-preview__card" />
+                </div>
+              </div>
+            </div>
+          )}
           {active && (
             <div className="templates-page__preview-info">
-              <h3>{active.icon} {active.name}</h3>
-              <p>{active.desc}</p>
+              <h3>{active.icon} {t(active.name)}</h3>
+              <p>{t(active.desc)}</p>
               <code className="templates-page__preview-prompt">
-                castor init {active.prompt}
+                castor init {t(active.prompt)}
               </code>
             </div>
           )}
@@ -161,11 +157,12 @@ export default function TemplatesPage() {
 
         {/* Colonne droite : liste des templates */}
         <div className="templates-page__list">
-          {TEMPLATES.map((t) => (
+          {TEMPLATES.map((tp) => (
             <TemplateCard
-              key={t.id}
-              template={t}
-              selected={selected === t.id}
+              key={tp.id}
+              t={t}
+              template={tp}
+              selected={selected === tp.id}
               onSelect={setSelected}
             />
           ))}
@@ -173,12 +170,12 @@ export default function TemplatesPage() {
       </div>
 
       <div className="templates-page__cta">
-        <p>Comment ça marche ?</p>
+        <p>{t("tpl_cta_q")}</p>
         <ol className="templates-page__steps">
-          <li><strong>1.</strong> Choisis un template</li>
-          <li><strong>2.</strong> Décris ton projet en une phrase</li>
-          <li><strong>3.</strong> Castor génère la base</li>
-          <li><strong>4.</strong> Personnalise et déploie</li>
+          <li><strong>1.</strong> {t("tpl_step1")}</li>
+          <li><strong>2.</strong> {t("tpl_step2")}</li>
+          <li><strong>3.</strong> {t("tpl_step3")}</li>
+          <li><strong>4.</strong> {t("tpl_step4")}</li>
         </ol>
       </div>
     </section>

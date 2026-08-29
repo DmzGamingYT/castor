@@ -16,7 +16,7 @@ export default function Footer({ onDownload }) {
             <span className="hero__accent">{t("footer_tagline2")}</span>
           </p>
           <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
-            {t("download")} Castor Desktop
+            {t("dl_cta")}
           </button>
 
         </div>
@@ -29,14 +29,14 @@ export default function Footer({ onDownload }) {
           castor
         </span>
 
-        <span className="footer__copy">© 2026 Castor. Créé par <strong>Alessio Innangi</strong>.</span>
+        <span className="footer__copy">© 2026 Castor. {t("footer_created")} <strong>Alessio Innangi</strong>.</span>
         <a
           className="footer__version"
           href="https://github.com/DmzGamingYT/castor/releases"
           target="_blank"
           rel="noreferrer"
         >
-          v{APP_VERSION} · Open source MIT
+          v{APP_VERSION} · {t("footer_ose")}
         </a>
       </div>
     </footer>

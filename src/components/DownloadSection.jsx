@@ -2,24 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import Icon, { BeaverMark } from "./Icon.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 import { APP_VERSION } from "../lib/version.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 const PLATFORMS = [
-  { os: "mac", icon: "apple", label: "macOS", sub: "Apple Silicon · .dmg" },
-  { os: "win", icon: "windows", label: "Windows", sub: "x64 · installateur" },
-  { os: "linux", icon: "linux", label: "Linux", sub: "Deb · AppImage" },
+  { os: "mac", icon: "apple", label: "macOS", sub: "mac_sub" },
+  { os: "win", icon: "windows", label: "Windows", sub: "win_sub" },
+  { os: "linux", icon: "linux", label: "Linux", sub: "linux_sub" },
 ];
 
 const FEATURES = [
-  { icon: "zap", label: "Démarrage < 1s" },
-  { icon: "lock", label: "Clés chiffrées" },
-  { icon: "plug", label: "Multi-providers" },
-  { icon: "layers", label: "Agents parallèles" },
-  { icon: "clock", label: "Agents planifiés" },
-  { icon: "split", label: "Diff côte à côte" },
+  { icon: "zap", key: "dl_feat_start" },
+  { icon: "lock", key: "dl_feat_keys" },
+  { icon: "plug", key: "dl_feat_multi" },
+  { icon: "layers", key: "dl_feat_agents" },
+  { icon: "clock", key: "dl_feat_sched" },
+  { icon: "split", key: "dl_feat_split" },
 ];
 
 /* ─── Mockup de l'installateur ─── */
 function InstallerMockup({ active }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const timers = useRef([]);
 
@@ -41,7 +43,7 @@ function InstallerMockup({ active }) {
           <span className="dot dot--red" />
           <span className="dot dot--yellow" />
           <span className="dot dot--green" />
-          <em>Castor Desktop — Installateur</em>
+          <em>{t("dl_win_title")}</em>
         </div>
         <div className="dl-mockup__body">
           {/* Sidebar */}
@@ -49,7 +51,7 @@ function InstallerMockup({ active }) {
             <span className="dl-mockup__sidebar-logo">
               <BeaverMark size={20} />
             </span>
-            {["Prérequis", "Installation", "Configuration", "Prêt"].map((label, i) => (
+            {[t("dl_step_req"), t("dl_step_install"), t("dl_step_config"), t("dl_step_ready")].map((label, i) => (
               <div key={label} className={`dl-mockup__step ${step >= i ? "dl-mockup__step--done" : ""}`}>
                 <span className="dl-mockup__step-dot">
                   {step > i ? "✓" : step === i ? <span className="pulse-dot" /> : ""}
@@ -66,41 +68,41 @@ function InstallerMockup({ active }) {
                 <strong>Castor Desktop</strong>
                 <span className="dl-mockup__ver">v{APP_VERSION} · 96 Mo</span>
                 <button className="btn btn--primary btn--sm" type="button">
-                  Installer
+                  {t("dl_install")}
                 </button>
               </div>
             )}
             {step === 1 && (
               <div className="dl-mockup__progress-wrap">
                 <span className="dl-mockup__pkg-icon">📦</span>
-                <strong>Installation en cours…</strong>
+                <strong>{t("dl_installing")}</strong>
                 <div className="dl-mockup__progress">
                   <div className="dl-mockup__progress-fill" style={{ width: "65%" }} />
                 </div>
-                <span className="dl-mockup__progress-label">Copie des fichiers…</span>
+                <span className="dl-mockup__progress-label">{t("dl_copy_files")}</span>
               </div>
             )}
             {step === 2 && (
               <div className="dl-mockup__progress-wrap">
                 <span className="dl-mockup__pkg-icon">⚙️</span>
-                <strong>Configuration</strong>
+                <strong>{t("dl_step_config")}</strong>
                 <div className="dl-mockup__progress">
                   <div className="dl-mockup__progress-fill dl-mockup__progress-fill--alt" style={{ width: "100%" }} />
                 </div>
-                <span className="dl-mockup__progress-label">Raccourci bureau créé ✓</span>
+                <span className="dl-mockup__progress-label">{t("dl_shortcut")}</span>
               </div>
             )}
             {step >= 3 && (
               <div className="dl-mockup__done">
                 <span className="dl-mockup__done-icon">🦫</span>
-                <strong>Castor est installé !</strong>
-                <span className="dl-mockup__done-sub">Prêt à construire tes projets.</span>
+                <strong>{t("dl_installed")}</strong>
+                <span className="dl-mockup__done-sub">{t("dl_ready_build")}</span>
                 <div className="dl-mockup__done-actions">
                   <button className="btn btn--primary btn--sm" type="button">
-                    Lancer Castor
+                    {t("dl_launch")}
                   </button>
                   <button className="btn btn--ghost btn--sm" type="button">
-                    Fermer
+                    {t("dl_close")}
                   </button>
                 </div>
               </div>
@@ -119,6 +121,7 @@ function InstallerMockup({ active }) {
 /* ─── Section complète ─── */
 export default function DownloadSection({ onDownload }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const sectionRef = useRef(null);
   const [inView, setInView] = useState(false);
 
@@ -139,12 +142,11 @@ export default function DownloadSection({ onDownload }) {
         {/* Colonne gauche : texte */}
         <div className="dl-section__text">
           <span className="dl-section__eyebrow">
-            <BeaverMark size={14} /> Téléchargement
+            <BeaverMark size={14} /> {t("dl_eyebrow")}
           </span>
-          <h2>Installe Castor.<br /><span className="hero__accent">Commence à builder.</span></h2>
+          <h2>{t("dl_heading_a")}<br /><span className="hero__accent">{t("dl_heading_b")}</span></h2>
           <p className="dl-section__desc">
-            Un installateur par plateforme. Pas de compte, pas d'abonnement,
-            pas de limite. Le castor s'installe en quelques secondes.
+            {t("dl_desc")}
           </p>
 
           {/* Platform badges */}
@@ -159,7 +161,7 @@ export default function DownloadSection({ onDownload }) {
                 <Icon name={p.icon} size={18} />
                 <span className="dl-section__platform-info">
                   <strong>{p.label}</strong>
-                  <small>{p.sub}</small>
+                  <small>{t(p.sub)}</small>
                 </span>
               </button>
             ))}
@@ -168,23 +170,23 @@ export default function DownloadSection({ onDownload }) {
           {/* CTA */}
           <div className="dl-section__cta">
             <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
-              Télécharger Castor Desktop
+              {t("dl_cta")}
             </button>
             <a
               className="btn btn--ghost btn--lg"
               href="/castor/desktop"
               onClick={(e) => { e.preventDefault(); navigate("/desktop"); }}
             >
-              En savoir plus →
+              {t("dl_learn_more")}
             </a>
           </div>
 
           {/* Feature pills */}
           <div className="dl-section__features">
             {FEATURES.map((f) => (
-              <span key={f.label} className="dl-section__pill">
+              <span key={f.key} className="dl-section__pill">
                 <Icon name={f.icon} size={14} />
-                {f.label}
+                {t(f.key)}
               </span>
             ))}
           </div>

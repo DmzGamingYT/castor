@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { setLang as setTranslationsLang, t } from "./translations.js";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { t as translate } from "./translations.js";
 
 const LanguageContext = createContext();
 
@@ -17,7 +17,6 @@ function getInitialLang() {
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(getInitialLang);
-  const [, forceRender] = useState(0);
 
   useEffect(() => {
     try {
@@ -26,14 +25,19 @@ export function LanguageProvider({ children }) {
       /* ignore */
     }
     document.documentElement.lang = lang;
-    setTranslationsLang(lang);
-    forceRender((n) => n + 1); // re-render pour que t() retourne la bonne langue
   }, [lang]);
 
-  const toggle = () => setLang((l) => (l === "fr" ? "en" : "fr"));
+  const toggle = useCallback(() => {
+    setLang((l) => (l === "fr" ? "en" : "fr"));
+  }, []);
+
+  // t() réactif : lit directement l'état lang → jamais décalé d'un rendu
+  const t = useCallback((key) => translate(key, lang), [lang]);
+
+  const value = useMemo(() => ({ lang, setLang, toggle, t }), [lang, toggle, t]);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggle, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
