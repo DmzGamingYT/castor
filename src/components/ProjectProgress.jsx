@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import AnimatedHeading from "./AnimatedHeading.jsx";
+import Icon from "./Icon.jsx";
 import { ROADMAP, STATUS_META } from "../data/roadmap.js";
 
 const BOT_OPEN_EVENT = "castor-bot:open";
@@ -21,6 +22,9 @@ const PLURALS = {
   "exploration": "explorations",
 };
 const STATUS_ORDER = ["livré", "en cours", "bientôt", "exploration"];
+
+/* cadran : circonférence du cercle du gauge (r = 52) */
+const RING_C = 2 * Math.PI * 52;
 
 function categoryProgress(items) {
   if (!items.length) return 0;
@@ -52,7 +56,7 @@ function useReveal() {
   return ref;
 }
 
-/* ── bannière vue d'ensemble : % global count-up + barre de chantier + distribution ── */
+/* ── bannière vue d'ensemble : cadran + barre de chantier + distribution ── */
 function Overview() {
   const items = allItems();
   const pct = Math.round(
@@ -85,7 +89,7 @@ function Overview() {
           if (p < 1) rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
-        /* la barre se remplit via la classe .in (CSS) */
+        /* cadran et barre se remplissent via la classe .in (CSS/--off) */
       },
       { threshold: 0.35 }
     );
@@ -96,97 +100,95 @@ function Overview() {
     };
   }, [pct, ref]);
 
+  const ringOffset = RING_C * (1 - pct / 100);
+
   return (
-    <div className="prog-overview" ref={ref} aria-label={`Avancement global du projet : ${pct}%`}>
+    <div
+      className="prog-overview"
+      ref={ref}
+      style={{ "--off": ringOffset }}
+      aria-label={`Avancement global du projet : ${pct}%`}
+    >
+      {/* panneau gauche : cadran de chantier */}
       <div className="prog-overview__score">
-        <span className="prog-overview__num" ref={numRef}>0</span>
-        <span className="prog-overview__pct">%</span>
-        <span className="prog-overview__label">avancement global du chantier</span>
-      </div>
-
-      {/* barre maître style chantier : bandes animées + castor qui avance */}
-      <div className="prog-master" aria-hidden="true">
-        <div className="prog-master__fill" style={{ "--w": `${pct}%` }}>
-          <span className="prog-master__beaver">🦫</span>
-        </div>
-      </div>
-
-      {/* distribution des statuts : segments proportionnels */}
-      <div className="prog-dist" aria-hidden="true">
-        {STATUS_ORDER.map((s) =>
-          counts[s] ? (
-            <span
-              key={s}
-              className={`prog-dist__seg prog-dist__seg--${s.replace(" ", "-")}`}
-              style={{ "--w": `${(counts[s] / items.length) * 100}%` }}
-              title={`${counts[s]} ${PLURALS[s]}`}
+        <div className="prog-ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120" className="prog-ring__svg">
+            <defs>
+              <linearGradient id="progGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" />
+                <stop offset="100%" />
+              </linearGradient>
+            </defs>
+            <circle className="prog-ring__track" cx="60" cy="60" r="52" />
+            <circle
+              className="prog-ring__circle"
+              cx="60"
+              cy="60"
+              r="52"
+              stroke="url(#progGrad)"
             />
-          ) : null
-        )}
+          </svg>
+          <div className="prog-ring__center">
+            <span className="prog-overview__num" ref={numRef}>0</span>
+            <span className="prog-overview__pct">%</span>
+          </div>
+        </div>
+        <p className="prog-overview__label">avancement global du chantier</p>
+        <p className="prog-overview__total">{items.length} chantiers sur la feuille de route</p>
       </div>
 
-      <div className="prog-counts" role="list">
-        {STATUS_ORDER.map((s) => (
-          <span key={s} className={`prog-count prog-count--${s.replace(" ", "-")}`} role="listitem">
-            <i aria-hidden="true">{STATUS_META[s].emoji}</i> {counts[s]} {PLURALS[s]}
-          </span>
-        ))}
+      {/* panneau droit : barre maître + répartition */}
+      <div className="prog-overview__bars">
+        {/* barre maître style chantier : bandes animées + castor qui avance */}
+        <div className="prog-master" aria-hidden="true">
+          <div className="prog-master__fill" style={{ "--w": `${pct}%` }}>
+            <span className="prog-master__beaver">🦫</span>
+          </div>
+        </div>
+
+        {/* règle de chantier : repères tous les quarts */}
+        <div className="prog-master__ticks" aria-hidden="true">
+          {[25, 50, 75, 100].map((t) => (
+            <span
+              key={t}
+              className={`prog-master__tick${t <= pct ? " prog-master__tick--done" : ""}`}
+              style={{ left: `${t}%` }}
+            >
+              <i />
+              {t}%
+            </span>
+          ))}
+        </div>
+
+        {/* distribution des statuts : segments proportionnels */}
+        <div className="prog-dist" aria-hidden="true">
+          {STATUS_ORDER.map((s) =>
+            counts[s] ? (
+              <span
+                key={s}
+                className={`prog-dist__seg prog-dist__seg--${s.replace(" ", "-")}`}
+                style={{ "--w": `${(counts[s] / items.length) * 100}%` }}
+                title={`${counts[s]} ${PLURALS[s]}`}
+              />
+            ) : null
+          )}
+        </div>
+
+        {/* légende : pastilles décomptées */}
+        <ul className="prog-legend" role="list">
+          {STATUS_ORDER.map((s) => (
+            <li
+              key={s}
+              className={`prog-legend__item prog-legend__item--${s.replace(" ", "-")}`}
+              role="listitem"
+            >
+              <span className="prog-legend__dot" aria-hidden="true" />
+              <strong className="prog-legend__count">{counts[s]}</strong>
+              <span>{PLURALS[s]}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
-  );
-}
-
-/* anneau de progression SVG animé à l'entrée dans le viewport */
-function ProgressRing({ value, color }) {
-  const ref = useRef(null);
-  const numRef = useRef(null);
-  const rafRef = useRef(0);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          el.style.setProperty("--ring-value", value);
-          el.classList.add("in");
-          io.disconnect();
-          /* count-up du chiffre central */
-          const num = numRef.current;
-          if (num) {
-            const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-            if (reduce) { num.textContent = String(value); }
-            else {
-              const t0 = performance.now();
-              const tick = (t) => {
-                const p = Math.min(1, (t - t0) / 1200);
-                const eased = 1 - Math.pow(1 - p, 3);
-                num.firstChild.textContent = String(Math.round(value * eased));
-                if (p < 1) rafRef.current = requestAnimationFrame(tick);
-              };
-              rafRef.current = requestAnimationFrame(tick);
-            }
-          }
-        }
-      },
-      { threshold: 0.4 }
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [value]);
-
-  const R = 34;
-  const C = (2 * Math.PI * R).toFixed(1);
-  return (
-    <div className="prog-ring" ref={ref} style={{ "--ring-color": color, "--ring-circ": C }} aria-hidden="true">
-      <svg viewBox="0 0 80 80" width="80" height="80">
-        <circle className="prog-ring__bg" cx="40" cy="40" r={R} />
-        <circle className="prog-ring__fg" cx="40" cy="40" r={R} strokeDasharray={C} />
-      </svg>
-      <span className="prog-ring__num" ref={numRef}>0<i>%</i></span>
     </div>
   );
 }
@@ -201,16 +203,31 @@ function CategoryCard({ catKey, index }) {
     <article
       className="prog-card"
       ref={ref}
-      style={{ "--cat-color": color, "--d": `${index * 120}ms` }}
-      aria-label={`${block.label} — avancement ${pct}%`}
+      style={{ "--cat-color": color, "--w": `${pct}%`, "--d": `${index * 120}ms` }}
+      aria-label={`${block.name} — avancement ${pct}%`}
     >
       <header className="prog-card__head">
         <div className="prog-card__title">
-          <h3>{block.label}</h3>
-          <p>{SUBS[catKey]}</p>
+          <span className="prog-card__cat-icon" aria-hidden="true">
+            <Icon name={block.icon} size={21} />
+          </span>
+          <div className="prog-card__title-text">
+            <h3>{block.name}</h3>
+            <p>{SUBS[catKey]}</p>
+          </div>
         </div>
-        <ProgressRing value={pct} color={color} />
+        <div className="prog-card__score">
+          <span className="prog-card__pct" aria-hidden="true">
+            {pct}<i>%</i>
+          </span>
+          <span className="prog-card__chants">{block.items.length} chantiers</span>
+        </div>
       </header>
+
+      {/* fine barre de progression de la catégorie */}
+      <div className="prog-card__track" aria-hidden="true">
+        <div className="prog-card__fill" />
+      </div>
 
       <ul className="prog-card__list">
         {block.items.map((it, i) => (
@@ -221,12 +238,13 @@ function CategoryCard({ catKey, index }) {
           >
             <span className="prog-item__dot" aria-hidden="true" />
             <div className="prog-item__body">
-              <strong>
-                {it.title}
-                <span className="prog-item__pill">
-                  {STATUS_META[it.status].emoji} {STATUS_META[it.status].label}
+              <div className="prog-item__top">
+                <strong>{it.title}</strong>
+                <span className="prog-item__pill" title={STATUS_META[it.status].label}>
+                  <span aria-hidden="true">{STATUS_META[it.status].emoji}</span>
+                  {STATUS_META[it.status].label}
                 </span>
-              </strong>
+              </div>
               <p>{it.desc}</p>
             </div>
           </li>
@@ -244,7 +262,7 @@ export default function ProjectProgress() {
   return (
     <section className="section prog" id="avancement" aria-label="Avancement du projet">
       <div className="prog__head" ref={headRef}>
-        <span className="prog__badge">🔨 Avancement du projet</span>
+        <span className="prog__badge">🧱 Avancement du projet</span>
         <AnimatedHeading variant="words">Le chantier avance, patte après patte</AnimatedHeading>
         <p className="section-sub">
           Ce qui est livré, ce qu'on construit et ce qui arrive — sans fausse promesse ni date artificielle.

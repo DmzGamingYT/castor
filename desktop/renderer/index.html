@@ -4,14 +4,21 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     />
     <title>Castor</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
+    <!-- polices auto-hébergées (data-URI) : l'app fonctionne hors ligne, aucune dépendance réseau -->
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="variables.css" />
+    <link rel="stylesheet" href="layout.css" />
+    <link rel="stylesheet" href="sidebar.css" />
+    <link rel="stylesheet" href="chat.css" />
+    <link rel="stylesheet" href="icons.css" />
+    <link rel="stylesheet" href="projects.css" />
+    <link rel="stylesheet" href="header.css" />
+    <link rel="stylesheet" href="modals.css" />
+    <link rel="stylesheet" href="panel.css" />
+    <link rel="stylesheet" href="jobs.css" />
   </head>
   <body>
     <div class="layout">
@@ -82,9 +89,26 @@
             </div>
           </section>
 
+          <section class="sb-section sb-section--jobs" data-collapsible="jobs">
+            <button class="sb-section__head" aria-expanded="true">
+              <span class="sb-section__title">Agents planifiés</span>
+              <span id="job-count" class="count-badge hidden">0</span>
+              <span class="sb-chevron">▾</span>
+            </button>
+            <div class="sb-section__body">
+              <ul id="job-list" class="job-list"></ul>
+              <button id="add-job" class="btn-ghost btn-mini">＋ Programmer un agent…</button>
+              <span id="job-empty" class="empty-note">Automatise un chantier, même quand tu dors.</span>
+            </div>
+          </section>
+
         </div>
 
         <div class="sidebar__footer">
+          <div class="sync-bar">
+            <button id="sync-export" class="btn-ghost btn-mini" title="Exporter les données (conversations, clés, projets, jobs)">📤 Export</button>
+            <button id="sync-import" class="btn-ghost btn-mini" title="Importer des données depuis un fichier">📥 Import</button>
+          </div>
           <div class="usage-wrap">
             <button id="usage-box" class="usage" title="Détail des tokens — cliquer pour ouvrir">
               <div class="gauge">
@@ -123,6 +147,20 @@
             </div>
           </div>
         </div>
+        <div id="castor-bot" class="castor-bot hidden">
+          <div class="castor-bot__head">
+            <span>🦫 Assistant</span>
+            <button id="castor-bot-close" class="icon-btn">×</button>
+          </div>
+          <div id="castor-bot-messages" class="castor-bot__messages"></div>
+          <div class="castor-bot__input-row">
+            <input id="castor-bot-input" placeholder="/help · /roadmap · /astuce" spellcheck="false" />
+            <button id="castor-bot-send" class="btn-primary btn-sm">→</button>
+          </div>
+        </div>
+        <button id="castor-bot-toggle" class="castor-bot__fab" title="Assistant Castor">
+          🦫
+        </button>
       </aside>
 
       <div class="resizer resizer--left" title="Redimensionner la sidebar"></div>
@@ -148,6 +186,17 @@
             <button id="clear-skill" title="Retirer">×</button>
           </span>
           <span id="stats" class="stats"></span>
+          <div class="accent-picker" title="Changer la couleur d'accent">
+            <button id="accent-toggle" class="icon-btn accent-dot" aria-label="Thème personnalisable"></button>
+            <div id="accent-panel" class="accent-panel hidden">
+              <button class="accent-swatch" data-color="#e2952a" style="background:#e2952a" title="Ambre"></button>
+              <button class="accent-swatch" data-color="#58b8d6" style="background:#58b8d6" title="Ciel"></button>
+              <button class="accent-swatch" data-color="#93a862" style="background:#93a862" title="Sauge"></button>
+              <button class="accent-swatch" data-color="#c25b45" style="background:#c25b45" title="Terre"></button>
+              <button class="accent-swatch" data-color="#8a5cf5" style="background:#8a5cf5" title="Indigo"></button>
+              <input id="accent-custom" type="color" value="#e2952a" title="Couleur libre" />
+            </div>
+          </div>
           <button id="theme-toggle" class="icon-btn" title="Basculer jour / nuit" aria-label="Basculer le thème jour / nuit">
             <!-- icône maison : croissant (jour) / soleil (nuit), tracée à la main -->
             <svg class="theme-ico" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
@@ -182,7 +231,8 @@
             <div class="welcome__keys">
               <span><kbd>⌘N</kbd> nouvelle conversation</span>
               <span><kbd>⌘O</kbd> ouvrir un chantier</span>
-              <span>ou glisse un dossier dans la fenêtre</span>
+              <span><kbd>⌘F</kbd> rechercher une conversation</span>
+              <span>glisse un dossier, des fichiers ou des images</span>
             </div>
           </div>
         </div>
@@ -235,6 +285,10 @@
         </header>
 
         <section id="sp-view-changes" class="sp-view">
+          <div class="changes-toolbar">
+            <button id="diff-undo" class="btn-ghost btn-mini hidden" title="Restaure le fichier tel qu'il était avant la dernière écriture approuvée">↩︎ Annuler l'écriture</button>
+            <span id="diff-undo-path" class="changes-undo-path"></span>
+          </div>
           <div id="changes-empty" class="empty-note big">
             Ouvre un chantier pour suivre les fichiers modifiés par le castor.
           </div>
@@ -353,6 +407,17 @@
             <button type="submit" class="btn-ghost btn-mini">＋</button>
           </form>
           <ul id="memory-list" class="memory-list"></ul>
+
+          <h3 class="sp-subtitle sp-subtitle--sep">
+            Serveurs MCP
+            <span class="sp-spacer"></span>
+            <span id="mcp-count" class="count-badge">0</span>
+          </h3>
+          <ul id="mcp-list" class="skill-list"></ul>
+          <form id="mcp-form" class="memory-form">
+            <input id="mcp-command" placeholder="commande MCP (ex: npx -y @server/toolbox)" spellcheck="false" />
+            <button type="submit" class="btn-ghost btn-mini">＋</button>
+          </form>
         </section>
       </aside>
     </div>
@@ -414,14 +479,69 @@
             <strong id="diff-title">Écriture de fichier</strong>
             <code id="diff-path"></code>
           </div>
-        </header>
-        <pre id="diff-body" class="diff-modal__body"></pre>
-        <footer class="diff-modal__actions">
-          <button id="diff-undo" class="btn-ghost hidden">↩︎ Annuler l'écriture</button>
-          <button id="diff-reject" class="btn-ghost">Refuser</button>
-          <button id="diff-approve" class="btn-primary">Approuver</button>
-        </footer>
+        </header>          <div id="diff-summary" class="diff-summary"></div>
+          <div id="diff-body" class="diff-modal__body diff-modal__body--split"></div>
+          <footer class="diff-modal__actions">
+            <button id="diff-all" class="btn-ghost">Tout sélectionner</button>
+            <button id="diff-reject" class="btn-ghost">Refuser</button>
+            <button id="diff-approve" class="btn-primary">Appliquer la sélection</button>
+          </footer>
       </div>
+    </div>
+
+    <div id="job-modal" class="diff-modal hidden">
+      <div class="diff-modal__backdrop"></div>
+      <form id="job-form" class="diff-modal__card job-modal-card">
+        <header class="diff-modal__head">
+          <span class="job-modal__icon">⏱</span>
+          <div>
+            <strong id="job-modal-title">Programmer un agent</strong>
+            <code>le castor travaillera automatiquement</code>
+          </div>
+        </header>
+        <div class="job-form__grid">
+          <label class="job-form__wide">Nom de l'agent
+            <input id="job-name" required placeholder="Refactor nocturne" />
+          </label>
+          <label class="job-form__wide">Consigne
+            <textarea id="job-prompt" required rows="4" placeholder="Analyse le projet et propose les améliorations…"></textarea>
+          </label>
+          <label>Fréquence
+            <select id="job-schedule-type">
+              <option value="nightly">Chaque nuit</option>
+              <option value="hourly">Toutes les heures</option>
+              <option value="interval">Intervalle</option>
+            </select>
+          </label>
+          <label id="job-hour-wrap">Heure
+            <input id="job-hour" type="time" value="02:00" />
+          </label>
+          <label id="job-minute-wrap" class="hidden">Minute de l'heure
+            <input id="job-minute" type="number" min="0" max="59" value="0" />
+          </label>
+          <label id="job-interval-wrap" class="hidden">Toutes les (minutes)
+            <input id="job-interval" type="number" min="1" max="1440" value="30" />
+          </label>
+          <label>Provider
+            <select id="job-provider"></select>
+          </label>
+          <label>Modèle
+            <input id="job-model" placeholder="modèle par défaut" />
+          </label>
+          <label class="job-form__wide">Projet
+            <select id="job-project"></select>
+          </label>
+          <label class="job-form__wide job-form__check">
+            <input id="job-auto-approve" type="checkbox" />
+            <span>Appliquer automatiquement les écritures approuvées par cet agent <small>(à utiliser uniquement sur un projet de confiance)</small></span>
+          </label>
+        </div>
+        <p id="job-form-error" class="job-form__error"></p>
+        <footer class="diff-modal__actions">
+          <button type="button" id="job-cancel" class="btn-ghost">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer l'agent</button>
+        </footer>
+      </form>
     </div>
 
     <!-- palette de commandes (⌘K) -->

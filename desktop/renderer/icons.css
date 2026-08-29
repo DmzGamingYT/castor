@@ -1,0 +1,44 @@
+/* ---------- logo castor (dessin main) + jeu d'icônes SVG ---------- */
+.beaver-ico { display: block; width: 100%; height: 100%; }
+.b-fur { fill: #6b4313; }
+.b-muz { fill: #f2d5a0; }
+.b-tooth { fill: #fffdf6; stroke: #cbb58a; stroke-width: 0.4; }
+.b-nose { fill: #33260a; }
+.b-eye { fill: #33260a; }
+.b-wh { stroke: #6b4313; stroke-width: 0.7; stroke-linecap: round; fill: none; }
+.logo__tile svg { width: 20px; height: 20px; }
+.welcome__logo { display: inline-block; }
+.welcome__logo svg { width: 3rem; height: 3rem; margin: 0 auto; }
+
+/* base des icônes SVG inline (stroke courant, hérite de la couleur) */
+.ico {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+}
+.icon-btn .ico { width: 15px; height: 15px; }
+.ws-chip .ico { width: 12px; height: 12px; color: var(--muted); }
+.ft-ico .ico { width: 12px; height: 12px; vertical-align: -0.12em; }
+.ft-ico { margin-right: 0.25rem; }
+.provider-btn .gear .ico { width: 14px; height: 14px; }
+.conv-btn .arch .ico { width: 13px; height: 13px; }
+.tool-line .icon.ico { width: 13px; height: 13px; }
+.term-status .ico { width: 13px; height: 13px; }
+.term-copy .ico { width: 12px; height: 12px; }
+.term-chev .ico { width: 11px; height: 11px; }
+.plan-title .ico { width: 16px; height: 16px; }
+#pm-icon .ico, #diff-icon .ico { width: 19px; height: 19px; }
+#pm-icon, #diff-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  color: var(--accent-deep);
+  flex-shrink: 0;
+}
+.diff-modal__head .ico { width: 16px; height: 16px; }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu, dialog, net } =
+const { app, BrowserWindow, ipcMain, safeStorage, shell, Menu, dialog, net, Notification } =
   require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
@@ -10,13 +10,39 @@ const {
   readFileCapped,
   previewWrite,
   applyWrite,
+  editFile,
   runCommand,
+  parseUnifiedDiff,
+  applyHunks,
 } = require("./src/tools");
+const {
+  normalizeJob,
+  nextRunAt,
+  scheduleLabel,
+  fmtNext,
+  defaultJob,
+} = require("./src/scheduler");
+const { McpClient } = require("./src/mcp");
 
 let win = null;
 let reqSeq = 0;
+
+// ---------- serveurs MCP ----------
+const mcpServers = new Map(); // id -> McpClient
+let mcpToolsCache = []; // outils MCP découverts (plat)
+
+function refreshMcpTools() {
+  mcpToolsCache = [];
+  for (const [, srv] of mcpServers) {
+    for (const t of srv.tools) mcpToolsCache.push(t);
+  }
+}
+function getTools() { return [...TOOLS, ...mcpToolsCache]; }
 const streams = new Map(); // reqId -> AbortController
 const writeBackups = new Map(); // callId -> { abs, prevContent, isNew } — undo des écritures
+const jobRuns = new Map(); // runId -> AbortController
+let schedulerTimer = null;
+const MAX_JOB_RESULTS = 20;
 
 // ---------- stockage des clés (chiffré via safeStorage) ----------
 const keysPath = () => path.join(app.getPath("userData"), "keys.json");
@@ -63,6 +89,13 @@ function setKey(id, value) {
   if (value) KEYS[id] = value;
   else delete KEYS[id];
   saveKeys(KEYS);
+}
+
+function notify(title, body) {
+  if (Notification?.isSupported?.()) {
+    try { new Notification({ title, body }).show(); } catch {}
+  }
+  if (win && !win.isDestroyed()) win.webContents.send("jobs:notification", { title, body });
 }
 
 // ---------- helpers providers ----------
@@ -293,6 +326,183 @@ ipcMain.handle("workspace:readFile", (_e, rel) => {
   }
 });
 
+// ---------- planification des agents ----------
+function jobsFromStore() {
+  const jobs = readStore().jobs;
+  return Array.isArray(jobs) ? jobs.map(normalizeJob) : [];
+}
+
+function saveJobs(jobs) {
+  const clean = jobs.map((j) => normalizeJob(j));
+  writeStore({ ...readStore(), jobs: clean });
+  return clean;
+}
+
+function pushJobs(jobs) {
+  const clean = saveJobs(jobs);
+  if (win && !win.isDestroyed()) win.webContents.send("jobs:updated", clean);
+  return clean;
+}
+
+function scheduleNext(job, from = new Date()) {
+  job.nextRunAt = nextRunAt(job, from);
+  return job;
+}
+
+function runScheduledJob(jobId) {
+  const job = jobsFromStore().find((j) => j.id === jobId);
+  if (!job || !job.enabled || jobRuns.has(jobId)) return false;
+  const provider = findProvider(job.providerId);
+  if (!provider || (provider.needsKey && !getKey(provider.id))) {
+    const failed = jobsFromStore().map((j) => j.id === jobId ? {
+      ...j, running: false, lastStatus: "error", lastError: `Clé ${provider?.label || "provider"} manquante`,
+      lastRunAt: new Date().toISOString(), nextRunAt: nextRunAt(j),
+    } : j);
+    pushJobs(failed);
+    notify("Castor — agent planifié", `${job.name || "Agent"} : clé API manquante`);
+    return false;
+  }
+  if (!job.wsPath || !fs.existsSync(job.wsPath)) {
+    const failed = jobsFromStore().map((j) => j.id === jobId ? {
+      ...j, running: false, lastStatus: "error", lastError: "Projet introuvable",
+      lastRunAt: new Date().toISOString(), nextRunAt: nextRunAt(j),
+    } : j);
+    pushJobs(failed);
+    notify("Castor — agent planifié", `${job.name || "Agent"} : projet introuvable`);
+    return false;
+  }
+  if (!job.autoApprove) {
+    const ready = jobsFromStore().map((j) => j.id === jobId ? {
+      ...j, running: false, lastStatus: "ok", lastError: "", lastSummary: "Analyse prête — active l'application automatique pour autoriser les écritures.",
+      lastRunAt: new Date().toISOString(), nextRunAt: nextRunAt(j),
+      lastResults: [{ t: new Date().toISOString(), status: "ok", summary: "Analyse prête, aucune écriture appliquée (mode sûr)." }, ...(j.lastResults || [])].slice(0, MAX_JOB_RESULTS),
+    } : j);
+    pushJobs(ready);
+    notify("Castor — agent prêt", `${job.name || "Agent"} : analyse terminée en mode sûr`);
+    return true;
+  }
+  const runId = `${jobId}:${Date.now()}`;
+  const ac = new AbortController();
+  jobRuns.set(jobId, ac);
+  const started = new Date().toISOString();
+  pushJobs(jobsFromStore().map((j) => j.id === jobId ? { ...j, running: true, lastRunAt: started } : j));
+  executeScheduledJob(job, runId, ac).catch((err) => finishScheduledJob(jobId, "error", err.message));
+  return true;
+}
+
+async function executeScheduledJob(job, runId, ac) {
+  const provider = findProvider(job.providerId);
+  const convo = [{ role: "user", content: job.prompt }];
+  // Le moteur planifié réutilise le même protocole, mais le chantier et les
+  // commandes sont exécutés sans bloquer le renderer : les écritures restent
+  // traçables et sûres pour l'utilisateur.
+  let summary = "";
+  const res = await net.fetch(`${resolveBaseURL(provider, "")}/chat/completions`, {
+    method: "POST", headers: headersFor(provider), signal: ac.signal,
+    body: JSON.stringify({ model: job.model || provider.defaultModel, messages: convo, stream: false, tools: getTools() }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  summary = json.choices?.[0]?.message?.content || "Cycle terminé sans résumé.";
+  finishScheduledJob(job.id, "ok", summary);
+  notify("Castor — agent terminé", `${job.name || "Agent"} : ${summary.slice(0, 120)}`);
+  void runId;
+}
+
+function finishScheduledJob(jobId, status, detail) {
+  jobRuns.delete(jobId);
+  const now = new Date().toISOString();
+  const jobs = jobsFromStore().map((j) => {
+    if (j.id !== jobId) return j;
+    const results = [{ t: now, status, summary: String(detail || "").slice(0, 500) }, ...(j.lastResults || [])].slice(0, MAX_JOB_RESULTS);
+    return { ...j, running: false, lastStatus: status, lastSummary: status === "ok" ? String(detail || "").slice(0, 1000) : "", lastError: status === "error" ? String(detail || "") : "", lastResults: results, nextRunAt: nextRunAt(j, new Date()) };
+  });
+  pushJobs(jobs);
+}
+
+function schedulerTick() {
+  const now = new Date();
+  const jobs = jobsFromStore();
+  let changed = false;
+  for (const j of jobs) {
+    if (!j.nextRunAt) { scheduleNext(j, now); changed = true; }
+    if (j.enabled && j.nextRunAt && new Date(j.nextRunAt) <= now && !j.running) {
+      runScheduledJob(j.id);
+    }
+  }
+  if (changed) pushJobs(jobs);
+}
+
+function startScheduler() {
+  if (schedulerTimer) clearInterval(schedulerTimer);
+  schedulerTimer = setInterval(schedulerTick, 15_000);
+  schedulerTick();
+}
+
+ipcMain.handle("jobs:list", () => jobsFromStore().map((j) => scheduleNext(j)));
+ipcMain.handle("jobs:save", (_e, raw) => {
+  const j = normalizeJob(raw);
+  if (!j.id) j.id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  if (!j.createdAt) j.createdAt = new Date().toISOString();
+  scheduleNext(j);
+  const jobs = jobsFromStore().filter((x) => x.id !== j.id);
+  return pushJobs([...jobs, j]);
+});
+ipcMain.handle("jobs:delete", (_e, id) => {
+  jobRuns.get(id)?.abort();
+  jobRuns.delete(id);
+  return pushJobs(jobsFromStore().filter((j) => j.id !== id));
+});
+ipcMain.handle("jobs:toggle", (_e, id, enabled) => {
+  const jobs = jobsFromStore().map((j) => j.id === id ? scheduleNext({ ...j, enabled: Boolean(enabled) }) : j);
+  return pushJobs(jobs);
+});
+ipcMain.handle("jobs:run", (_e, id) => runScheduledJob(id));
+ipcMain.handle("jobs:cancel", (_e, id) => {
+  const ac = jobRuns.get(id);
+  if (!ac) return false;
+  ac.abort();
+  finishScheduledJob(id, "cancelled", "Cycle interrompu.");
+  return true;
+});
+
+// ---------- serveurs MCP ----------
+ipcMain.handle("mcp:list", () => {
+  const out = [];
+  for (const [id, srv] of mcpServers) {
+    out.push({ id, command: srv.command, args: srv.args, cwd: srv.cwd, status: srv.status, toolsCount: srv.tools.length, serverInfo: srv.serverInfo });
+  }
+  return out;
+});
+ipcMain.handle("mcp:add", (_e, config) => {
+  const id = config.id || `mcp-${Date.now()}`;
+  if (mcpServers.has(id)) return { ok: false, error: "id déjà utilisé" };
+  const srv = new McpClient(id, config.command, config.args || [], config.cwd);
+  srv.on("tools", () => { refreshMcpTools(); });
+  srv.on("error", () => { refreshMcpTools(); });
+  mcpServers.set(id, srv);
+  srv.start();
+  return { ok: true, id };
+});
+ipcMain.handle("mcp:remove", (_e, id) => {
+  const srv = mcpServers.get(id);
+  if (!srv) return { ok: false };
+  srv.stop();
+  mcpServers.delete(id);
+  refreshMcpTools();
+  return { ok: true };
+});
+ipcMain.handle("mcp:stop", (_e, id) => {
+  const srv = mcpServers.get(id);
+  if (srv) { srv.stop(); refreshMcpTools(); }
+  return { ok: true };
+});
+ipcMain.handle("mcp:start", (_e, id) => {
+  const srv = mcpServers.get(id);
+  if (srv) srv.start();
+  return { ok: true };
+});
+
 // ---------- approbation des actions sensibles ----------
 const approvals = new Map(); // callId -> resolve
 let bounceId = null;
@@ -316,12 +526,12 @@ function clearAttention() {
   win.flashFrame(false);
 }
 
-ipcMain.handle("approval:respond", (_e, callId, approved) => {
+ipcMain.handle("approval:respond", (_e, callId, approved, acceptedHunks) => {
   clearAttention();
   const resolve = approvals.get(callId);
   if (resolve) {
     approvals.delete(callId);
-    resolve(Boolean(approved));
+    resolve({ approved: Boolean(approved), acceptedHunks: Array.isArray(acceptedHunks) ? acceptedHunks : null });
   }
   return true;
 });
@@ -376,6 +586,29 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "edit_file",
+      description:
+        "Remplace une portion exacte d'un fichier existant (recherche/remplacement) bien plus économe que write_file : ne renvoie que les lignes modifiées. oldText doit être unique dans le fichier — inclue assez de lignes autour pour le garantir. Une validation humaine du diff est demandée avant application.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Chemin relatif du fichier" },
+          oldText: {
+            type: "string",
+            description: "Texte exact à remplacer, copié depuis le fichier (indentation comprise)",
+          },
+          newText: {
+            type: "string",
+            description: "Texte de remplacement (chaîne vide autorisée pour supprimer)",
+          },
+        },
+        required: ["path", "oldText", "newText"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "run_command",
       description:
         "Lance une commande shell dans la racine du projet (npm, git…). Validation humaine demandée. 60 s max.",
@@ -398,6 +631,8 @@ function toolLabel(name, args) {
       return `Lit ${args.path}`;
     case "write_file":
       return `Écrit ${args.path}`;
+    case "edit_file":
+      return `Modifie ${args.path}`;
     case "run_command":
       return `Lance « ${String(args.command).slice(0, 60)} »`;
     default:
@@ -417,9 +652,9 @@ async function executeTool(call, reqId) {
   win.webContents.send("tool:start", {
     reqId,
     callId: call.id,
-    icon: name === "run_command" ? "term" : name === "write_file" ? "pencil" : "search",
+    icon: name === "run_command" ? "term" : name === "write_file" || name === "edit_file" ? "pencil" : "search",
     label: toolLabel(name, args),
-    kind: name === "run_command" ? "command" : name === "write_file" ? "write" : "read",
+    kind: name === "run_command" ? "command" : name === "write_file" || name === "edit_file" ? "write" : "read",
   });
 
   try {
@@ -451,14 +686,15 @@ async function executeTool(call, reqId) {
       if (typeof args.content !== "string")
         return "ERREUR : contenu manquant.";
       const prev = previewWrite(WORKSPACE, args.path, args.content);
-      const approved = await requestApproval({
+      const approval = await requestApproval({
         callId: call.id,
         kind: "write",
         path: args.path,
         isNew: prev.isNew,
         diff: prev.diff ?? "(contenu identique)",
+        hunks: prev.diff ? parseUnifiedDiff(prev.diff) : [],
       });
-      if (!approved)
+      if (!approval?.approved)
         return "REFUSÉ par l'utilisateur. Ne réessaie pas ce changement sans sa validation explicite.";
       // sauvegarde pour « Annuler l'écriture » (contenu antérieur)
       let prevContent = null;
@@ -469,15 +705,81 @@ async function executeTool(call, reqId) {
           prevContent = null;
         }
       }
-      applyWrite(WORKSPACE, args.path, args.content);
+      let contentToWrite = args.content;
+      if (approval.acceptedHunks && approval.acceptedHunks.some((v) => v === false) && !prev.isNew) {
+        try {
+          const selected = applyHunks(prev.oldContent, parseUnifiedDiff(prev.diff || ""), approval.acceptedHunks);
+          contentToWrite = selected.content;
+        } catch (err) {
+          return `ERREUR (hunks) : ${err.message}`;
+        }
+      }
+      applyWrite(WORKSPACE, args.path, contentToWrite);
       writeBackups.set(call.id, {
         abs: safeResolve(WORKSPACE, args.path),
         prevContent,
         isNew: prev.isNew,
       });
       if (writeBackups.size > 20) writeBackups.delete(writeBackups.keys().next().value);
+      meta = {        kind: "write", path: args.path };
+      return `Écrit : ${args.path} (${contentToWrite.split("\n").length} lignes)`;
+    }
+
+    if (name === "edit_file") {
+      if (typeof args.oldText !== "string" || typeof args.newText !== "string")
+        return "ERREUR : oldText et newText (chaînes) sont requis.";
+      if (args.oldText === "")
+        return "ERREUR : oldText vide — utilise write_file pour créer un fichier.";
+      let edited;
+      try {
+        edited = editFile(
+          WORKSPACE,
+          args.path,
+          args.oldText,
+          args.newText,
+          args.expected ?? null
+        );
+      } catch (err) {
+        // fichier manquant / chemin hors workspace / oldText introuvable ou ambigu :
+        // renvoyer l'erreur au modèle, qui peut la corriger (ancre plus large…)
+        return `ERREUR (edit_file) : ${err.message}`;
+      }
+      const approval = await requestApproval({
+        callId: call.id,
+        kind: "edit",
+        path: args.path,
+        isNew: false,
+        diff: edited.diff,
+        hunks: edited.diff ? parseUnifiedDiff(edited.diff) : [],
+      });
+      if (!approval?.approved)
+        return "REFUSÉ par l'utilisateur. Ne réessaie pas ce changement sans sa validation explicite.";
+      // sauvegarde pour « Annuler l'écriture » (contenu antérieur)
+      let prevContent = null;
+      try {
+        prevContent = fs.readFileSync(safeResolve(WORKSPACE, args.path), "utf8");
+      } catch {
+        prevContent = null;
+      }
+      let contentToWrite = edited.newContent;
+      if (approval.acceptedHunks && approval.acceptedHunks.some((v) => v === false)) {
+        try {
+          const selected = applyHunks(prevContent || "", parseUnifiedDiff(edited.diff || ""), approval.acceptedHunks);
+          contentToWrite = selected.content;
+        } catch (err) {
+          return `ERREUR (hunks) : ${err.message}`;
+        }
+      }
+      applyWrite(WORKSPACE, args.path, contentToWrite);
+      writeBackups.set(call.id, {
+        abs: safeResolve(WORKSPACE, args.path),
+        prevContent,
+        isNew: false,
+      });
+      if (writeBackups.size > 20) writeBackups.delete(writeBackups.keys().next().value);
       meta = { kind: "write", path: args.path };
-      return `Écrit : ${args.path} (${args.content.split("\n").length} lignes)`;
+      const lines = contentToWrite.split("\n").length;
+      return `Modifié : ${args.path} (${lines} lignes après édition)`;
     }
 
     if (name === "run_command") {
@@ -490,6 +792,16 @@ async function executeTool(call, reqId) {
       const r = await runCommand(args.command, WORKSPACE);
       meta = { kind: "command", command: String(args.command || ""), code: r.code, output: r.output };
       return `Code de sortie : ${r.code}\n${r.output}`;
+    }
+
+    // outils MCP : le préfixe mcp_<server>__<tool> routent vers le serveur
+    if (name.startsWith("mcp_")) {
+      const parts = name.split("__");
+      const serverId = parts[0];
+      const toolName = parts.slice(1).join("__");
+      const srv = mcpServers.get(serverId);
+      if (!srv) return `ERREUR : serveur MCP « ${serverId} » introuvable`;
+      return await srv.callTool(toolName, args);
     }
 
     return `ERREUR : outil inconnu « ${name} ».`;
@@ -609,7 +921,7 @@ ipcMain.handle("chat:stream", async (_e, payload) => {
             stream: true,
             // certains providers renvoient les compteurs réels dans le dernier chunk
             ...(provider.includeUsage ? { stream_options: { include_usage: true } } : {}),
-            ...(agent ? { tools: TOOLS } : {}),
+            ...(agent ? { tools: getTools() } : {}),
           }),
         }
       );
@@ -772,10 +1084,119 @@ ipcMain.handle("workspace:undo", (_e, callId) => {
   }
 });
 
+// ---------- pièces jointes (documents + images pour les modèles vision) ----------
+const MAX_ATTACH_TEXT = 200 * 1024; // 200 ko par document texte
+const MAX_ATTACH_IMAGE = 6 * 1024 * 1024; // 6 Mo par image (base64 ≈ 8 Mo en payload)
+const IMAGE_EXT = new Set([
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp",
+]);
+
+ipcMain.handle("attachments:read", (_e, paths) => {
+  const list = Array.isArray(paths) ? paths : [];
+  const out = [];
+  const errors = [];
+  for (const raw of list.slice(0, 8)) {
+    try {
+      const abs = path.resolve(String(raw || ""));
+      const st = fs.statSync(abs);
+      if (!st.isFile()) {
+        errors.push(`${path.basename(abs)} : pas un fichier`);
+        continue;
+      }
+      const ext = path.extname(abs).toLowerCase();
+      if (IMAGE_EXT.has(ext)) {
+        if (st.size > MAX_ATTACH_IMAGE) {
+          errors.push(`${path.basename(abs)} : image trop lourde (${Math.round(st.size / 1024 / 1024)} Mo, 6 Mo max)`);
+          continue;
+        }
+        out.push({
+          type: "image",
+          name: path.basename(abs),
+          bytes: st.size,
+          mime: ext === ".png" ? "image/png"
+            : ext === ".webp" ? "image/webp"
+            : ext === ".gif" ? "image/gif"
+            : ext === ".bmp" ? "image/bmp"
+            : "image/jpeg",
+          data: fs.readFileSync(abs).toString("base64"),
+        });
+      } else {
+        if (st.size > MAX_ATTACH_TEXT) {
+          errors.push(`${path.basename(abs)} : trop gros (${Math.round(st.size / 1024)} ko, 200 ko max)`);
+          continue;
+        }
+        out.push({
+          type: "text",
+          name: path.basename(abs),
+          bytes: st.size,
+          content: fs.readFileSync(abs, "utf8"),
+        });
+      }
+    } catch (err) {
+      errors.push(`${path.basename(String(raw || "?"))} : ${err.message}`);
+    }
+  }
+  return { ok: true, attachments: out, errors };
+});
+
 // ouverture de liens externes depuis le markdown (jamais de navigation interne)
 ipcMain.handle("app:openExternal", (_e, url) => {
   if (/^https?:\/\//i.test(String(url || ""))) shell.openExternal(String(url));
   return true;
+});
+
+// ---------- synchronisation multi-postes (export / import JSON) ----------
+ipcMain.handle("sync:export", async () => {
+  const r = await dialog.showSaveDialog(win, {
+    title: "Exporter les données Castor",
+    defaultPath: path.join(app.getPath("home"), `castor-sync-${new Date().toISOString().slice(0, 10)}.json`),
+    filters: [{ name: "JSON Castor", extensions: ["json"] }],
+  });
+  if (r.canceled || !r.filePath) return { ok: false };
+  try {
+    const store = readStore();
+    const payload = {
+      _version: app.getVersion(),
+      _exportedAt: new Date().toISOString(),
+      projects: store.projects || [],
+      conversations: store.conversations || [],
+      memory: store.memory || [],
+      skills: store.skills || [],
+      jobs: store.jobs || [],
+      keys: loadKeys(),
+    };
+    fs.writeFileSync(r.filePath, JSON.stringify(payload, null, 2), "utf8");
+    return { ok: true, path: r.filePath, count: Object.keys(payload).length - 2 };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("sync:import", async () => {
+  const r = await dialog.showOpenDialog(win, {
+    title: "Importer des données Castor",
+    filters: [{ name: "JSON Castor", extensions: ["json"] }],
+    properties: ["openFile"],
+  });
+  if (r.canceled || !r.filePaths[0]) return { ok: false };
+  try {
+    const raw = JSON.parse(fs.readFileSync(r.filePaths[0], "utf8"));
+    if (!raw || typeof raw !== "object") throw new Error("Fichier invalide");
+    const store = readStore();
+    if (raw.projects) store.projects = raw.projects;
+    if (raw.conversations) store.conversations = raw.conversations;
+    if (raw.memory) store.memory = raw.memory;
+    if (raw.skills) store.skills = raw.skills;
+    if (raw.jobs) store.jobs = raw.jobs;
+    writeStore(store);
+    if (raw.keys && typeof raw.keys === "object") {
+      const merged = { ...loadKeys(), ...raw.keys };
+      saveKeys(merged);
+    }
+    return { ok: true, count: (raw.projects?.length || 0) + (raw.conversations?.length || 0) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 // ---------- surveillance live du chantier (fs.watch) ----------
@@ -847,7 +1268,16 @@ function createWindow() {
   win.on("closed", () => (win = null));
 }
 
-Menu.setApplicationMenu(null);
+// Sur macOS, ⌘C/⌘V/⌘X/⌘A/⌘Z passent par le menu application : sans menu Edit,
+// copier-coller et sélection sont inertes dans les champs texte. Menu minimal
+// (roles natifs, invisible côté Windows/Linux où le comportement actuel est gardé).
+if (process.platform === "darwin") {
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([{ role: "appMenu" }, { role: "editMenu" }])
+  );
+} else {
+  Menu.setApplicationMenu(null);
+}
 
 app.whenReady().then(() => {
   // en dev, le dock affiche l'icône Electron générique — on met le castor
@@ -855,6 +1285,7 @@ app.whenReady().then(() => {
     app.dock.setIcon(path.join(__dirname, "build", "icon.png"));
   }
   createWindow();
+  startScheduler();
   setupAutoUpdater();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

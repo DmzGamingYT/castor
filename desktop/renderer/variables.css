@@ -1,0 +1,150 @@
+/* ============================================================
+   Castor Desktop — thème clair « papier & encre »
+   Même DA que le site : crème · encre olive · ambré · ciel doux
+   ============================================================ */
+
+:root {
+  --bg: #faf6ec;
+  --bg-soft: #f2ecda;
+  --panel: #fffdf6;
+  --panel-2: #f7f1e0;
+  --border: #e3dac0;
+  --border-soft: #ece4cd;
+  --text: #2e3320;
+  --muted: #7c7860;
+
+  --accent: #e2952a;
+  --accent-2: #efb65a;
+  --accent-dim: #c98820;
+  --accent-deep: #a06509;
+  --ink: #33260a;
+
+  --wood: #d99a3e;
+  --river: #58b8d6;
+  --river-deep: #1f7d9e;
+  --sage: #93a862;
+  --sage-deep: #66773d;
+  --danger: #c25b45;
+
+  /* contexte sombre : blocs de code uniquement */
+  --code-bg: #21271a;
+  --code-border: #39432a;
+  --code-text: #d8e2c8;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+/* ---------- thème nuit « nuit de chantier » — aligné sur la palette du site
+   (mêmes variables que src/styles.css pour une DA strictement identique) ---------- */
+[data-theme="dark"] {
+  --bg: #171b10;
+  --bg-soft: #1e2315;
+  --panel: #20261a;
+  --panel-2: #262d1e;
+  --border: #3a4229;
+  --border-soft: #2f3624;
+  --text: #e8e4d2;
+  --muted: #9aa087;
+
+  --accent: #e8a13c;
+  --accent-2: #f0bc63;
+  --accent-dim: #c98820;
+  --accent-deep: #f2c063;
+  --ink: #241a05;
+
+  --wood: #d99a3e;
+  --river: #58b8d6;
+  --river-deep: #7ccde8;
+  --sage: #93a862;
+  --sage-deep: #aec47e;
+  --danger: #e07b62;
+
+  --code-bg: #0f110c;
+  --code-border: #33371f;
+  --code-text: #cfe0c0;
+}
+
+/* couleurs « dures » épinglées dans le CSS : on les re-teinte en nuit */
+[data-theme="dark"] body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(232, 163, 60, 0.10), transparent 60%),
+    var(--bg);
+}
+
+[data-theme="dark"] ::selection { color: var(--ink); }
+
+[data-theme="dark"] .skill-chip,
+[data-theme="dark"] .welcome__hints code:hover,
+[data-theme="dark"] .chg-code.mod { background: #2a2414; }
+
+[data-theme="dark"] .msg--assistant .msg__bubble {
+  background: #211d12;
+  border-color: #3a2f1c;
+}
+
+[data-theme="dark"] .msg--user .msg__bubble {
+  background: var(--panel-2);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .slash-item.sel,
+[data-theme="dark"] .slash-item:hover { background: #2a2414; }
+
+[data-theme="dark"] .diff-modal__backdrop { background: rgba(0, 0, 0, 0.55); }
+
+[data-theme="dark"] .slash-menu,
+[data-theme="dark"] .diff-modal__card {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .conv-btn input.conv-rename { color: var(--text); }
+
+/* coche / aperçus du diff restent lisibles en nuit */
+[data-theme="dark"] .diff-modal__body .d-add,
+[data-theme="dark"] .code-pre .d-add { color: #a5d17a; }
+[data-theme="dark"] .diff-modal__body .d-del,
+[data-theme="dark"] .code-pre .d-del { color: #ee9883; }
+
+[data-theme="dark"] .chg-code.add { background: rgba(147, 168, 98, 0.22); }
+[data-theme="dark"] .chg-code.del { background: rgba(224, 122, 95, 0.2); }
+[data-theme="dark"] .chg-code.ren { background: rgba(79, 182, 216, 0.2); }
+[data-theme="dark"] .logo__tile {
+  box-shadow: 0 4px 16px rgba(232, 163, 60, 0.45);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(226, 149, 42, 0.10), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+::selection { background: var(--accent); color: #fffdf6; }
+
+:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w, 280px) 6px minmax(0, 1fr);
+  height: 100vh;
+}
+
+/* mouvement réduit : coupe les animations infinies (clignotements, ondes) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

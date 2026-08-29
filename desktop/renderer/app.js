@@ -6,6 +6,19 @@ const $ = (sel) => document.querySelector(sel);
 const CTX_WINDOW = 128000; // fenêtre de contexte par défaut (tokens)
 const estTok = (chars) => Math.ceil(chars / 4);
 
+/* Fenêtre de contexte du modèle sélectionné : le cache des modèles
+   (models:refresh) porte la vraie valeur (context_length) quand l'API la
+   fournit — sinon repli sur 128k. */
+function currentModelContext() {
+  const model = ($("#model-input")?.value || "").trim();
+  if (!model) return CTX_WINDOW;
+  const hit = (currentProvider()?.models || []).find(
+    (m) => (typeof m === "string" ? m : m.id) === model
+  );
+  const ctx = hit && typeof hit === "object" ? Number(hit.context) || 0 : 0;
+  return ctx > 0 ? ctx : CTX_WINDOW;
+}
+
 const DEFAULT_SKILLS = [
   { name: "review", body: "Relis le code fourni comme un reviewer senior : points bloquants d'abord, puis suggestions concrètes avec extraits corrigés." },
   { name: "tests", body: "Propose des tests couvrant les cas limites du code fourni, prêts à coller dans le projet." },
@@ -59,6 +72,8 @@ const ICONS = {
 
 const state = {
   providers: [],
+  jobs: [],
+  editingJobId: null,
   activeId: null,
   messages: [], // {role, content}
   streaming: false,
@@ -87,6 +102,7 @@ const state = {
   queue: [], // messages en attente pendant un stream
   attachments: [], // fichiers glissés, joints au prochain message
   attachErrors: [], // notes d'erreur transitoires (trop gros, binaire…)
+  lastWrite: null, // { callId, path } — dernière écriture approuvée (annulable)
   convTab: "active",
   convSearch: "",
   panelOpen: false,
@@ -144,6 +160,13 @@ function applyTheme(theme) {
   const btn = $("#theme-toggle");
   btn.dataset.themeBtn = theme;
   btn.title = themeLabel(theme);
+  const prefs = loadPersisted();
+  if (prefs.accentColor) document.documentElement.style.setProperty("--accent", prefs.accentColor);
+}
+
+function applyAccentColor(hex) {
+  document.documentElement.style.setProperty("--accent", hex);
+  persist({ accentColor: hex });
 }
 
 async function setTheme(theme) {
@@ -157,6 +180,24 @@ async function toggleTheme() {
 }
 
 $("#theme-toggle").addEventListener("click", toggleTheme);
+
+/* ---------- accent color picker ---------- */
+(function initAccentPicker() {
+  const toggle = $("#accent-toggle");
+  const panel = $("#accent-panel");
+  const custom = $("#accent-custom");
+  if (!toggle || !panel) return;
+  toggle.addEventListener("click", () => panel.classList.toggle("hidden"));
+  panel.querySelectorAll(".accent-swatch").forEach((btn) =>
+    btn.addEventListener("click", () => { applyAccentColor(btn.dataset.color); panel.classList.add("hidden"); })
+  );
+  custom?.addEventListener("input", (e) => applyAccentColor(e.target.value));
+  const prefs = loadPersisted();
+  if (prefs.accentColor) {
+    document.documentElement.style.setProperty("--accent", prefs.accentColor);
+    if (custom) custom.value = prefs.accentColor;
+  }
+})();
 
 // Suit le changement de préférence système tant que l'utilisateur n'a pas choisi.
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", async (e) => {
@@ -443,6 +484,8 @@ function updateModelChip(model) {
   chip.textContent = model || "";
   chip.classList.toggle("hidden", !model);
   chip.title = model || "";
+  // le modèle vient de changer : la jauge se recalcule sur son contexte réel
+  renderUsage();
 }
 
 $("#model-input").addEventListener("input", () =>
@@ -851,11 +894,52 @@ window.castor.onToolResult(({ reqId, callId, meta }) => {
     }
   }
   if (meta?.kind === "command") termFinish(callId, meta);
+  if (meta?.kind === "write") {
+    // l'écriture vient d'être appliquée : on peut l'annuler (backup côté main)
+    state.lastWrite = { callId, path: meta.path };
+    renderUndoButton();
+  }
   if (state.panelOpen && (meta?.kind === "write" || meta?.kind === "command")) {
     refreshChanges();
     $("#chg-badge").classList.remove("hidden");
   }
 });
+
+/* ---------- annulation de la dernière écriture ---------- */
+function renderUndoButton() {
+  const btn = $("#diff-undo");
+  const pathEl = $("#diff-undo-path");
+  if (!btn) return;
+  const has = Boolean(state.lastWrite);
+  btn.classList.toggle("hidden", !has);
+  btn.disabled = false;
+  btn.title = state.lastWrite
+    ? `Restaure ${state.lastWrite.path} tel qu'il était avant`
+    : "";
+  if (pathEl) {
+    pathEl.textContent = state.lastWrite ? state.lastWrite.path : "";
+    pathEl.classList.toggle("hidden", !has);
+  }
+}
+
+async function undoLastWrite() {
+  const w = state.lastWrite;
+  const btn = $("#diff-undo");
+  if (!w || !btn) return;
+  btn.disabled = true;
+  const res = await window.castor.undoWrite(w.callId);
+  if (res?.ok) {
+    state.lastWrite = null;
+    renderUndoButton();
+    refreshChanges();
+    $("#chg-badge").classList.add("hidden");
+  } else {
+    btn.disabled = false;
+    btn.title = "Échec de l'annulation : " + (res?.error || "sauvegarde introuvable") + " — clique pour réessayer";
+  }
+}
+
+$("#diff-undo")?.addEventListener("click", undoLastWrite);
 
 /* ---------- panneau droit : Changes · Terminal · Notes ---------- */
 function setPanel(open) {
@@ -1462,30 +1546,70 @@ function colorizeDiff(diff) {
     .join("\n");
 }
 
+let pendingHunks = [];
+
+function renderSplitDiff(p) {
+  const body = $("#diff-body");
+  body.innerHTML = "";
+  pendingHunks = (p.hunks && p.hunks.length ? p.hunks : []).map(() => true);
+  if (!pendingHunks.length) {
+    body.innerHTML = `<pre class="split-diff__empty">${escapeHtml(p.diff || "(aucune modification)")}</pre>`;
+    return;
+  }
+  for (const [i, h] of p.hunks.entries()) {
+    const row = document.createElement("section");
+    row.className = "diff-hunk-row selected";
+    row.dataset.hunk = String(i);
+    const head = document.createElement("header");
+    head.className = "diff-hunk-row__head";
+    const check = document.createElement("input");
+    check.type = "checkbox"; check.checked = true; check.dataset.hunk = String(i);
+    check.setAttribute("aria-label", `Sélectionner le hunk ${i + 1}`);
+    const label = document.createElement("span");
+    label.textContent = `Hunk ${i + 1} · lignes ${h.oldStart}–${h.oldStart + h.oldCount - 1}`;
+    head.append(check, label);
+    const panes = document.createElement("div"); panes.className = "split-diff__panes";
+    const oldPane = document.createElement("pre"); oldPane.className = "split-diff__pane split-diff__pane--old";
+    const newPane = document.createElement("pre"); newPane.className = "split-diff__pane split-diff__pane--new";
+    oldPane.innerHTML = h.oldSide.map((line, n) => `<span class="diff-line ${h.oldDel[n] ? "diff-line--del" : "diff-line--ctx"}">${escapeHtml(line || " ")}</span>`).join("");
+    newPane.innerHTML = h.newSide.map((line, n) => `<span class="diff-line ${h.newAdd[n] ? "diff-line--add" : "diff-line--ctx"}">${escapeHtml(line || " ")}</span>`).join("");
+    panes.append(oldPane, newPane); row.append(head, panes); body.appendChild(row);
+    check.addEventListener("change", () => { pendingHunks[i] = check.checked; row.classList.toggle("selected", check.checked); updateDiffSummary(); });
+  }
+  updateDiffSummary();
+}
+
+function updateDiffSummary() {
+  const total = pendingHunks.length;
+  const selected = pendingHunks.filter(Boolean).length;
+  $("#diff-summary").textContent = total ? `${selected}/${total} modification${total > 1 ? "s" : ""} sélectionnée${selected > 1 ? "s" : ""}` : "";
+}
+
 function showApproval(p) {
   pendingApproval = p.callId;
-  if (p.kind === "command") {
-    $("#diff-icon").innerHTML = ICONS.term;
-    $("#diff-title").textContent = "Commande shell";
-    $("#diff-path").textContent = `dans ${state.wsName || "le projet"} — ${p.command}`;
-    $("#diff-body").innerHTML = escapeHtml("$ " + p.command);
-  } else {
-    $("#diff-icon").innerHTML = p.isNew ? ICONS.sparkle : ICONS.pencil;
-    $("#diff-title").textContent = p.isNew ? "Nouveau fichier" : "Écriture de fichier";
-    $("#diff-path").textContent = p.path;
-    $("#diff-body").innerHTML = colorizeDiff(p.diff || "");
-  }
+  $("#diff-icon").innerHTML = p.kind === "command" ? ICONS.term : p.isNew ? ICONS.sparkle : ICONS.pencil;
+  $("#diff-title").textContent = p.kind === "command" ? "Commande shell" : p.isNew ? "Nouveau fichier" : "Édition de fichier";
+  $("#diff-path").textContent = p.kind === "command" ? `dans ${state.wsName || "le projet"} — ${p.command}` : p.path;
+  if (p.kind === "command") { $("#diff-body").innerHTML = `<pre class="split-diff__empty">${escapeHtml("$ " + p.command)}</pre>`; pendingHunks = []; }
+  else renderSplitDiff(p);
   $("#diff-modal").classList.remove("hidden");
   $("#diff-reject").focus();
 }
 
 function answerApproval(approved) {
   if (!pendingApproval) return;
-  window.castor.respondApproval(pendingApproval, approved);
-  pendingApproval = null;
+  window.castor.respondApproval(pendingApproval, approved, approved ? pendingHunks : null);
+  pendingApproval = null; pendingHunks = [];
   $("#diff-modal").classList.add("hidden");
   $("#input").focus();
 }
+
+$("#diff-all").addEventListener("click", () => {
+  const next = pendingHunks.some((x) => !x);
+  pendingHunks = pendingHunks.map(() => next);
+  document.querySelectorAll("#diff-body input[type=checkbox]").forEach((c, i) => { c.checked = next; c.closest(".diff-hunk-row")?.classList.toggle("selected", next); });
+  updateDiffSummary();
+});
 
 window.castor.onApprovalRequest(showApproval);
 $("#diff-approve").addEventListener("click", () => answerApproval(true));
@@ -1521,14 +1645,30 @@ document.addEventListener("drop", async (e) => {
   e.preventDefault();
   dragDepth = 0;
   document.body.classList.remove("ws-dropping");
-  const file = e.dataTransfer?.files?.[0];
-  if (!file || state.streaming) return;
-  const p = window.castor.pathForFile(file);
-  if (!p) return;
-  const res = await window.castor.openWorkspacePath(p);
-  if (!res.ok) return;
-  applyWorkspace(res);
-  refreshFileTree();
+  const files = [...(e.dataTransfer?.files || [])];
+  if (!files.length || state.streaming) return;
+  const paths = files.map((f) => window.castor.pathForFile(f)).filter(Boolean);
+  // un seul élément : tenter d'ouvrir comme chantier (dossier) — comportement historique ;
+  // openWorkspacePath échoue pour un fichier simple → pièce jointe
+  if (paths.length === 1) {
+    const res = await window.castor.openWorkspacePath(paths[0]);
+    if (res.ok) {
+      applyWorkspace(res);
+      refreshFileTree();
+      return;
+    }
+  }
+  // fichiers → pièces jointes au prochain message (texte lu, images encodées)
+  const res = await window.castor.readAttachments(paths);
+  state.attachErrors = res.errors || [];
+  for (const a of res.attachments || []) {
+    if (state.attachments.length >= 8) {
+      state.attachErrors.push("8 pièces jointes maximum");
+      break;
+    }
+    state.attachments.push(a);
+  }
+  renderAttachments();
 });
 
 /* ---------- raccourcis clavier ---------- */
@@ -1542,6 +1682,12 @@ document.addEventListener("keydown", (e) => {
   if (k === "o") {
     e.preventDefault();
     $("#open-workspace").click();
+  }
+  if (k === "f") {
+    e.preventDefault();
+    const s = $("#conv-search");
+    s?.focus();
+    s?.select();
   }
   if (k === ",") {
     e.preventDefault();
@@ -1560,6 +1706,7 @@ function cmdkActions() {
   const dark = resolveTheme(loadPersisted()) === "dark";
   const actions = [
     { icon: ICONS.sparkle, label: "Nouvelle conversation", hint: "⌘N", run: () => { if (!state.streaming) resetChatView(); } },
+    { icon: ICONS.search, label: "Rechercher une conversation", hint: "⌘F", run: () => { const s = $("#conv-search"); s?.focus(); s?.select(); } },
     { icon: ICONS.gear, label: "Changer de modèle / provider", hint: "⌘,", run: () => openProviderSettings(state.activeId) },
     { icon: ICONS.folder, label: "Ouvrir un projet…", hint: "⌘O", run: () => $("#open-workspace").click() },
     { icon: ICONS.clock, label: dark ? "☀ Passer en mode jour" : "🌙 Passer en mode nuit", run: () => toggleTheme() },
@@ -1779,6 +1926,32 @@ $("#memory-form").addEventListener("submit", async (e) => {
   renderMemory();
 });
 
+/* ---------- serveurs MCP ---------- */
+let state_mcpServers = [];
+async function renderMcpList() {
+  const ul = $("#mcp-list"); if (!ul) return;
+  try { state_mcpServers = await window.castor.listMcpServers(); } catch { state_mcpServers = []; }
+  ul.innerHTML = "";
+  $("#mcp-count").textContent = String(state_mcpServers.length);
+  for (const srv of state_mcpServers) {
+    const li = document.createElement("li"); li.className = "skill-item";
+    const dot = document.createElement("span"); dot.className = `dot ${srv.status === "running" ? "dot--on" : "dot--off"}`;
+    const name = document.createElement("span"); name.style.fontWeight = "600"; name.textContent = srv.id;
+    const info = document.createElement("span"); info.style.cssText = "font-size:0.7rem;color:var(--muted);"; info.textContent = `${srv.toolsCount} outil${srv.toolsCount > 1 ? "s" : ""} · ${srv.command}`;
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "Supprimer";
+    del.addEventListener("click", async () => { await window.castor.removeMcpServer(srv.id); renderMcpList(); });
+    li.append(dot, name, info, del); ul.appendChild(li);
+  }
+}
+$("#mcp-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault(); const raw = $("#mcp-command").value.trim(); if (!raw) return;
+  const parts = raw.split(/\s+/); const command = parts[0]; const args = parts.slice(1);
+  await window.castor.addMcpServer({ id: "mcp-" + command.split("/").pop().replace(/@.*?\//, ""), command, args });
+  $("#mcp-command").value = "";
+  renderMcpList();
+});
+renderMcpList();
+
 /* suppression en deux clics : le ✕ devient « ? » pendant 2,6 s */
 let armedDel = null;
 function disarmDel() {
@@ -1804,17 +1977,18 @@ let systemPromptChars = 0;
 function renderUsage() {
   // la jauge reflète ce qui est réellement envoyé au modèle (fenêtre glissante)
   const used = estTok(state.lastPayloadChars ?? conversationChars());
-  const pct = Math.min(100, Math.round((used / CTX_WINDOW) * 1000) / 10);
+  const ctx = currentModelContext();
+  const pct = Math.min(100, Math.round((used / ctx) * 1000) / 10);
   $("#gauge-fill").style.width = pct + "%";
   $("#gauge-label").textContent =
-    `≈${fmtTok(used)} tok · ${pct} % de 128k` + (state.lastTruncated ? " · glissante" : "");
-  renderUsagePopover(used, pct);
+    `≈${fmtTok(used)} tok · ${pct} % de ${fmtCtx(ctx)}` + (state.lastTruncated ? " · glissante" : "");
+  renderUsagePopover(used, pct, ctx);
 }
 
 /* ---------- popover détaillé des tokens ---------- */
-function renderUsagePopover(used, pct) {
+function renderUsagePopover(used, pct, ctx = currentModelContext()) {
   $("#up-ctx-used").textContent = fmtTok(used) + " tok";
-  $("#up-ctx-cap").textContent = CTX_WINDOW.toLocaleString("fr-FR") + " tok";
+  $("#up-ctx-cap").textContent = ctx.toLocaleString("fr-FR") + " tok";
   const fill = $("#up-gauge-fill");
   fill.style.width = pct + "%";
   fill.style.background =
@@ -2008,9 +2182,11 @@ function buildSystemMessage() {
       s +=
         "\n\n# Espace de travail\n" +
         `Dossier ouvert : ${state.wsName} (${state.wsPath})\n` +
-        "Tu disposes d'outils : list_dir, read_file, write_file, run_command.\n" +
-        "Explore le projet avant de modifier. Pour écrire, fournis toujours le contenu complet du fichier — " +
-        "l'utilisateur validera chaque écriture et chaque commande.";
+        "Tu disposes d'outils : list_dir, read_file, write_file, edit_file, run_command.\n" +
+        "Explore le projet avant de modifier. Pour créer un fichier ou le réécrire en entier, " +
+        "fournis le contenu complet via write_file ; pour changer une portion précise d'un fichier " +
+        "existant, préfère edit_file (oldText exact et unique + newText) — beaucoup plus économe. " +
+        "L'utilisateur validera chaque écriture, édition et commande.";
     } else {
       s +=
         "\n\n# Espace de travail (mode plan)\n" +
@@ -2022,6 +2198,15 @@ function buildSystemMessage() {
 
   const skill = state.pendingSkill;
   if (skill) s += `\n\n# Compétence activée : ${skill.name}\n${skill.body}`;
+
+  const imgs = state.attachments.filter((a) => a.type === "image").length;
+  if (state.attachments.length) {
+    s +=
+      `\n\n# Pièces jointes au message utilisateur\n` +
+      (imgs ? `${imgs} image(s) : utilise la vision pour les décrire, les comparer, extraire du texte ou du code.
+` : "") +
+      `Les blocs « [Fichier joint : nom — taille] » contiennent le contenu exact du fichier, entre marqueurs début/fin. Appuie-toi dessus pour répondre précisément.`;
+  }
 
   if (state.memory.length) {
     s +=
@@ -2038,12 +2223,12 @@ function buildSystemMessage() {
    On n'envoie que le système + les messages récents qui tiennent dans le
    budget (75 % de la fenêtre — le reste sert à la réponse). Les 2 derniers
    messages sont toujours conservés, même hors budget. */
-const HISTORY_BUDGET_TOK = Math.floor(CTX_WINDOW * 0.75);
+const historyBudgetTok = () => Math.floor(currentModelContext() * 0.75);
 
 function buildPayloadMessages() {
   const system = buildSystemMessage();
   const history = state.messages.slice(0, -1); // tout sauf l'assistant en cours
-  const budgetChars = HISTORY_BUDGET_TOK * 4;
+  const budgetChars = historyBudgetTok() * 4;
   const minStart = Math.max(0, history.length - 2); // jamais moins de 2 messages
   let total = system.content.length;
   let start = history.length;
@@ -2085,6 +2270,83 @@ function addMessageEl(role) {
   const { wrap, bubble } = makeMessageEl(role);
   $("#messages").appendChild(wrap);
   return bubble;
+}
+
+/* ---------- pièces jointes (chips au-dessus du composer) ---------- */
+function fmtBytes(n) {
+  return n >= 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + " Mo" : Math.max(1, Math.round(n / 1024)) + " ko";
+}
+
+function renderAttachments() {
+  const zone = $("#attach-zone");
+  if (!zone) return;
+  zone.innerHTML = "";
+  zone.classList.toggle("hidden", !state.attachments.length && !state.attachErrors.length);
+  for (const [i, a] of state.attachments.entries()) {
+    const chip = document.createElement("span");
+    chip.className = "attach-chip" + (a.type === "image" ? " attach-chip--img" : "");
+    chip.title = a.type === "image" ? `${a.name} — image (vision)` : `${a.name} — ${fmtBytes(a.bytes)}`;
+    if (a.type === "image") {
+      const thumb = document.createElement("img");
+      thumb.src = `data:${a.mime};base64,${a.data}`;
+      thumb.alt = a.name;
+      chip.appendChild(thumb);
+    } else {
+      const ic = document.createElement("i");
+      ic.className = "icon ico";
+      ic.innerHTML = ICONS.file;
+      chip.appendChild(ic);
+    }
+    const nm = document.createElement("span");
+    nm.className = "attach-chip__name";
+    nm.textContent = a.name;
+    chip.appendChild(nm);
+    const x = document.createElement("button");
+    x.textContent = "✕";
+    x.title = "Retirer la pièce jointe";
+    x.addEventListener("click", () => {
+      state.attachments.splice(i, 1);
+      renderAttachments();
+    });
+    chip.appendChild(x);
+    zone.appendChild(chip);
+  }
+  for (const err of state.attachErrors) {
+    const chip = document.createElement("span");
+    chip.className = "attach-chip attach-chip--err";
+    chip.textContent = err;
+    zone.appendChild(chip);
+  }
+  if (!state.attachments.length) {
+    // erreurs seules : elles disparaissent au prochain envoi
+    if (state.attachErrors.length) {
+      clearTimeout(state.attachErrTimer);
+      state.attachErrTimer = setTimeout(() => {
+        state.attachErrors = [];
+        renderAttachments();
+      }, 4000);
+    }
+  }
+}
+
+/* Construit le bloc de contexte des pièces jointes du message utilisateur.
+   Documents texte → blocs annotés · Images → data URI (modèles vision). */
+function attachmentsToContent(text) {
+  const texts = state.attachments.filter((a) => a.type === "text");
+  const images = state.attachments.filter((a) => a.type === "image");
+  let content = text;
+  for (const a of texts) {
+    content +=
+      `\n\n[Fichier joint : ${a.name} — ${fmtBytes(a.bytes)}]\n` +
+      "--- début de " + a.name + " ---\n" +
+      a.content +
+      "\n--- fin de " + a.name + " ---";
+  }
+  if (images.length) {
+    content +=
+      `\n\n[Images jointes : ${images.map((i) => i.name).join(", ")} — décris-les ou exploite-les selon la demande]`;
+  }
+  return { content, images };
 }
 
 /* ---------- file d'attente (messages pendant un stream) ---------- */
@@ -2150,7 +2412,25 @@ async function send(text) {
 
   $(".welcome")?.remove();
 
-  pushMessage("user", text).textContent = text;
+  const { content: textWithAttachments, images } = attachmentsToContent(text);
+  const el = pushMessage("user", textWithAttachments);
+  // la bulle affiche le texte + les vignettes ; le contenu complet reste dans l'historique
+  el.textContent = textWithAttachments.replace(/\n\n\[Images jointes[^\]]*\]$/, "");
+  if (images.length) {
+    const gal = document.createElement("span");
+    gal.className = "attach-gallery";
+    for (const im of images) {
+      const thumb = document.createElement("img");
+      thumb.src = `data:${im.mime};base64,${im.data}`;
+      thumb.alt = im.name;
+      thumb.title = im.name;
+      gal.appendChild(thumb);
+    }
+    el.appendChild(gal);
+  }
+  state.attachments = [];
+  state.attachErrors = [];
+  renderAttachments();
 
   const thinking = document.createElement("div");
   thinking.className = "thinking";
@@ -2166,7 +2446,8 @@ async function send(text) {
   state.firstTokenMs = null;
   let chars = 0;
   const sendBtn = $("#send");
-  sendBtn.textContent = "⏹";
+  sendBtn.innerHTML =
+    '<span class="send-wave" aria-hidden="true"><i></i><i></i><i></i></span>';
   sendBtn.title = "Arrêter la génération (Échap)";
   sendBtn.classList.add("stop");
   sendBtn.disabled = false;
@@ -2185,11 +2466,29 @@ async function send(text) {
   $("#messages").appendChild(trace);
   state.currentTrace = trace;
 
+  // seul le dernier message utilisateur porte les images (contenu multimodal) :
+  // l'historique reste en texte simple, comme le veut le protocole OpenAI
+  let lastUserIdx = -1;
+  for (let i = payload.messages.length - 1; i >= 0; i--) {
+    if (payload.messages[i].role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+  const payloadMsgs = payload.messages.map((m, i) => {
+    if (i !== lastUserIdx || m.role !== "user" || !images.length) return m;
+    const parts = [];
+    const t = m.content.replace(/\n\n\[Images jointes[^\]]*\]$/, "");
+    if (t) parts.push({ type: "text", text: t });
+    for (const im of images) parts.push({ type: "image_url", image_url: { url: `data:${im.mime};base64,${im.data}` } });
+    return { role: "user", content: parts };
+  });
+
   const res = await window.castor.stream({
     providerId: provider.id,
     baseURLOverride: baseURL,
     model,
-    messages: payload.messages,
+    messages: payloadMsgs,
     agent: state.chatMode === "build" && Boolean(state.wsPath),
   });
   state.reqId = res.reqId;
@@ -2891,6 +3190,8 @@ function openConversation(id) {
 function resetChatView() {
   state.activeConvId = null;
   state.messages = [];
+  state.lastWrite = null; // l'annulation ne survit pas au changement de conversation
+  renderUndoButton();
   $("#messages").innerHTML = welcomeHTML();
   $("#stats").textContent = "";
   const p = currentProvider();
@@ -2967,7 +3268,7 @@ function welcomeHTML() {
       <div class="welcome__hints">
         <code>/review ce composant</code>
         <code>/tests pour ma fonction parse()</code>
-        <code>refactore ce fichier en TypeScript</code>
+        <code>édite la fonction parse() dans utils.js</code>
       </div>
       <div class="welcome__keys">
         <span><kbd>⌘K</kbd> palette de commandes</span>
@@ -2985,6 +3286,173 @@ $("#messages").addEventListener("click", (e) => {
     autoresize($("#input"));
   }
 });
+
+/* ---------- synchronisation multi-postes ---------- */
+function initSync() {
+  $("#sync-export")?.addEventListener("click", async () => {
+    const res = await window.castor.exportData();
+    if (res.ok) alert(`Exporté ${res.count} sections vers :\n${res.path}`);
+    else if (res.error) alert(`Erreur : ${res.error}`);
+  });
+  $("#sync-import")?.addEventListener("click", async () => {
+    const res = await window.castor.importData();
+    if (res.ok) { alert(`Importé ${res.count} éléments. Redémarre l'app pour tout charger.`); location.reload(); }
+    else if (res.error) alert(`Erreur : ${res.error}`);
+  });
+}
+initSync();
+
+/* ---------- assistant IA embarqué (Castor Bot) ---------- */
+const BOT_RESPONSES = {
+  "": "Tape /help pour la liste des commandes, ou pose-moi une question sur ton projet.",
+  help: {
+    title: "Commandes disponibles",
+    lines: ["/help — afficher cette aide", "/roadmap — état du chantier Castor", "/astuce — une astuce aléatoire pour ton workflow", "/memory — mémoire persistante", "/usage — consommation de tokens", "Tu peux aussi me poser une question libre sur ton projet."],
+  },
+  roadmap: {
+    title: "🦫 Roadmap Castor",
+    lines: [
+      "✅ Agents planifiés — agent nocturne configuré", "✅ Diff côte à côte — validation hunk par hunk",
+      "✅ Assistant embarqué — tu me parles directement", "✅ Sync multi-postes — export / import JSON",
+      "🔧 Serveurs MCP — protocole JSON-RPC en cours", "💡 Thèmes personnalisables — en exploration",
+      "▸ rdv sur castor/avancement pour le suivi complet"
+    ],
+  },
+  astuce: {
+    title: "💡 Astuce du castor",
+    lines: [
+      "💡 Tape / avant ton message pour activer une compétence (review, tests, explique…).",
+      "💡 Glisse un dossier dans la fenêtre pour ouvrir un chantier instantanément.",
+      "💡 Le bouton ⏱ dans la sidebar te permet de programmer un agent autonome.",
+      "💡 Active le mode « Plan » pour que le castor analyse sans rien modifier.",
+      "💡 Exporte tes données régulièrement pour les garder synchronisées entre postes."
+    ],
+  },
+};
+
+function botReply(input) {
+  const q = input.trim().toLowerCase();
+  if (!q) return BOT_RESPONSES[""];
+  const r = BOT_RESPONSES[q];
+  if (r) return `${r.title}\n\n${r.lines.join("\n")}`;
+  if (q === "memory") {
+    const mem = state.memory || [];
+    return mem.length ? `Mémoire : ${mem.length} fait${mem.length > 1 ? "s" : "s"} enregistré${mem.length > 1 ? "s" : "s"}.\n\n${mem.slice(0, 5).map((m) => "• " + (m.text || m).slice(0, 80)).join("\n")}` : "Mémoire vide — utilise la section Outils pour ajouter des faits.";
+  }
+  if (q === "usage") {
+    const u = state.usage || {};
+    return `Session : ${state.sessionTokens || 0} tok, ${state.sessionRequests || 0} requêtes.\nCumul : ${u.totalTokens || 0} tok, ${u.requests || 0} requêtes.`;
+  }
+  return `Je ne comprends pas « ${input.trim().slice(0, 40)} ». Tape /help pour la liste des commandes.`;
+}
+
+function botMessage(text, role) {
+  const wrap = $("#castor-bot-messages");
+  if (!wrap) return;
+  const el = document.createElement("div");
+  el.className = `castor-bot__msg castor-bot__msg--${role || "bot"}`;
+  el.textContent = text;
+  wrap.appendChild(el);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function initCastorBot() {
+  const toggle = $("#castor-bot-toggle");
+  const panel = $("#castor-bot");
+  const close = $("#castor-bot-close");
+  const input = $("#castor-bot-input");
+  const send = $("#castor-bot-send");
+  if (!toggle || !panel) return;
+  toggle.addEventListener("click", () => { panel.classList.toggle("hidden"); if (!panel.classList.contains("hidden")) { input.focus(); botMessage("Salut ! Je suis ton assistant Castor. Tape /help pour commencer.", "bot"); } });
+  close?.addEventListener("click", () => panel.classList.add("hidden"));
+  function sendBot() {
+    const val = input.value.trim(); if (!val) return;
+    botMessage(val, "user"); input.value = "";
+    const reply = botReply(val);
+    setTimeout(() => botMessage(reply, "bot"), 120);
+  }
+  send?.addEventListener("click", sendBot);
+  input?.addEventListener("keydown", (e) => { if (e.key === "Enter") sendBot(); });
+}
+initCastorBot();
+
+/* ---------- agents planifiés ---------- */
+const jobScheduleLabel = (s) => {
+  if (!s) return "";
+  if (s.type === "nightly") return `Chaque nuit à ${String(s.hour).padStart(2, "0")}:${String(s.minute).padStart(2, "0")}`;
+  if (s.type === "hourly") return `Chaque heure · minute ${String(s.minute).padStart(2, "0")}`;
+  return `Toutes les ${s.minutes} min`;
+};
+const jobNextLabel = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return "—";
+  const diff = d - new Date();
+  if (diff < 60_000) return "à l'instant";
+  if (diff < 3_600_000) return `dans ${Math.max(1, Math.round(diff / 60_000))} min`;
+  return d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+};
+
+function renderJobs() {
+  const ul = $("#job-list"); if (!ul) return;
+  ul.innerHTML = "";
+  const jobs = state.jobs || [];
+  $("#job-count").textContent = String(jobs.length);
+  $("#job-count").classList.toggle("hidden", !jobs.length);
+  $("#job-empty").classList.toggle("hidden", Boolean(jobs.length));
+  for (const job of jobs) {
+    const li = document.createElement("li"); li.className = `job-item${job.enabled ? "" : " job-item--off"}`;
+    const top = document.createElement("div"); top.className = "job-item__top";
+    const dot = document.createElement("span"); dot.className = `job-item__dot${job.running ? " job-item__dot--running" : ""}`;
+    const name = document.createElement("strong"); name.textContent = job.name || "Agent sans nom";
+    const toggle = document.createElement("button"); toggle.className = "job-toggle"; toggle.textContent = job.enabled ? "ON" : "OFF"; toggle.title = "Activer / désactiver";
+    toggle.addEventListener("click", async () => { state.jobs = await window.castor.toggleJob(job.id, !job.enabled); renderJobs(); });
+    top.append(dot, name, toggle);
+    const meta = document.createElement("small"); meta.textContent = job.running ? "En cours…" : `${jobScheduleLabel(job.schedule)} · ${jobNextLabel(job.nextRunAt)}`;
+    if (job.lastStatus) {
+      const result = document.createElement("span"); result.className = `job-item__result job-item__result--${job.lastStatus}`;
+      result.textContent = job.lastStatus === "ok" ? "✓ dernier cycle réussi" : job.lastStatus === "cancelled" ? "× interrompu" : "! dernier cycle en erreur";
+      result.title = job.lastSummary || job.lastError || ""; li.appendChild(result);
+    }
+    const actions = document.createElement("div"); actions.className = "job-item__actions";
+    const run = document.createElement("button"); run.className = "job-action"; run.textContent = job.running ? "Stop" : "▶"; run.title = job.running ? "Arrêter" : "Lancer maintenant";
+    run.addEventListener("click", async () => { if (job.running) await window.castor.cancelJob(job.id); else await window.castor.runJob(job.id); });
+    const edit = document.createElement("button"); edit.className = "job-action"; edit.textContent = "✎"; edit.title = "Modifier"; edit.addEventListener("click", () => openJobModal(job));
+    const del = document.createElement("button"); del.className = "job-action job-action--danger"; del.textContent = "×"; del.title = "Supprimer"; del.addEventListener("click", async () => { await window.castor.deleteJob(job.id); });
+    actions.append(run, edit, del); li.append(top, meta, actions); ul.appendChild(li);
+  }
+}
+
+function fillJobForm(job = null) {
+  $("#job-name").value = job?.name || ""; $("#job-prompt").value = job?.prompt || "";
+  const s = job?.schedule || { type: "nightly", hour: 2, minute: 0, minutes: 30 };
+  $("#job-schedule-type").value = s.type; $("#job-hour").value = `${String(s.hour ?? 2).padStart(2, "0")}:${String(s.minute ?? 0).padStart(2, "0")}`; $("#job-minute").value = s.minute ?? 0; $("#job-interval").value = s.minutes ?? 30;
+  $("#job-provider").innerHTML = state.providers.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.label)}</option>`).join("");
+  $("#job-provider").value = job?.providerId || state.activeId || state.providers[0]?.id || "";
+  $("#job-model").value = job?.model || "";
+  $("#job-auto-approve").checked = Boolean(job?.autoApprove);
+  $("#job-project").innerHTML = state.projects.map((p) => `<option value="${escapeHtml(p.path)}">${escapeHtml(p.name)}</option>`).join("");
+  if (job?.wsPath) $("#job-project").value = job.wsPath;
+  updateJobScheduleFields();
+}
+function updateJobScheduleFields() {
+  const type = $("#job-schedule-type").value;
+  $("#job-hour-wrap").classList.toggle("hidden", type !== "nightly"); $("#job-minute-wrap").classList.toggle("hidden", type !== "hourly"); $("#job-interval-wrap").classList.toggle("hidden", type !== "interval");
+}
+function openJobModal(job = null) { state.editingJobId = job?.id || null; $("#job-modal-title").textContent = job ? "Modifier l'agent" : "Programmer un agent"; fillJobForm(job); $("#job-form-error").textContent = ""; $("#job-modal").classList.remove("hidden"); $("#job-name").focus(); }
+function closeJobModal() { $("#job-modal").classList.add("hidden"); state.editingJobId = null; }
+
+$("#add-job").addEventListener("click", () => openJobModal()); $("#job-cancel").addEventListener("click", closeJobModal); $("#job-schedule-type").addEventListener("change", updateJobScheduleFields);
+$("#job-modal").addEventListener("click", (e) => { if (e.target.classList.contains("diff-modal__backdrop")) closeJobModal(); });
+$("#job-form").addEventListener("submit", async (e) => {
+  e.preventDefault(); const name = $("#job-name").value.trim(); const prompt = $("#job-prompt").value.trim(); const project = $("#job-project").value;
+  if (!name || !prompt || !project) { $("#job-form-error").textContent = "Nom, consigne et projet sont obligatoires."; return; }
+  const type = $("#job-schedule-type").value; const time = $("#job-hour").value.split(":");
+  const old = state.jobs.find((j) => j.id === state.editingJobId);
+  const job = { ...(old || {}), id: state.editingJobId, name, prompt, providerId: $("#job-provider").value, model: $("#job-model").value.trim(), wsPath: project, autoApprove: $("#job-auto-approve").checked, schedule: { type, hour: Number(time[0] || 2), minute: type === "hourly" ? Number($("#job-minute").value) : Number(time[1] || 0), minutes: Number($("#job-interval").value || 30) }, enabled: old?.enabled ?? true };
+  state.jobs = await window.castor.saveJob(job); renderJobs(); closeJobModal();
+});
+window.castor.onJobsUpdated((jobs) => { state.jobs = jobs || []; renderJobs(); });
+window.castor.onJobNotification((n) => { if (n?.body) { const el = $("#job-empty"); if (el) el.title = n.body; } });
 
 /* ---------- sections repliables de la sidebar ---------- */
 function applySectionCollapsed(sec, collapsed) {
@@ -3018,6 +3486,9 @@ function initSections() {
   $("#app-version").textContent = state.version;
   $("#app-version").title = "Clique pour vérifier les mises à jour";
   document.querySelectorAll(".beaver-slot").forEach((el) => (el.innerHTML = LOGO_SVG));
+
+  state.jobs = (await window.castor.listJobs?.()) || [];
+  renderJobs();
 
   state.skills = (await window.castor.storeGet("skills")) || DEFAULT_SKILLS;
   if (!(await window.castor.storeGet("skills"))) {

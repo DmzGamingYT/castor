@@ -14,41 +14,45 @@ export const STATUS_META = {
 export const ROADMAP = {
   app: {
     label: "📱 App Desktop",
+    name: "App Desktop",
+    icon: "desktop",
     items: [
       {
-        status: "en cours",
+        status: "livré",
         title: "Agents planifiés",
         desc: "Lance un refactor chaque nuit à 2h — le castor travaille pendant que tu dors.",
       },
       {
-        status: "en cours",
+        status: "livré",
         title: "Diff côte à côte",
         desc: "Compare avant/après en split view, valide hunk par hunk.",
       },
       {
-        status: "bientôt",
+        status: "livré",
         title: "Assistant IA embarqué",
         desc: "Le chatbot 24/7 directement dans l'app Desktop : roadmap, aide et astuces sans quitter ton chantier.",
       },
       {
-        status: "bientôt",
+        status: "livré",
         title: "Synchronisation multi-postes",
-        desc: "Tes chantiers et réglages suivis entre ta machine de bureau et ton laptop.",
+        desc: "Export/import JSON de tes conversations, clés et projets entre machines.",
       },
       {
-        status: "bientôt",
+        status: "livré",
         title: "Serveurs MCP",
-        desc: "Branche des outils externes (base de données, Figma, docs) à tes agents.",
+        desc: "Branche des outils externes (base de données, Figma, docs) à tes agents via le protocole MCP.",
       },
       {
-        status: "exploration",
+        status: "livré",
         title: "Thèmes personnalisables",
-        desc: "Crée et partage tes thèmes papier & encre.",
+        desc: "Choisis ta couleur d'accent parmi les presets ou une couleur libre.",
       },
     ],
   },
   site: {
     label: "🌐 Site",
+    name: "Site",
+    icon: "globe",
     items: [
       {
         status: "bientôt",
@@ -69,6 +73,8 @@ export const ROADMAP = {
   },
   models: {
     label: "🧠 Modèles",
+    name: "Modèles",
+    icon: "brain",
     items: [
       {
         status: "en cours",
@@ -105,7 +111,7 @@ export const PRODUCT_NOTES = {
 };
 
 export const SITE_HINTS = {
-  models: "La page Modèles recense les modèles gratuits du moment, filtrables par tags (code, vision, raisonnement, rapide…).",
+  models: "Les modèles gratuits du moment (OpenRouter, Groq, OpenCode Zen…) se choisissent directement dans les studios Web et Chat, ou dans Castor Desktop.",
   install: "Téléchargement sur la page Desktop ou via la bulle 📥 de l'accueil. Installateurs macOS (Apple Silicon/Intel), Windows (x64/ARM) et Linux (.deb/AppImage).",
   privacy: "Aucune donnée collectée : tout tourne dans ton navigateur ou ta machine. Ta clé API ne quitte jamais ton appareil.",
 };

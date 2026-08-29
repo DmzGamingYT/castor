@@ -1,0 +1,97 @@
+.project-list {
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+.proj-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.84rem;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.proj-btn:hover { background: rgba(226, 149, 42, 0.07); }
+.proj-btn.active {
+  border-color: var(--border);
+  background: var(--panel);
+}
+.proj-ico { width: 22px; height: 22px; flex-shrink: 0; }
+.proj-btn .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj-btn .del {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.15s;
+}
+.proj-btn:hover .del,
+.proj-btn:focus-within .del { opacity: 0.6; }
+.proj-btn .del:hover { color: var(--danger); opacity: 1; }
+.proj-btn .del.confirm {
+  opacity: 1;
+  color: var(--danger);
+  font-weight: 700;
+}
+#ws-tree-wrap { margin-top: 0.35rem; }
+
+/* ---------- glisser-déposer d'un dossier ---------- */
+body.ws-dropping #project-list,
+body.ws-dropping #open-workspace {
+  outline: 2px dashed var(--accent-dim);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+body.ws-dropping .sidebar { background: rgba(226, 149, 42, 0.10); }
+
+.file-tree {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 0.35rem 0.4rem;
+  margin-top: 0.35rem;
+}
+.file-tree::-webkit-scrollbar { width: 6px; }
+.file-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.file-tree details { margin-left: 0; }
+.file-tree details details { margin-left: 0.85rem; }
+.file-tree summary {
+  cursor: pointer;
+  color: var(--text);
+  list-style: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.file-tree summary::before { content: "▸ "; color: var(--muted); }
+.file-tree details[open] > summary::before { content: "▾ "; }
+.file-tree summary:hover { color: var(--accent-deep); }
+.ft-file {
+  color: var(--muted);
+  white-space: nowrap;
+  padding-left: 1.15rem;
+}
+.ft-more { color: var(--muted); opacity: 0.7; padding-left: 0.6rem; font-style: italic; }
+
+/* ---------- chip workspace dans le header ---------- */

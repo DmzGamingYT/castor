@@ -8,6 +8,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "test": "node --test tests/tools.edit.test.js tests/tools.core.test.js tests/diff-hunks.test.js tests/scheduler.test.js",
     "dist:dir": "electron-builder --dir",
     "dist": "electron-builder --mwl"
   },  "build": {
