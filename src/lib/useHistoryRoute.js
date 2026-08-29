@@ -14,7 +14,6 @@ function titleFor(path) {
     "/": "Castor — le castor qui code pour toi",
     "/cli": "CLI en ligne — Castor",
     "/templates": "Templates de projets — Castor",
-    "/chat": "Castor Chat — le studio de dialogue — Castor",
     "/desktop": "Castor Desktop — l'agent de code — Castor",
     "/espace": "Espace Cloud — le sandbox cloud — Castor",
     "/cloud": "Castor Cloud — l'IDE cloud — Castor",

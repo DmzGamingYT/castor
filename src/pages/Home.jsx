@@ -8,6 +8,7 @@ import DownloadSection from "../components/DownloadSection.jsx";
 import FAQSection from "../components/FAQSection.jsx";
 import AnimatedHeading from "../components/AnimatedHeading.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 import { BeaverMark } from "../components/Icon.jsx";
 
 /* révèle un élément quand il entre dans le viewport */
@@ -61,6 +62,7 @@ function useParallax() {
 
 function Hero({ onDownload }) {
   const parallaxRef = useParallax();
+  const { t } = useLanguage();
   return (
     <section className="hero" ref={parallaxRef}>
       <HeroParticles />
@@ -70,24 +72,24 @@ function Hero({ onDownload }) {
       <Hills />
 
       <span className="hero__badge">
-        <BeaverMark size={15} /> Gratuit pour toujours. Sans mauvaise surprise.
+        <BeaverMark size={15} /> {t("hero_kicker")}
       </span>
 
       <h1>
-        Donne-lui un chantier.
+        {t("hero_h1_a")}
         <br />
-        <span className="hero__accent">Il construit.</span>
+        <span className="hero__accent">{t("hero_h1_b")}</span>
       </h1>
 
       <p className="hero__sub">
-        Castor est un agent de code qui bâtit tes projets bloc par bloc.
+        {t("hero_sub")}
         <br className="br-desktop" />
-        Cloud ou sous ton toit, avec les modèles que tu choisis.
+        {t("hero_sub2")}
       </p>
 
       <div className="hero__actions">
         <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
-          Télécharger Desktop
+          {t("hero_cta")}
         </button>
         <a
           className="btn btn--ghost btn--lg"
@@ -97,7 +99,7 @@ function Hero({ onDownload }) {
             document.getElementById("chantier")?.scrollIntoView({ behavior: "smooth" });
           }}
         >
-          Voir la démo
+          {t("hero_demo")}
         </a>
       </div>
 
@@ -171,6 +173,7 @@ function StepsMockup() {
   const [phase, setPhase] = useState(0);
   const [inputVal, setInputVal] = useState("");
   const [building, setBuilding] = useState([]);
+  const { t } = useLanguage();
 
   useEffect(() => {
     /* Auto-play : un cycle complet s'enchaîne tout seul et se reprogramme à la
@@ -311,22 +314,22 @@ function StepsMockup() {
         <div className={`steps-legend__item ${phase >= 0 ? "steps-legend__item--active" : ""}`}>
           <span className="steps-legend__num">01</span>
           <div>
-            <strong>Tu donnes un chantier</strong>
-            <p>Une phrase suffit. Pas de config.</p>
+            <strong>{t("step1_title")}</strong>
+            <p>{t("step1_desc")}</p>
           </div>
         </div>
         <div className={`steps-legend__item ${phase >= 1 ? "steps-legend__item--active" : ""}`}>
           <span className="steps-legend__num">02</span>
           <div>
-            <strong>Le castor construit</strong>
-            <p>Structure, styles, tests, bloc par bloc.</p>
+            <strong>{t("step2_title")}</strong>
+            <p>{t("step2_desc")}</p>
           </div>
         </div>
         <div className={`steps-legend__item ${phase >= 2 ? "steps-legend__item--active" : ""}`}>
           <span className="steps-legend__num">03</span>
           <div>
-            <strong>Tu valides, c'est à toi</strong>
-            <p>Le code t'appartient, point.</p>
+            <strong>{t("step3_title")}</strong>
+            <p>{t("step3_desc")}</p>
           </div>
         </div>
       </div>

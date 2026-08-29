@@ -198,7 +198,6 @@ function DesktopHowItWorks() {
 }
 
 function DesktopComparison() {
-  const navigate = useNavigate();
   const products = [
     {
       name: "Desktop",
@@ -217,15 +216,6 @@ function DesktopComparison() {
       icon: "cloud",
       color: "var(--river)",
       perks: ["Zéro installation", "GitHub sync", "Sandbox réel"],
-    },
-    {
-      name: "Chat",
-      tag: null,
-      desc: "Réponses longues et sourcées. Pour comprendre, pas pour coder.",
-      highlight: false,
-      icon: "chat",
-      color: "var(--sage)",
-      perks: ["Recherche web", "Sources citées", "Mode réflexion"],
     },
   ];
 
@@ -277,15 +267,7 @@ function DesktopComparison() {
               >
                 Suivre le projet →
               </a>
-            ) : (
-              <button
-                type="button"
-                className="desktop-compare__link desktop-compare__link--btn"
-                onClick={() => navigate("/chat")}
-              >
-                Essayer Castor Chat →
-              </button>
-            )}
+            ) : null}
           </article>
         ))}
       </div>
@@ -330,6 +312,26 @@ function CloudWorkflow() {
       <span className="dl-compare__badge"><Icon name="zap" size={14} /> Workflow automatisé</span>
       <h2>De GitHub à la production.</h2>
       <p className="section-sub">Ouvre un repo, Castor fait le reste.</p>
+
+      {/* ── étapes du pipeline, connectées par un rail ── */}
+      <div className="cloud-flow">
+        {steps.map((s, i) => (
+          <div
+            key={i}
+            className={`cloud-flow__step${i <= step ? " cloud-flow__step--done" : ""}${i === step ? " cloud-flow__step--current" : ""}`}
+            style={{ "--s-color": s.color, "--d": `${i * 180}ms` }}
+          >
+            {i > 0 && <span className="cloud-flow__rail" aria-hidden="true" />}
+            <span className="cloud-flow__badge" aria-hidden="true">
+              {i < step ? <Icon name="checkCircle" size={18} /> : <Icon name={s.icon} size={18} />}
+            </span>
+            <strong>{s.label}</strong>
+            <small>{["Choisis le repo à brancher", "Une branche propre, pas de conflit", "Dépendances + tests dans un bac à sable", "Aperçu en direct, push en un clic"][i]}</small>
+          </div>
+        ))}
+      </div>
+
+      {/* ── mockup IDE : le chantier en cours ── */}
       <div className="cloud-workflow__mockup">
         <div className="cloud-workflow__bar">
           <span className="dot dot--red" /><span className="dot dot--yellow" /><span className="dot dot--green" />
@@ -350,6 +352,7 @@ function CloudWorkflow() {
             <div className="cloud-workflow__status">
               <span className="pulse-dot" style={{ background: steps[step].color }} />
               <strong>{steps[step].label}</strong>
+              <span className="cloud-workflow__status-time">il y a 2 s</span>
             </div>
             <div className="cloud-workflow__code">
               <span className="ln ln--add">+ import {'{'} rateLimit {'}'} from "./rateLimit"</span>
@@ -367,14 +370,6 @@ function CloudWorkflow() {
           </div>
         </div>
       </div>
-      <div className="cloud-workflow__steps-legend">
-        {steps.map((s, i) => (
-          <div key={i} className={`cloud-workflow__legend-item ${i <= step ? "active" : ""}`}>
-            <span className="cloud-workflow__legend-num" style={{ background: i <= step ? s.color : "var(--border)" }}>{i + 1}</span>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
@@ -391,9 +386,21 @@ function CloudWaitlist() {
   return (
     <section className="section cloud-waitlist">
       <div className="cloud-waitlist__inner">
+        <span className="cloud-waitlist__beaver" aria-hidden="true">🦫</span>
         <span className="dl-compare__badge"><Icon name="spark" size={14} /> Bientôt disponible</span>
         <h2>Rejoins la liste d'attente.</h2>
         <p className="section-sub">Soyez les premiers à tester Castor Cloud dès sa sortie.</p>
+
+        <div className="cloud-waitlist__counter">
+          <strong>482</strong>
+          <span>castors déjà inscrits</span>
+          <div className="cloud-waitlist__bar">
+            <div className="cloud-waitlist__bar-fill" />
+            <span className="cloud-waitlist__bar-dot" style={{ left: "64%" }} />
+          </div>
+          <span className="cloud-waitlist__goal">Objectif : 750 pour l'alpha</span>
+        </div>
+
         {submitted ? (
           <div className="cloud-waitlist__done">
             <span className="cloud-waitlist__done-icon">✓</span>
@@ -420,11 +427,17 @@ function CloudWaitlist() {
 
 function CloudRoadmap() {
   const milestones = [
-    { date: "Q3 2026", title: "Alpha privée", desc: "Sandbox basique, éditeur, terminal.", done: true },
-    { date: "Q4 2026", title: "Beta publique", desc: "Preview live, GitHub sync, multi-branche.", done: false },
-    { date: "Q1 2027", title: "Agent intégré", desc: "L'agent code directement dans le sandbox cloud.", done: false },
-    { date: "2027", title: "Launch", desc: "Multi-collaborateur, CI/CD intégré, monitoring.", done: false },
+    { date: "Q3 2026", title: "Alpha privée", desc: "Sandbox basique, éditeur, terminal.", status: "livré", emoji: "✅" },
+    { date: "Q4 2026", title: "Beta publique", desc: "Preview live, GitHub sync, multi-branche.", status: "en cours", emoji: "🔨" },
+    { date: "Q1 2027", title: "Agent intégré", desc: "L'agent code directement dans le sandbox cloud.", status: "bientôt", emoji: "🚀" },
+    { date: "2027", title: "Launch", desc: "Multi-collaborateur, CI/CD intégré, monitoring.", status: "exploration", emoji: "🔬" },
   ];
+  const STATUS_STYLE = {
+    "livré": "cloud-milestone__pill--done",
+    "en cours": "cloud-milestone__pill--wip",
+    "bientôt": "cloud-milestone__pill--soon",
+    "exploration": "cloud-milestone__pill--explore",
+  };
 
   return (
     <section className="section cloud-roadmap">
@@ -432,13 +445,18 @@ function CloudRoadmap() {
       <p className="section-sub">Un produit qui avance, pas un vaporware.</p>
       <div className="cloud-roadmap__track">
         {milestones.map((m, i) => (
-          <div key={i} className={`cloud-roadmap__item ${m.done ? "done" : ""}`}>
-            <div className="cloud-roadmap__marker">
-              <span className="cloud-roadmap__dot" />
-              {i < milestones.length - 1 && <span className="cloud-roadmap__line" />}
+          <div key={i} className={`cloud-milestone ${m.status === "livré" ? "cloud-milestone--done" : ""}`}>
+            <div className="cloud-milestone__marker">
+              <span className="cloud-milestone__dot" />
+              {i < milestones.length - 1 && <span className="cloud-milestone__line" />}
             </div>
-            <div className="cloud-roadmap__content">
-              <span className="cloud-roadmap__date">{m.date}</span>
+            <div className="cloud-milestone__card">
+              <div className="cloud-milestone__head">
+                <span className="cloud-milestone__date">{m.date}</span>
+                <span className={`cloud-milestone__pill ${STATUS_STYLE[m.status]}`}>
+                  <span aria-hidden="true">{m.emoji}</span> {m.status}
+                </span>
+              </div>
               <h3>{m.title}</h3>
               <p>{m.desc}</p>
             </div>
@@ -450,28 +468,59 @@ function CloudRoadmap() {
 }
 
 function CloudArchitecture() {
+  const layers = [
+    {
+      icon: "branch",
+      title: "GitHub",
+      desc: "Ton repo, tes branches",
+      tags: ["Repo public", "Repo privé", "PRs"],
+      main: false,
+    },
+    {
+      icon: "cloud",
+      title: "Castor Cloud",
+      desc: "Sandbox isolé · Agent IA · Dev server",
+      tags: ["Docker", "Dev server :3000", "Agent parallèle"],
+      main: true,
+    },
+    {
+      icon: "globe",
+      title: "Preview live",
+      desc: "Résultat instantané",
+      tags: ["URL dédiée", "Hot reload", "Multi-appareils"],
+      main: false,
+    },
+  ];
+
   return (
     <section className="section cloud-arch">
       <h2>Comment ça marche.</h2>
       <p className="section-sub">De ton GitHub à ton navigateur, en 3 couches.</p>
-      <div className="cloud-arch__diagram">
-        <div className="cloud-arch__layer">
-          <span className="cloud-arch__icon"><Icon name="branch" size={28} /></span>
-          <strong>GitHub</strong>
-          <span className="cloud-arch__desc">Ton repo, tes branches</span>
-        </div>
-        <div className="cloud-arch__arrow"><svg width="48" height="24" viewBox="0 0 48 24"><path d="M0,12 L40,12 M34,6 L40,12 L34,18" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" /></svg></div>
-        <div className="cloud-arch__layer cloud-arch__layer--main">
-          <span className="cloud-arch__icon"><Icon name="cloud" size={28} /></span>
-          <strong>Castor Cloud</strong>
-          <span className="cloud-arch__desc">Sandbox isolé · Agent IA · Dev server</span>
-        </div>
-        <div className="cloud-arch__arrow"><svg width="48" height="24" viewBox="0 0 48 24"><path d="M0,12 L40,12 M34,6 L40,12 L34,18" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" /></svg></div>
-        <div className="cloud-arch__layer">
-          <span className="cloud-arch__icon"><Icon name="globe" size={28} /></span>
-          <strong>Preview live</strong>
-          <span className="cloud-arch__desc">Résultat instantané</span>
-        </div>
+      <div className="cloud-arch__stack">
+        {layers.map((l, i) => (
+          <div key={l.title} className="cloud-arch__layer-wrap" style={{ "--d": `${i * 140}ms` }}>
+            <article className={`cloud-arch__layer${l.main ? " cloud-arch__layer--main" : ""}`}>
+              <span className="cloud-arch__icon"><Icon name={l.icon} size={26} /></span>
+              <div className="cloud-arch__info">
+                <strong>{l.title}</strong>
+                <span className="cloud-arch__desc">{l.desc}</span>
+                <div className="cloud-arch__tags">
+                  {l.tags.map((t) => (
+                    <span key={t} className="cloud-arch__tag">{t}</span>
+                  ))}
+                </div>
+              </div>
+              {l.main && <span className="cloud-arch__core">LE CŒUR</span>}
+            </article>
+            {i < layers.length - 1 && (
+              <div className="cloud-arch__connector" aria-hidden="true">
+                <svg width="28" height="44" viewBox="0 0 28 44">
+                  <path d="M14 0 V36 M8 30 L14 36 L20 30" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+                </svg>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -479,13 +528,20 @@ function CloudArchitecture() {
 
 function CloudComparison() {
   const items = [
-    { feature: "Installation", desktop: "Requise", cloud: "Aucune" },
-    { feature: "Espace de travail", desktop: "Local", cloud: "Cloud isolé" },
-    { feature: "GitHub sync", desktop: "Manuel", cloud: "Automatique" },
-    { feature: "Multi-collaborateur", desktop: "Non", cloud: "Oui (bientôt)" },
-    { feature: "Offline", desktop: "Oui", cloud: "Non" },
-    { feature: "Gratuit", desktop: "Oui", cloud: "Oui" },
+    { feature: "Installation", desktop: { t: "Requise", ok: false }, cloud: { t: "Aucune", ok: true } },
+    { feature: "Espace de travail", desktop: { t: "Local", ok: true }, cloud: { t: "Cloud isolé", ok: true } },
+    { feature: "GitHub sync", desktop: { t: "Manuel", ok: false }, cloud: { t: "Automatique", ok: true } },
+    { feature: "Multi-collaborateur", desktop: { t: "Non", ok: false }, cloud: { t: "Oui (bientôt)", ok: true } },
+    { feature: "Offline", desktop: { t: "Oui", ok: true }, cloud: { t: "Non", ok: false } },
+    { feature: "Gratuit", desktop: { t: "Oui", ok: true }, cloud: { t: "Oui", ok: true } },
   ];
+
+  function Cell({ v, cloud }) {
+    if (v.ok) {
+      return <span className={`cloud-compare__val cloud-compare__val--yes${cloud ? " cloud-compare__val--hl" : ""}`}><Icon name="checkCircle" size={15} /> {v.t}</span>;
+    }
+    return <span className={`cloud-compare__val cloud-compare__val--no${cloud ? " cloud-compare__val--hl" : ""}`}><i aria-hidden="true">✕</i> {v.t}</span>;
+  }
 
   return (
     <section className="section cloud-compare">
@@ -500,8 +556,8 @@ function CloudComparison() {
         {items.map((row, i) => (
           <div key={i} className="cloud-compare__row">
             <span className="cloud-compare__feat">{row.feature}</span>
-            <span className="cloud-compare__val">{row.desktop}</span>
-            <span className="cloud-compare__val cloud-compare__val--hl">{row.cloud}</span>
+            <Cell v={row.desktop} cloud={false} />
+            <Cell v={row.cloud} cloud={true} />
           </div>
         ))}
       </div>

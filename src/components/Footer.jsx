@@ -1,20 +1,22 @@
 import Hills from "./Hills.jsx";
 import { BeaverMark } from "./Icon.jsx";
 import { APP_VERSION } from "../lib/version.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 export default function Footer({ onDownload }) {
+  const { t } = useLanguage();
   return (
     <footer className="footer">
       <div className="footer__cta">
         <Hills />
         <div className="footer__cta-inner">
           <p className="footer__tagline">
-            Les abonnements ont coulé.
+            {t("footer_tagline")}
             <br />
-            <span className="hero__accent">Le code est gratuit.</span>
+            <span className="hero__accent">{t("footer_tagline2")}</span>
           </p>
           <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
-            Télécharger Castor Desktop
+            {t("download")} Castor Desktop
           </button>
 
         </div>

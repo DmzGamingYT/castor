@@ -82,8 +82,8 @@ const KB = [
   },
   {
     keys: ["\\bchat(?!bot)\\b", "studio"],
-    reply: () => `${PRODUCT_NOTES.chat}\n\nOuvre-le depuis le menu **Chat** en haut !`,
-    chips: ["📥 Télécharger", "🧠 Modèles"],
+    reply: () => `💬 ${PRODUCT_NOTES.chat}\n\nPose ta question ici même — je suis le chat intégré du site !`,
+    chips: ["📥 Télécharger", "🚀 Roadmap"],
   },
   {
     keys: ["\\bcloud\\b"],
@@ -312,7 +312,7 @@ export default function CastorBot() {
             className={`cbot-switch ${aiMode ? "cbot-switch--on" : ""} ${!hasKey ? "cbot-switch--off-dis" : ""}`}
             onClick={toggleAi}
             disabled={!hasKey}
-            title={hasKey ? "Basculer entre mode local et mode IA (OpenRouter)" : "Ajoute ta clé OpenRouter dans Castor Chat pour activer l'IA"}
+            title={hasKey ? "Basculer entre mode local et mode IA (OpenRouter)" : "Ajoute ta clé OpenRouter dans le Castor Bot pour activer l'IA"}
             aria-pressed={aiMode}
           >
             <span className="cbot-switch__track"><span className="cbot-switch__thumb" /></span>
@@ -323,7 +323,7 @@ export default function CastorBot() {
 
         {!hasKey && (
           <p className="cbot-panel__hint">
-            💡 Colle ta clé OpenRouter gratuite dans <strong>Castor Chat</strong> pour débloquer le mode IA.
+            💡 Colle ta clé OpenRouter gratuite ici pour débloquer le mode IA.
           </p>
         )}
 

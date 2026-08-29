@@ -31,22 +31,6 @@ export const PRODUCTS = [
       { icon: "spark", title: "Zéro lock-in", desc: "Tout restera poussable sur GitHub. Tu pars quand tu veux, avec tout." },
     ],
   },
-  {
-    slug: "chat",
-    icon: "chat",
-    tag: null,
-    name: "Castor Chat",
-    tagline: "La réponse longue, pas la réponse chère.",
-    desc: "Un chat IA gratuit qui cherche, lit les sources et réfléchit en profondeur avant de répondre. Fini l'abonnement juste pour poser des questions.",
-    cta: "Ouvrir Castor Chat",
-    mockup: "chat",
-    features: [
-      { icon: "search", title: "Recherche web", desc: "Il consulte des sources récentes et te les cite." },
-      { icon: "brain", title: "Mode réflexion", desc: "Pour les problèmes corsés, il raisonne étape par étape." },
-      { icon: "paperclip", title: "Fichiers & code", desc: "Balance un extrait, une stack trace ou un PDF dans la conversation." },
-      { icon: "spark", title: "Gratuit, vraiment", desc: "Pas de quota qui expire au pire moment." },
-    ],
-  },
 ];
 
 export const bySlug = (slug) => PRODUCTS.find((p) => p.slug === slug);

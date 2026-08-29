@@ -199,6 +199,12 @@ function CategoryCard({ catKey, index }) {
   const ref = useReveal();
   const color = COLORS[catKey];
 
+  /* à faire : on masque ce qui est déjà livré — la liste complète
+     des livrés est confiée au Castor Bot 🦫 */
+  const todo = block.items.filter((it) => it.status !== "livré");
+  const delivered = block.items.filter((it) => it.status === "livré");
+  const askBot = () => window.dispatchEvent(new CustomEvent(BOT_OPEN_EVENT));
+
   return (
     <article
       className="prog-card"
@@ -220,7 +226,7 @@ function CategoryCard({ catKey, index }) {
           <span className="prog-card__pct" aria-hidden="true">
             {pct}<i>%</i>
           </span>
-          <span className="prog-card__chants">{block.items.length} chantiers</span>
+          <span className="prog-card__chants">{todo.length} chantiers à faire</span>
         </div>
       </header>
 
@@ -230,7 +236,7 @@ function CategoryCard({ catKey, index }) {
       </div>
 
       <ul className="prog-card__list">
-        {block.items.map((it, i) => (
+        {todo.map((it, i) => (
           <li
             key={it.title}
             className={`prog-item prog-item--${it.status.replace(" ", "-")}`}
@@ -250,6 +256,13 @@ function CategoryCard({ catKey, index }) {
           </li>
         ))}
       </ul>
+
+      {delivered.length > 0 && (
+        <button type="button" className="prog-card__done" onClick={askBot}>
+          <span aria-hidden="true">✅</span>
+          {delivered.length} déjà livré{delivered.length > 1 ? "s" : ""} — liste via le Castor Bot
+        </button>
+      )}
     </article>
   );
 }

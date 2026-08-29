@@ -554,6 +554,11 @@ main:focus { outline: none; }
   100% { box-shadow: 0 0 0 0 rgba(226, 149, 42, 0); }
 }
 
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ---------- boutons ---------- */
 .btn {
   display: inline-flex;
@@ -4935,9 +4940,76 @@ main:focus { outline: none; }
 
 /* ========== Cloud Page ========== */
 
-/* Workflow mockup */
+/* Workflow — rail d'étapes */
 .cloud-workflow { text-align: center; }
 
+.cloud-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 2.2rem;
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cloud-flow__step {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1rem 1.2rem;
+  text-align: center;
+  opacity: 0.55;
+  transition: opacity 0.4s, transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  animation: rise-in 0.5s both;
+  animation-delay: var(--d, 0ms);
+}
+.cloud-flow__step--done,
+.cloud-flow__step--current { opacity: 1; }
+.cloud-flow__step--current {
+  border-color: var(--s-color);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--s-color) 18%, transparent);
+  transform: translateY(-3px);
+}
+
+.cloud-flow__rail {
+  position: absolute;
+  top: 24px;
+  right: 100%;
+  width: 1rem;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+
+.cloud-flow__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--s-color) 13%, transparent);
+  color: var(--s-color);
+  margin-bottom: 0.6rem;
+  transition: background 0.3s;
+}
+.cloud-flow__step--done .cloud-flow__badge { background: var(--s-color); color: var(--ink); }
+
+.cloud-flow__step strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+.cloud-flow__step small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* Workflow — mockup IDE */
 .cloud-workflow__mockup {
   max-width: 720px;
   margin: 2rem auto 0;
@@ -4995,6 +5067,9 @@ main:focus { outline: none; }
   display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;
 }
 .cloud-workflow__status strong { font-size: 0.85rem; color: #c8c9bc; }
+.cloud-workflow__status-time {
+  margin-left: auto; font-size: 0.65rem; color: #6a6d60;
+}
 
 .cloud-workflow__code {
   background: rgba(0, 0, 0, 0.3); border-radius: 8px;
@@ -5016,73 +5091,165 @@ main:focus { outline: none; }
   color: #d0d1c8; background: rgba(255, 255, 255, 0.08);
 }
 
-.cloud-workflow__steps-legend {
-  display: flex; justify-content: center; gap: 1.5rem;
-  margin-top: 1.5rem; flex-wrap: wrap;
-}
-
-.cloud-workflow__legend-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.78rem; color: var(--muted); opacity: 0.5;
-  transition: opacity 0.3s;
-}
-.cloud-workflow__legend-item.active { opacity: 1; }
-
-.cloud-workflow__legend-num {
-  width: 22px; height: 22px; border-radius: 50%;
-  display: inline-grid; place-items: center;
-  font-size: 0.65rem; font-weight: 700; color: var(--ink);
-  transition: background 0.3s;
-}
-
-/* Architecture */
+/* Architecture — pile de couches */
 .cloud-arch { text-align: center; }
 
-.cloud-arch__diagram {
-  display: flex; align-items: center; justify-content: center;
-  gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;
+.cloud-arch__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 2rem;
+}
+
+.cloud-arch__layer-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: rise-in 0.5s both;
+  animation-delay: var(--d, 0ms);
 }
 
 .cloud-arch__layer {
-  background: var(--panel); border: 1px solid var(--border);
-  border-radius: 12px; padding: 1.2rem 1.5rem;
-  text-align: center; min-width: 140px; transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem;
+  text-align: left;
+  min-width: 320px;
+  max-width: 480px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.cloud-arch__layer:hover { transform: translateY(-3px); }
+.cloud-arch__layer:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+}
 
 .cloud-arch__layer--main {
-  border-color: var(--accent-dim);
-  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .cloud-arch__icon {
-  display: flex; justify-content: center; margin-bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
+  flex-shrink: 0;
 }
 
-.cloud-arch__layer strong { display: block; font-size: 0.9rem; margin-bottom: 0.2rem; }
-.cloud-arch__desc { font-size: 0.72rem; color: var(--muted); }
+.cloud-arch__info { flex: 1; }
+.cloud-arch__info strong { display: block; font-size: 0.92rem; margin-bottom: 0.15rem; }
+.cloud-arch__desc { font-size: 0.75rem; color: var(--muted); }
 
-.cloud-arch__arrow { color: var(--accent); opacity: 0.5; flex-shrink: 0; }
+.cloud-arch__tags {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.cloud-arch__tag {
+  font-size: 0.62rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+.cloud-arch__layer--main .cloud-arch__tag {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
+}
+
+.cloud-arch__core {
+  align-self: flex-start;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+
+.cloud-arch__connector {
+  display: flex;
+  justify-content: center;
+  height: 44px;
+}
 
 /* Waitlist */
 .cloud-waitlist { text-align: center; }
 
 .cloud-waitlist__inner {
-  max-width: 480px; margin: 0 auto;
+  max-width: 520px; margin: 0 auto;
+  position: relative;
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--panel)) 0%, var(--panel) 100%);
-  border: 1px solid var(--accent-dim); border-radius: 16px;
-  padding: 2.5rem 2rem;
+  border: 1px solid var(--accent-dim); border-radius: 18px;
+  padding: 2.6rem 2rem 2.2rem;
+}
+
+.cloud-waitlist__beaver {
+  position: absolute;
+  top: -26px;
+  right: 1.2rem;
+  font-size: 2rem;
+  animation: float-y 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
 }
 
 .cloud-waitlist__counter {
-  margin: 1.2rem 0;
+  margin: 1.3rem 0 1.1rem;
 }
 .cloud-waitlist__counter strong {
   display: block; font-size: 2rem; color: var(--accent);
   font-family: var(--font-mono);
+  line-height: 1;
 }
-.cloud-waitlist__counter span { font-size: 0.8rem; color: var(--muted); }
+.cloud-waitlist__counter > span { font-size: 0.8rem; color: var(--muted); }
+
+.cloud-waitlist__bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+  margin: 0.9rem auto 0.4rem;
+  max-width: 320px;
+  overflow: visible;
+}
+.cloud-waitlist__bar-fill {
+  height: 100%;
+  width: 64%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--river)));
+}
+.cloud-waitlist__bar-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 3px solid var(--accent);
+}
+.cloud-waitlist__goal {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
 
 .cloud-waitlist__form {
   display: flex; gap: 0.5rem; margin-top: 1rem;
@@ -5107,46 +5274,104 @@ main:focus { outline: none; }
 .cloud-waitlist__done strong { display: block; margin-bottom: 0.2rem; }
 .cloud-waitlist__done p { color: var(--muted); font-size: 0.85rem; margin: 0; }
 
-/* Roadmap */
+/* Roadmap — jalons en cartes */
 .cloud-roadmap { text-align: center; }
 
 .cloud-roadmap__track {
-  max-width: 480px; margin: 2rem auto 0; text-align: left;
+  max-width: 560px; margin: 2rem auto 0; text-align: left;
 }
 
-.cloud-roadmap__item {
+.cloud-milestone {
   display: flex; gap: 1rem; position: relative;
 }
 
-.cloud-roadmap__marker {
+.cloud-milestone__marker {
   display: flex; flex-direction: column; align-items: center;
   flex-shrink: 0; width: 20px;
 }
 
-.cloud-roadmap__dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--border); border: 2px solid var(--bg);
+.cloud-milestone__dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--border); border: 3px solid var(--bg);
   flex-shrink: 0; z-index: 1; transition: background 0.3s;
 }
-.cloud-roadmap__item.done .cloud-roadmap__dot { background: var(--accent); }
+.cloud-milestone--done .cloud-milestone__dot { background: var(--accent); }
 
-.cloud-roadmap__line {
+.cloud-milestone__line {
   width: 2px; flex: 1;
   background: var(--border); margin: 4px 0;
 }
 
-.cloud-roadmap__content { padding-bottom: 1.5rem; }
-.cloud-roadmap__date { font-size: 0.7rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.cloud-roadmap__content h3 { font-size: 1rem; margin: 0.2rem 0; }
-.cloud-roadmap__content p { color: var(--muted); font-size: 0.82rem; margin: 0; }
-.cloud-roadmap__item.done .cloud-roadmap__content h3 { color: var(--accent); }
+.cloud-milestone__card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+  flex: 1;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.cloud-milestone__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+}
+.cloud-milestone--done .cloud-milestone__card {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.cloud-milestone__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+.cloud-milestone__date {
+  font-size: 0.7rem; color: var(--accent); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.cloud-milestone__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  text-transform: lowercase;
+}
+.cloud-milestone__pill--done {
+  background: rgba(40, 200, 64, 0.12);
+  color: #2f9e4b;
+  border: 1px solid rgba(40, 200, 64, 0.35);
+}
+.cloud-milestone__pill--wip {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.cloud-milestone__pill--soon {
+  background: color-mix(in srgb, var(--river) 12%, transparent);
+  color: var(--river);
+  border: 1px solid color-mix(in srgb, var(--river) 35%, transparent);
+}
+.cloud-milestone__pill--explore {
+  background: color-mix(in srgb, var(--sage) 12%, transparent);
+  color: var(--sage);
+  border: 1px solid color-mix(in srgb, var(--sage) 35%, transparent);
+}
+
+.cloud-milestone__card h3 { font-size: 0.95rem; margin: 0 0 0.2rem; }
+.cloud-milestone--done .cloud-milestone__card h3 { color: var(--accent); }
+.cloud-milestone__card p { color: var(--muted); font-size: 0.8rem; margin: 0; }
 
 /* Comparison table */
 .cloud-compare { text-align: center; }
 
 .cloud-compare__table {
-  max-width: 600px; margin: 2rem auto 0;
-  border: 1px solid var(--border); border-radius: 12px;
+  max-width: 640px; margin: 2rem auto 0;
+  border: 1px solid var(--border); border-radius: 14px;
   overflow: hidden;
 }
 
@@ -5169,15 +5394,42 @@ main:focus { outline: none; }
 .cloud-compare__feat { text-align: left; color: var(--muted); }
 .cloud-compare__prod { display: flex; align-items: center; gap: 0.3rem; justify-content: center; }
 .cloud-compare__prod--highlight { color: var(--accent); }
-.cloud-compare__val { text-align: center; }
-.cloud-compare__val--hl { font-weight: 600; }
+.cloud-compare__val {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  text-align: center;
+  font-size: 0.78rem;
+}
+.cloud-compare__val--yes { color: #2f9e4b; }
+.cloud-compare__val--no { color: var(--muted); }
+.cloud-compare__val--no i {
+  font-style: normal;
+  color: #d96a5a;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.cloud-compare__val--hl { font-weight: 600; color: var(--accent); }
+.cloud-compare__val--hl.cloud-compare__val--yes { color: var(--accent); }
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@media (max-width: 900px) {
+  .cloud-flow { grid-template-columns: repeat(2, 1fr); }
+  .cloud-flow__rail { display: none; }
+}
 
 @media (max-width: 700px) {
+  .cloud-flow { grid-template-columns: 1fr; max-width: 340px; }
   .cloud-workflow__sidebar { display: none; }
-  .cloud-workflow__steps-legend { flex-direction: column; align-items: center; }
-  .cloud-arch__diagram { flex-direction: column; }
-  .cloud-arch__arrow { transform: rotate(90deg); }
+  .cloud-arch__layer { min-width: 0; width: 100%; max-width: 420px; }
+  .cloud-arch__core { display: none; }
   .cloud-compare__header, .cloud-compare__row { grid-template-columns: 1fr 1fr 1fr; font-size: 0.7rem; }
+  .cloud-compare__val { font-size: 0.7rem; }
   .cloud-waitlist__form { flex-direction: column; }
 }
 

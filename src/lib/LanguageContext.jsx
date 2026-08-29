@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { setLang as setTranslationsLang, t } from "./translations.js";
 
 const LanguageContext = createContext();
 
@@ -11,26 +12,28 @@ function getInitialLang() {
   } catch {
     /* localStorage indisponible (mode privé/SSR) → langue par défaut */
   }
-  /* par défaut : français (le site est francophone) */
   return "fr";
 }
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(getInitialLang);
+  const [, forceRender] = useState(0);
 
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, lang);
     } catch {
-      /* localStorage indisponible — on persiste pas, pas grave */
+      /* ignore */
     }
     document.documentElement.lang = lang;
+    setTranslationsLang(lang);
+    forceRender((n) => n + 1); // re-render pour que t() retourne la bonne langue
   }, [lang]);
 
   const toggle = () => setLang((l) => (l === "fr" ? "en" : "fr"));
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggle }}>
+    <LanguageContext.Provider value={{ lang, setLang, toggle, t }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -4,19 +4,18 @@ import { useLanguage } from "../lib/LanguageContext.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
 
 const LINKS = [
-  { path: "/", route: "/", label: "Accueil", icon: "home" },
-  { path: "/desktop", route: "/desktop", label: "Desktop", icon: "desktop" },
-  { path: "/cli", route: "/cli", label: "CLI", icon: "terminal" },
-  { path: "/avancement", route: "/avancement", label: "Avancement", icon: "hammer" },
-  { path: "/espace", route: "/espace", label: "Cloud", icon: "cloud" },
-  { path: "/chat", route: "/chat", label: "Chat", icon: "chat" },
+  { path: "/", route: "/", key: "nav_home", icon: "home" },
+  { path: "/desktop", route: "/desktop", key: "nav_desktop", icon: "desktop" },
+  { path: "/cli", route: "/cli", key: "nav_cli", icon: "terminal" },
+  { path: "/avancement", route: "/avancement", key: "nav_progress", icon: "hammer" },
+  { path: "/espace", route: "/espace", key: "nav_cloud", icon: "cloud" },
 ];
 
 export default function Header({ route, onDownload }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const { lang, toggle: toggleLang } = useLanguage();
+  const { lang, toggle: toggleLang, t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function Header({ route, onDownload }) {
       <nav id="site-nav" className={`nav ${menuOpen ? "nav--open" : ""}`} aria-label="Navigation principale">
         {LINKS.map((l) => (
           <a
-            key={l.label}
+            key={l.key}
             className={l.route && route === l.route ? "nav__link--active" : ""}
             href={`/castor${l.path}`}
             onClick={(e) => {
@@ -57,7 +56,7 @@ export default function Header({ route, onDownload }) {
             }}
           >
             <Icon name={l.icon} size={15} className="nav__link-icon" />
-            {l.label}
+            {t(l.key)}
             <span className="nav__underline" aria-hidden="true" />
           </a>
         ))}
@@ -99,7 +98,7 @@ export default function Header({ route, onDownload }) {
         </a>
         <button type="button" className="btn btn--primary btn--sm header__cta" onClick={onDownload}>
           <span className="btn__shimmer" aria-hidden="true" />
-          Télécharger
+          {t("download")}
         </button>
         <button
           type="button"

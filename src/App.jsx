@@ -7,13 +7,11 @@ import { PRODUCTS } from "./data/products.jsx";
 import useHistoryRoute from "./lib/useHistoryRoute.js";
 import { NavigationProvider } from "./lib/NavigationContext.jsx";
 import { LanguageProvider } from "./lib/LanguageContext.jsx";
-import { useTheme } from "./lib/useTheme.js";
 import { BeaverMark } from "./components/Icon.jsx";
 
 /* les studios et pages secondaires sont chargés à la demande */
 const Home = lazy(() => import("./pages/Home.jsx"));
 const ProductPage = lazy(() => import("./pages/ProductPage.jsx"));
-const ChatStudio = lazy(() => import("./pages/ChatStudio.jsx"));
 const CloudSpace = lazy(() => import("./pages/CloudSpace.jsx"));
 const CliPage = lazy(() => import("./pages/CliPage.jsx"));
 const TemplatesPage = lazy(() => import("./pages/TemplatesPage.jsx"));
@@ -37,7 +35,6 @@ function PageFallback() {
 
 export default function App() {
   const path = useHistoryRoute();
-  useTheme(); // thème automatique selon l'heure
   const [downloadOpen, setDownloadOpen] = useState(false);
   const openDownload = () => setDownloadOpen(true);
 
@@ -57,9 +54,7 @@ export default function App() {
   }, [path]);
 
   const page =
-    path === "/chat" ? (
-      <ChatStudio />
-    ) : path === "/espace" ? (
+    path === "/espace" ? (
       <CloudSpace />
     ) : PRODUCT_SLUGS.has(path) ? (
       <ProductPage slug={path.slice(1)} onDownload={openDownload} />

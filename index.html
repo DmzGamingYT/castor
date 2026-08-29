@@ -32,18 +32,12 @@
       content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://openrouter.ai https://api.github.com https://raw.githubusercontent.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'"
     />
 
-    <!-- applique le thème avant le premier rendu pour éviter le flash -->
+    <!-- mode clair unique : le site reste en thème jour en permanence -->
     <script>
-      try {
-        var t = localStorage.getItem("castor-theme");
-        if (t !== "dark" && t !== "light") {
-          t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-        document.documentElement.dataset.theme = t;
-        /* barre du navigateur mobile alignée sur le thème */
-        var tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.content = t === "dark" ? "#171b10" : "#faf6ec";
-      } catch (e) {}
+      document.documentElement.dataset.theme = "light";
+      /* barre du navigateur mobile alignée sur le thème clair */
+      var tc = document.querySelector('meta[name="theme-color"]');
+      if (tc) tc.content = "#faf6ec";
     </script>
 
     <!-- Structured Data — Google Rich Snippets -->
@@ -102,7 +96,7 @@
               "name": "Quels modèles puis-je utiliser ?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Ceux que tu branches : Ox Alpha, Nemotron, Laguna et les autres gratuits via OpenRouter, Groq pour l'inférence ultra-rapide, OpenCode Zen pour le code, ou tes propres modèles locaux via Ollama et LM Studio. La page Modèles recense les gratuits du moment."
+                "text": "Ceux que tu branches : Ox Alpha, Nemotron, Laguna et les autres gratuits via OpenRouter, Groq pour l'inférence ultra-rapide, OpenCode Zen pour le code, ou tes propres modèles locaux via Ollama et LM Studio."
               }
             },
             {
@@ -126,7 +120,7 @@
               "name": "Pourquoi créer une clé OpenRouter ?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Elle donne accès aux modèles gratuits des studios Web et Chat. Elle se crée en 30 secondes sur openrouter.ai, se colle une seule fois dans l'app et reste dans ton navigateur. Sans clé, les studios restent utilisables en mode démo locale et avec les gabarits hors-ligne."
+                "text": "Elle donne accès aux modèles gratuits du Castor Bot (mode IA). Elle se crée en 30 secondes sur openrouter.ai, se colle une seule fois dans l'app et reste dans ton navigateur. Sans clé, le Castor Bot reste utilisable en mode local."
               }
             }
           ]

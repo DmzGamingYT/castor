@@ -47,6 +47,31 @@ export const ROADMAP = {
         title: "Thèmes personnalisables",
         desc: "Choisis ta couleur d'accent parmi les presets ou une couleur libre.",
       },
+      {
+        status: "en cours",
+        title: "Git intégré",
+        desc: "Commit, push et branches directement depuis l'app — plus besoin de terminal.",
+      },
+      {
+        status: "en cours",
+        title: "Mise à jour automatique",
+        desc: "Castor se met à jour tout seul en arrière-plan, sans rien casser.",
+      },
+      {
+        status: "bientôt",
+        title: "Recherche globale",
+        desc: "Retrouve n'importe quelle conversation, note ou fichier en un raccourci.",
+      },
+      {
+        status: "bientôt",
+        title: "Mode sandbox",
+        desc: "Lance tes projets dans un bac à sable isolé avant de les appliquer.",
+      },
+      {
+        status: "exploration",
+        title: "Version anglaise de l'app",
+        desc: "L'interface Desktop traduite pour les castors internationaux.",
+      },
     ],
   },
   site: {
@@ -106,12 +131,12 @@ export const PRODUCT_NOTES = {
   desktop: "Castor Desktop — agents parallèles sur ta machine, multi-providers (OpenRouter, Groq, OpenCode Zen, Ollama, LM Studio), clés chiffrées via safeStorage. Gratuit, open source.",
   web: "Castor Web — studio de génération de sites dans le navigateur : prompt → aperçu instantané → export HTML autonome.",
   cloud: "Castor Cloud — en développement : IDE cloud complet branché sur GitHub, sandbox réel, preview intégrée.",
-  chat: "Castor Chat — chat IA gratuit avec recherche web, mode réflexion et fichiers joints.",
+  chat: "Castor Bot — le chat IA gratuit intégré au site : recherche web, mode réflexion et fichiers joints.",
   cli: "Castor CLI — l'agent en ligne de commande, conscient du repo, avec diffs lisibles.",
 };
 
 export const SITE_HINTS = {
-  models: "Les modèles gratuits du moment (OpenRouter, Groq, OpenCode Zen…) se choisissent directement dans les studios Web et Chat, ou dans Castor Desktop.",
+  models: "Les modèles gratuits du moment (OpenRouter, Groq, OpenCode Zen…) se choisissent directement dans Castor Desktop ou via le Castor Bot.",
   install: "Téléchargement sur la page Desktop ou via la bulle 📥 de l'accueil. Installateurs macOS (Apple Silicon/Intel), Windows (x64/ARM) et Linux (.deb/AppImage).",
   privacy: "Aucune donnée collectée : tout tourne dans ton navigateur ou ta machine. Ta clé API ne quitte jamais ton appareil.",
 };

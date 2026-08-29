@@ -22,7 +22,7 @@ const FAQS = [
   },
   {
     q: "Pourquoi créer une clé OpenRouter ?",
-    a: "Elle donne accès aux modèles gratuits des studios Web et Chat. Elle se crée en 30 secondes sur openrouter.ai, se colle une seule fois dans l'app et reste dans ton navigateur. Sans clé, les studios restent utilisables en mode démo locale et avec les gabarits hors-ligne.",
+    a: "Elle donne accès aux modèles gratuits du Castor Bot (mode IA). Elle se crée en 30 secondes sur openrouter.ai, se colle une seule fois dans l'app et reste dans ton navigateur. Sans clé, le Castor Bot reste utilisable en mode local.",
   },
 ];
 
