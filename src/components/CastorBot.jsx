@@ -24,7 +24,26 @@ function roadmapText(cat) {
   return `**${block.label} — les chantiers à venir :**\n\n${lines.join("\n\n")}`;
 }
 
+/* liste exclusive des chantiers déjà livrés, par catégorie */
+function deliveredText() {
+  const parts = Object.keys(ROADMAP).map((k) => {
+    const block = ROADMAP[k];
+    const done = block.items.filter((it) => it.status === "livré");
+    if (!done.length) return null;
+    const lines = done.map((it) => `✅ **${it.title}** — ${it.desc}`);
+    return `**${block.label}**\n${lines.join("\n")}`;
+  });
+  const visible = parts.filter(Boolean);
+  if (!visible.length) return "Aucun chantier livré pour l'instant.";
+  return `Voici ce qui est **déjà livré** chez Castor ✅\n\n${visible.join("\n\n")}`;
+}
+
 const KB = [
+  {
+    keys: ["livre", "livres", "deja fait", "deja realise", "deja livre", "termine", "fait ici", "delivered"],
+    reply: () => deliveredText(),
+    chips: ["🚀 Roadmap", "📱 App Desktop"],
+  },
   {
     keys: ["roadmap", "a venir", "avenir", "bientot", "nouveaute", "nouveautes", "prochain", "futur", "planning", "avancement"],
     reply: () =>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import AnimatedHeading from "./AnimatedHeading.jsx";
 import Icon from "./Icon.jsx";
 import { ROADMAP, STATUS_META } from "../data/roadmap.js";
@@ -89,7 +89,6 @@ function Overview() {
           if (p < 1) rafRef.current = requestAnimationFrame(tick);
         };
         rafRef.current = requestAnimationFrame(tick);
-        /* cadran et barre se remplissent via la classe .in (CSS/--off) */
       },
       { threshold: 0.35 }
     );
@@ -198,12 +197,29 @@ function CategoryCard({ catKey, index }) {
   const pct = categoryProgress(block.items);
   const ref = useReveal();
   const color = COLORS[catKey];
+  const [showDelivered, setShowDelivered] = useState(false);
+  const panelRef = useRef(null);
 
-  /* à faire : on masque ce qui est déjà livré — la liste complète
-     des livrés est confiée au Castor Bot 🦫 */
+  /* à faire : on masque ce qui est déjà livré — le bouton info
+     ouvre un suivi en temps réel des avancements terminés */
   const todo = block.items.filter((it) => it.status !== "livré");
   const delivered = block.items.filter((it) => it.status === "livré");
   const askBot = () => window.dispatchEvent(new CustomEvent(BOT_OPEN_EVENT));
+
+  /* fermer le panneau : Échap, clic extérieur */
+  useEffect(() => {
+    if (!showDelivered) return;
+    const onKey = (e) => { if (e.key === "Escape") setShowDelivered(false); };
+    const onClick = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) setShowDelivered(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onClick);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onClick);
+    };
+  }, [showDelivered]);
 
   return (
     <article
@@ -212,10 +228,13 @@ function CategoryCard({ catKey, index }) {
       style={{ "--cat-color": color, "--w": `${pct}%`, "--d": `${index * 120}ms` }}
       aria-label={`${block.name} — avancement ${pct}%`}
     >
+      {/* overlay radial teinté — identique aux feature-cards */}
+      <div className="prog-card__glow" aria-hidden="true" />
+
       <header className="prog-card__head">
         <div className="prog-card__title">
           <span className="prog-card__cat-icon" aria-hidden="true">
-            <Icon name={block.icon} size={21} />
+            <Icon name={block.icon} size={22} />
           </span>
           <div className="prog-card__title-text">
             <h3>{block.name}</h3>
@@ -258,10 +277,47 @@ function CategoryCard({ catKey, index }) {
       </ul>
 
       {delivered.length > 0 && (
-        <button type="button" className="prog-card__done" onClick={askBot}>
-          <span aria-hidden="true">✅</span>
-          {delivered.length} déjà livré{delivered.length > 1 ? "s" : ""} — liste via le Castor Bot
-        </button>
+        <div className="prog-card__done-wrap" ref={panelRef}>
+          <button
+            type="button"
+            className="prog-card__done"
+            aria-expanded={showDelivered}
+            aria-controls={`prog-done-${catKey}`}
+            onClick={() => setShowDelivered((v) => !v)}
+          >
+            <span aria-hidden="true">✅</span>
+            {delivered.length} déjà livré{delivered.length > 1 ? "s" : ""}
+            <span className={`prog-card__done-caret${showDelivered ? " prog-card__done-caret--open" : ""}`} aria-hidden="true">▾</span>
+          </button>
+
+          {showDelivered && (
+            <div
+              className="prog-card__done-panel"
+              id={`prog-done-${catKey}`}
+              role="region"
+              aria-label={`Suivi des avancements livrés — ${block.name}`}
+            >
+              <div className="prog-card__done-panel-head">
+                <span className="prog-card__done-live" aria-hidden="true"><i /> Temps réel</span>
+                <span className="prog-card__done-title">Avancements livrés</span>
+              </div>
+              <ul>
+                {delivered.map((it) => (
+                  <li key={it.title}>
+                    <span className="prog-card__done-check" aria-hidden="true">✓</span>
+                    <div>
+                      <strong>{it.title}</strong>
+                      <p>{it.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" className="prog-card__done-bot" onClick={askBot}>
+                🦫 Poser une question au Castor Bot
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </article>
   );
@@ -291,6 +347,7 @@ export default function ProjectProgress() {
       </div>
 
       <div className="prog__cta">
+        <div className="prog__cta-glow" aria-hidden="true" />
         <p>Une question sur un chantier ?</p>
         <div className="prog__cta-actions">
           <button type="button" className="btn btn--primary" onClick={askBot}>
