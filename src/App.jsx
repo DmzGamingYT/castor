@@ -6,13 +6,18 @@ import CastorBot from "./components/CastorBot.jsx";
 import { PRODUCTS } from "./data/products.jsx";
 import useHistoryRoute from "./lib/useHistoryRoute.js";
 import { NavigationProvider } from "./lib/NavigationContext.jsx";
+import { LanguageProvider } from "./lib/LanguageContext.jsx";
 import { BeaverMark } from "./components/Icon.jsx";
 
 /* les studios et pages secondaires sont chargés à la demande */
 const Home = lazy(() => import("./pages/Home.jsx"));
 const ProductPage = lazy(() => import("./pages/ProductPage.jsx"));
-const Models = lazy(() => import("./pages/Models.jsx"));
 const ChatStudio = lazy(() => import("./pages/ChatStudio.jsx"));
+const CloudSpace = lazy(() => import("./pages/CloudSpace.jsx"));
+const CliPage = lazy(() => import("./pages/CliPage.jsx"));
+const TemplatesPage = lazy(() => import("./pages/TemplatesPage.jsx"));
+const Avancement = lazy(() => import("./pages/Avancement.jsx"));
+const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
 const PRODUCT_SLUGS = new Set(PRODUCTS.map((p) => `/${p.slug}`));
 
@@ -52,15 +57,24 @@ export default function App() {
   const page =
     path === "/chat" ? (
       <ChatStudio />
+    ) : path === "/espace" ? (
+      <CloudSpace />
     ) : PRODUCT_SLUGS.has(path) ? (
       <ProductPage slug={path.slice(1)} onDownload={openDownload} />
-    ) : path === "/models" ? (
-      <Models />
-    ) : (
+    ) : path === "/cli" ? (
+      <CliPage />
+    ) : path === "/templates" ? (
+      <TemplatesPage />
+    ) : path === "/" ? (
       <Home onDownload={openDownload} />
+    ) : path === "/avancement" ? (
+      <Avancement />
+    ) : (
+      <NotFound />
     );
 
   return (
+    <LanguageProvider>
     <NavigationProvider>
       <div className="app">
         <button
@@ -81,5 +95,6 @@ export default function App() {
         <CastorBot />
       </div>
     </NavigationProvider>
+    </LanguageProvider>
   );
 }

@@ -55,17 +55,17 @@ export const ROADMAP = {
     icon: "globe",
     items: [
       {
-        status: "bientôt",
+        status: "livré",
         title: "Page CLI dédiée",
         desc: "Terminal interactif en ligne pour essayer la CLI sans rien installer.",
       },
       {
-        status: "bientôt",
+        status: "en cours",
         title: "Templates de projets",
         desc: "Blog, portfolio, dashboard : des points de départ générés par Castor.",
       },
       {
-        status: "exploration",
+        status: "en cours",
         title: "Version anglaise",
         desc: "i18n complet du site et des studios.",
       },

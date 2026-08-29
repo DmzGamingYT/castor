@@ -4,14 +4,21 @@ const BASE = "/castor";
 
 function currentPath() {
   const raw = window.location.pathname;
-  return raw.startsWith(BASE) ? raw.slice(BASE.length) || "/" : raw || "/";
+  const p = raw.startsWith(BASE) ? raw.slice(BASE.length) : raw;
+  /* normalise le slash final : /castor/desktop/ → /desktop */
+  return p.replace(/\/+$/, "") || "/";
 }
 
 function titleFor(path) {
   const titles = {
     "/": "Castor — le castor qui code pour toi",
-    "/models": "Modèles gratuits — Castor",
+    "/cli": "CLI en ligne — Castor",
+    "/templates": "Templates de projets — Castor",
     "/chat": "Castor Chat — le studio de dialogue — Castor",
+    "/desktop": "Castor Desktop — l'agent de code — Castor",
+    "/espace": "Espace Cloud — le sandbox cloud — Castor",
+    "/cloud": "Castor Cloud — l'IDE cloud — Castor",
+    "/avancement": "Avancement du projet — Castor",
   };
   return titles[path] || titles["/"];
 }

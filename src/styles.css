@@ -416,6 +416,35 @@ main:focus { outline: none; }
   transform: rotate(20deg);
 }
 
+/* Language toggle */
+.lang-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lang-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-dim);
+  box-shadow: 0 4px 14px rgba(226, 149, 42, 0.2);
+}
+.lang-btn__text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .header__github {
   display: inline-flex;
   align-items: center;
@@ -434,6 +463,26 @@ main:focus { outline: none; }
   border-color: var(--accent-dim);
   box-shadow: 0 4px 14px rgba(226, 149, 42, 0.2);
   color: var(--accent-deep);
+}
+
+.header__discord {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.15s;
+}
+.header__discord:hover {
+  transform: translateY(-2px);
+  border-color: #5865f2;
+  box-shadow: 0 4px 14px rgba(88, 101, 242, 0.25);
+  color: #5865f2;
 }
 
 /* CTA shimmer */
