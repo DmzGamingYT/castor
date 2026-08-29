@@ -1,74 +1,12 @@
+import { PLATFORMS, RELEASE_BASE, buildFiles, detectOS } from "../data/platforms.js";
+import { useArch } from "../lib/useArch.js";
 import Icon from "./Icon.jsx";
-const RELEASE_BASE =
-  "https://github.com/DmzGamingYT/castor/releases/latest/download";
 
-export const PLATFORMS = [
-  {
-    os: "mac",
-    name: "macOS",
-    icon: "apple",
-    color: "var(--accent)",
-    installer: { file: "Castor-macOS-arm64.dmg", sub: "Apple Silicon", size: "~96 Mo" },
-    alts: [
-      { file: "Castor-macOS-arm64.zip", label: "Portable (zip)" },
-      { file: "Castor-macOS-x64.dmg", label: "Intel (x64)" },
-    ],
-    features: [
-      "Glisser-déposer dans Applications",
-      "Clés API chiffrées via Keychain",
-      "Notifications natives",
-      "Menubar intégrée",
-    ],
-    install: "Ouvre le .dmg → glisse Castor.app",
-  },
-  {
-    os: "win",
-    name: "Windows",
-    icon: "windows",
-    color: "var(--river)",
-    installer: { file: "Castor-Windows-arm64-setup.exe", sub: "ARM64", size: "~115 Mo" },
-    alts: [
-      { file: "Castor-Windows-arm64-portable.zip", label: "Portable (zip)" },
-      { file: "Castor-Windows-x64-setup.exe", label: "Intel/AMD (x64)" },
-    ],
-    features: [
-      "Installateur avec raccourci bureau",
-      "Clés API chiffrées via DPAPI",
-      "Menu démarrer intégré",
-      "Mise à jour auto",
-    ],
-    install: "Lance l'installateur → terminé",
-  },
-  {
-    os: "linux",
-    name: "Linux",
-    icon: "linux",
-    color: "var(--sage)",
-    installer: { file: "Castor-Linux-arm64.deb", sub: "Debian / Ubuntu", size: "~95 Mo" },
-    alts: [
-      { file: "Castor-Linux-arm64.AppImage", label: "AppImage (toutes distros)" },
-      { file: "Castor-Linux-arm64.tar.gz", label: "Archive tar.gz" },
-    ],
-    features: [
-      "Paquet .deb ou AppImage",
-      "Clés API chiffrées via libsecret",
-      "Zéro dépendance système",
-      "Léger et rapide",
-    ],
-    install: "sudo apt install ./Castor.deb",
-  },
-];
-
-function detectOS() {
-  const ua = navigator.userAgent;
-  if (/Mac/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  if (/Linux|X11/i.test(ua)) return "linux";
-  return null;
-}
-
-export default function DownloadCompare({ onDownload }) {
+export default function DownloadCompare({ platformFiles, onDownload }) {
   const detected = detectOS();
+  const arch = useArch();
+  /* par défaut : détecte l'architecture automatiquement (build x64/ARM64 correct) */
+  const filesFor = platformFiles ?? ((os) => buildFiles(os, arch));
 
   return (
     <section className="section dl-compare" id="telecharger">
@@ -83,6 +21,8 @@ export default function DownloadCompare({ onDownload }) {
       <div className="dl-compare__grid">
         {PLATFORMS.map((p) => {
           const isDetected = detected === p.os;
+          const files = filesFor(p.os);
+          if (!files) return null;
           return (
             <article
               key={p.os}
@@ -93,12 +33,15 @@ export default function DownloadCompare({ onDownload }) {
               )}
 
               <div className="dl-compare__header">
-                <span className="dl-compare__icon" style={{ background: `color-mix(in srgb, ${p.color} 14%, transparent)` }}>
+                <span
+                  className="dl-compare__icon"
+                  style={{ background: `color-mix(in srgb, ${p.color} 14%, transparent)` }}
+                >
                   <Icon name={p.icon} size={28} />
                 </span>
                 <div>
                   <h3>{p.name}</h3>
-                  <span className="dl-compare__size">{p.installer.size}</span>
+                  <span className="dl-compare__size">{files.installer.size}</span>
                 </div>
               </div>
 
@@ -114,13 +57,13 @@ export default function DownloadCompare({ onDownload }) {
               <div className="dl-compare__actions">
                 <a
                   className="btn btn--primary btn--sm"
-                  href={`${RELEASE_BASE}/${p.installer.file}`}
+                  href={`${RELEASE_BASE}/${files.installer.file}`}
                   download
                 >
                   <Icon name="download" size={16} />
-                  {p.installer.sub}
+                  {files.installer.sub}
                 </a>
-                {p.alts.map((alt) => (
+                {files.alts.map((alt) => (
                   <a
                     key={alt.file}
                     className="dl-compare__alt"
@@ -150,6 +93,29 @@ export default function DownloadCompare({ onDownload }) {
           <span className="dl-compare__note">Gratuit · Open source · Multi-providers</span>
         </div>
       )}
+
+      {/* Nouvelles fonctionnalités v0.3.0 */}
+      <div className="dl-compare__new-features">
+        <span className="dl-compare__badge">
+          <Icon name="zap" size={14} /> Nouveautés v0.3.0
+        </span>
+        <div className="dl-compare__new-grid">
+          {[
+            { icon: "clock", title: "Agents planifiés", desc: "Programme des agents pour qu'ils travaillent la nuit." },
+            { icon: "split", title: "Diff côte à côte", desc: "Compare avant/après, valide hunk par hunk." },
+            { icon: "chat", title: "Assistant IA embarqué", desc: "Castor Bot 24/7 dans l'app." },
+            { icon: "refresh", title: "Sync multi-postes", desc: "Export/import entre machines." },
+            { icon: "plug", title: "Serveurs MCP", desc: "Branche des outils externes à tes agents." },
+            { icon: "palette", title: "Thèmes personnalisables", desc: "Couleur d'accent libre." },
+          ].map((f) => (
+            <article key={f.title} className="dl-compare__new-card">
+              <span className="dl-compare__new-icon"><Icon name={f.icon} size={20} /></span>
+              <h4>{f.title}</h4>
+              <p>{f.desc}</p>
+            </article>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

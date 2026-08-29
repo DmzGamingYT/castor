@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icon, { BeaverMark } from "./Icon.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { APP_VERSION } from "../lib/version.js";
 
 const PLATFORMS = [
   { os: "mac", icon: "apple", label: "macOS", sub: "Apple Silicon · .dmg" },
@@ -13,6 +14,8 @@ const FEATURES = [
   { icon: "lock", label: "Clés chiffrées" },
   { icon: "plug", label: "Multi-providers" },
   { icon: "layers", label: "Agents parallèles" },
+  { icon: "clock", label: "Agents planifiés" },
+  { icon: "split", label: "Diff côte à côte" },
 ];
 
 /* ─── Mockup de l'installateur ─── */
@@ -61,7 +64,7 @@ function InstallerMockup({ active }) {
               <div className="dl-mockup__idle">
                 <span className="dl-mockup__pkg-icon">📦</span>
                 <strong>Castor Desktop</strong>
-                <span className="dl-mockup__ver">v1.0.0 · 96 Mo</span>
+                <span className="dl-mockup__ver">v{APP_VERSION} · 96 Mo</span>
                 <button className="btn btn--primary btn--sm" type="button">
                   Installer
                 </button>
