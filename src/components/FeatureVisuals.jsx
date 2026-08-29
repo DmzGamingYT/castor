@@ -104,7 +104,8 @@ export function SpeedVisual() {
   );
 }
 
-export const FEATURE_VISUALS = {
+/* Map interne (non exportée pour rester fast-refresh : résoluble dans le fichier) */
+const FEATURE_VISUALS = {
   layers: AgentsVisual,
   plug: ProvidersVisual,
   lock: KeysVisual,
@@ -160,7 +161,8 @@ export function StepDiffVisual() {
   );
 }
 
-export const STEP_VISUALS = {
+/* Map interne non exportée — voir FEATURE_VISUALS ci-dessus */
+const STEP_VISUALS = {
   0: StepOpenVisual,
   1: StepModelVisual,
   2: StepDiffVisual,

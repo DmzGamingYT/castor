@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import DemoSection from "../components/DemoSection.jsx";
+import Testimonials from "../components/Testimonials.jsx";
 import DamScene from "../components/DamScene.jsx";
 import Hills from "../components/Hills.jsx";
 import HeroParticles from "../components/HeroParticles.jsx";
 import DownloadSection from "../components/DownloadSection.jsx";
-import ProjectProgress from "../components/ProjectProgress.jsx";
+import FAQSection from "../components/FAQSection.jsx";
 import AnimatedHeading from "../components/AnimatedHeading.jsx";
+import { useNavigate } from "../lib/NavigationContext.jsx";
 import { BeaverMark } from "../components/Icon.jsx";
 
 /* révèle un élément quand il entre dans le viewport */
@@ -89,10 +91,10 @@ function Hero({ onDownload }) {
         </button>
         <a
           className="btn btn--ghost btn--lg"
-          href="/castor/#demo"
+          href="/castor/#chantier"
           onClick={(e) => {
             e.preventDefault();
-            document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" });
+            document.getElementById("chantier")?.scrollIntoView({ behavior: "smooth" });
           }}
         >
           Voir la démo
@@ -170,10 +172,12 @@ function StepsMockup() {
   const [inputVal, setInputVal] = useState("");
   const [building, setBuilding] = useState([]);
 
-  const prompt = "un blog de recettes végé";
-
   useEffect(() => {
-    /* Auto-play sequence — tous les timers/intervalles trackés pour un cleanup propre */
+    /* Auto-play : un cycle complet s'enchaîne tout seul et se reprogramme à la
+       fin — les phases tournent strictement dans l'ordre et la boucle ne
+       chevauche jamais. (L'ancienne version dépendait de [phase] : chaque
+       changement de phase relançait tout le script et annulait le timer de
+       reset, laissant la démo bloquée ~9 s sur l'écran « terminé ».) */
     const timers = new Set();
     const later = (fn, ms) => {
       const t = setTimeout(() => { timers.delete(t); fn(); }, ms);
@@ -184,48 +188,54 @@ function StepsMockup() {
       timers.add(t);
       return t;
     };
+    const prompt = "un blog de recettes végé";
 
-    later(() => {
-      /* Phase 1: type the prompt */
-      let i = 0;
-      const ty = every(() => {
-        i++;
-        setInputVal(prompt.slice(0, i));
-        if (i >= prompt.length) {
-          clearInterval(ty);
-          later(() => setPhase(1), 600);
-        }
-      }, 50);
-    }, 800);
-
-    later(() => {
-      /* Phase 2: building */
-      const files = [
-        "> Structure index.html...",
-        "> Styles.css appliqués...",
-        "> Composants montés...",
-        "> Tests passés ✔",
-      ];
-      let f = 0;
-      const build = every(() => {
-        setBuilding((prev) => [...prev, files[f]]);
-        f++;
-        if (f >= files.length) {
-          clearInterval(build);
-          later(() => setPhase(2), 500);
-        }
-      }, 700);
-    }, 3200);
-
-    /* Reset loop */
-    later(() => {
+    const runCycle = () => {
       setPhase(0);
       setInputVal("");
       setBuilding([]);
-    }, 10000);
 
+      /* Phase 1 : tape le chantier */
+      later(() => {
+        let i = 0;
+        const ty = every(() => {
+          i++;
+          setInputVal(prompt.slice(0, i));
+          if (i >= prompt.length) {
+            clearInterval(ty);
+            timers.delete(ty);
+            later(() => setPhase(1), 600);
+          }
+        }, 50);
+      }, 800);
+
+      /* Phase 2 : construction */
+      later(() => {
+        const files = [
+          "> Structure index.html...",
+          "> Styles.css appliqués...",
+          "> Composants montés...",
+          "> Tests passés ✔",
+        ];
+        let f = 0;
+        const build = every(() => {
+          setBuilding((prev) => [...prev, files[f]]);
+          f++;
+          if (f >= files.length) {
+            clearInterval(build);
+            timers.delete(build);
+            later(() => setPhase(2), 500);
+          }
+        }, 700);
+      }, 3200);
+
+      /* Cycle suivant — démarre seulement quand celui-ci est terminé */
+      later(runCycle, 10000);
+    };
+
+    runCycle();
     return () => timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
-  }, [phase]);
+  }, []);
 
   return (
     <div className="steps-mockup">
@@ -326,10 +336,39 @@ function StepsMockup() {
 
 function Steps() {
   return (
-    <section className="section steps">
+    <section className="section steps" id="chantier">
       <AnimatedHeading variant="letters">Le chantier en trois coups de patte</AnimatedHeading>
       <p className="section-sub">Pas de tunnel magique : tu vois chaque étape.</p>
       <StepsMockup />
+    </section>
+  );
+}
+
+/* aperçu de l'avancement → pointe vers la page dédiée /avancement */
+function ProgressTeaser() {
+  const navigate = useNavigate();
+  return (
+    <section className="section prog-teaser" id="avancement">
+      <div className="prog-teaser__inner">
+        <div className="prog-teaser__text">
+          <span className="prog__badge">🔨 Avancement du projet</span>
+          <h2>Le chantier avance, patte après patte</h2>
+          <p className="section-sub">
+            Ce qui est livré, ce qu'on construit et ce qui arrive — sans fausse
+            promesse ni date artificielle.
+          </p>
+        </div>
+        <a
+          className="btn btn--primary btn--lg"
+          href="/castor/avancement"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/avancement");
+          }}
+        >
+          Voir l'avancement du projet →
+        </a>
+      </div>
     </section>
   );
 }
@@ -341,7 +380,9 @@ export default function Home({ onDownload }) {
       <Manifesto />
       <Steps />
       <DemoSection />
-      <ProjectProgress />
+      <Testimonials />
+      <ProgressTeaser />
+      <FAQSection />
       <DownloadSection onDownload={onDownload} />
     </>
   );

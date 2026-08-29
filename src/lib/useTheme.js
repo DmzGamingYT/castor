@@ -1,38 +1,43 @@
 import { useEffect, useState } from "react";
 
-const KEY = "castor-theme";
-
-function initial() {
+/* Thème automatique : sombre de 20h à 7h, clair le reste.
+   Suit aussi la préférence système via matchMedia. */
+function computeTheme() {
   try {
-    const saved = localStorage.getItem(KEY);
-    if (saved === "dark" || saved === "light") return saved;
+    const hour = new Date().getHours();
+    // nuit : 20h → 7h
+    if (hour >= 20 || hour < 7) return "dark";
   } catch {
-    /* pas de stockage */
+    /* ignore */
   }
-  try {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  } catch {
-    return "light";
-  }
+  return "light";
 }
 
-/* Thème clair/sombre : appliqué sur <html data-theme>, persisté,
-   et synchronisé avec la meta theme-color. */
 export function useTheme() {
-  const [theme, setTheme] = useState(initial);
+  const [theme, setTheme] = useState(computeTheme);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    try {
-      localStorage.setItem(KEY, theme);
-    } catch {
-      /* ignore */
-    }
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", theme === "dark" ? "#161a10" : "#faf6ec");
   }, [theme]);
 
-  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
-  return { theme, toggle };
+  // vérifier toutes les 60s pour basculer automatiquement
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTheme(computeTheme);
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // réagir au changement de préférence système
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => setTheme(computeTheme);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return { theme };
 }

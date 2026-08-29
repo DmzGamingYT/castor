@@ -5,92 +5,83 @@
       <stop offset="100%" stop-color="#e2952a"/>
     </linearGradient>
     <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5c3d0e"/>
+      <stop offset="0%" stop-color="#6b4a14"/>
       <stop offset="100%" stop-color="#3d2808"/>
     </linearGradient>
     <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#fffdf6"/>
-      <stop offset="100%" stop-color="#f5edd6"/>
+      <stop offset="100%" stop-color="#f3e9cf"/>
     </linearGradient>
-    <linearGradient id="nose" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2a1a04"/>
-      <stop offset="100%" stop-color="#1a0f02"/>
+    <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe071"/>
+      <stop offset="100%" stop-color="#efb63a"/>
     </linearGradient>
   </defs>
-  
-  <!-- Background tile -->
+
+  <!-- Tuile ambre arrondie -->
   <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  
-  <!-- Tail (behind body) -->
-  <ellipse cx="92" cy="88" rx="22" ry="11" fill="#3d2808" transform="rotate(-18 92 88)"/>
-  <ellipse cx="92" cy="88" rx="20" ry="9.5" fill="#4a3210" transform="rotate(-18 92 88)"/>
-  <!-- Tail texture lines -->
-  <line x1="78" y1="84" x2="106" y2="80" stroke="#3d2808" stroke-width="0.8" opacity="0.5" transform="rotate(-18 92 88)"/>
-  <line x1="76" y1="88" x2="108" y2="84" stroke="#3d2808" stroke-width="0.8" opacity="0.4" transform="rotate(-18 92 88)"/>
-  <line x1="78" y1="92" x2="106" y2="88" stroke="#3d2808" stroke-width="0.8" opacity="0.3" transform="rotate(-18 92 88)"/>
-  
-  <!-- Body -->
-  <ellipse cx="62" cy="82" rx="28" ry="22" fill="url(#fur)"/>
-  
-  <!-- Belly patch -->
-  <ellipse cx="58" cy="85" rx="16" ry="14" fill="url(#belly)" opacity="0.9"/>
-  
-  <!-- Left arm -->
-  <ellipse cx="38" cy="78" rx="8" ry="6" fill="#4a3210" transform="rotate(-15 38 78)"/>
-  
-  <!-- Right arm (waving) -->
-  <ellipse cx="84" cy="72" rx="8" ry="6" fill="#4a3210" transform="rotate(25 84 72)"/>
-  
-  <!-- Head -->
-  <circle cx="60" cy="52" r="24" fill="url(#fur)"/>
-  
-  <!-- Left ear -->
-  <circle cx="40" cy="34" r="8" fill="#4a3210"/>
-  <circle cx="40" cy="34" r="5" fill="#c98820" opacity="0.6"/>
-  
-  <!-- Right ear -->
-  <circle cx="78" cy="34" r="8" fill="#4a3210"/>
-  <circle cx="78" cy="34" r="5" fill="#c98820" opacity="0.6"/>
-  
-  <!-- Face lighter area -->
-  <ellipse cx="60" cy="56" rx="18" ry="16" fill="#5c3d0e" opacity="0.3"/>
-  
-  <!-- Eyes - white -->
-  <ellipse cx="50" cy="48" rx="6.5" ry="7" fill="#fffdf6"/>
-  <ellipse cx="70" cy="48" rx="6.5" ry="7" fill="#fffdf6"/>
-  
-  <!-- Eyes - iris -->
-  <circle cx="51.5" cy="48.5" r="4" fill="#1a0f02"/>
-  <circle cx="71.5" cy="48.5" r="4" fill="#1a0f02"/>
-  
-  <!-- Eyes - pupil highlight -->
-  <circle cx="53" cy="47" r="1.5" fill="#fff" opacity="0.9"/>
-  <circle cx="73" cy="47" r="1.5" fill="#fff" opacity="0.9"/>
-  
-  <!-- Nose -->
-  <ellipse cx="60" cy="57" rx="4.5" ry="3.5" fill="url(#nose)"/>
-  <ellipse cx="60" cy="56.5" rx="2" ry="1" fill="#fff" opacity="0.2"/>
-  
-  <!-- Mouth -->
-  <path d="M55 61 Q60 65 65 61" fill="none" stroke="#1a0f02" stroke-width="1.5" stroke-linecap="round"/>
-  
-  <!-- Teeth -->
-  <rect x="56.5" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6"/>
-  <rect x="61" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6"/>
-  <line x1="58.5" y1="61" x2="58.5" y2="66" stroke="#e8e0cc" stroke-width="0.5"/>
-  <line x1="63" y1="61" x2="63" y2="66" stroke="#e8e0cc" stroke-width="0.5"/>
-  
-  <!-- Whiskers -->
-  <g stroke="#fffdf6" stroke-width="0.8" opacity="0.5" stroke-linecap="round">
-    <line x1="36" y1="54" x2="48" y2="56"/>
-    <line x1="35" y1="58" x2="48" y2="58"/>
-    <line x1="36" y1="62" x2="48" y2="60"/>
-    <line x1="72" y1="56" x2="84" y2="54"/>
-    <line x1="72" y1="58" x2="84" y2="58"/>
-    <line x1="72" y1="60" x2="84" y2="62"/>
+  <rect x="0.75" y="0.75" width="126.5" height="126.5" rx="27.25" fill="none" stroke="#8a5a12" stroke-opacity="0.35" stroke-width="1.5"/>
+
+  <!-- Castor de chantier (même dessin que la marque du site) -->
+  <g transform="translate(0,4)">
+    <!-- queue plate (pagaie) + stries -->
+    <g transform="rotate(-22 96 92)">
+      <ellipse cx="96" cy="92" rx="23" ry="12" fill="#4a3210"/>
+      <g stroke="#33220a" stroke-width="1.6" stroke-linecap="round" opacity="0.55">
+        <line x1="80" y1="90" x2="112" y2="90"/>
+        <line x1="80" y1="94" x2="112" y2="94"/>
+      </g>
+    </g>
+    <!-- corps + ventre -->
+    <ellipse cx="62" cy="86" rx="30" ry="24" fill="url(#fur)"/>
+    <ellipse cx="57" cy="90" rx="18" ry="15" fill="url(#belly)" opacity="0.95"/>
+    <!-- petit marteau tenu devant le ventre -->
+    <g transform="rotate(-28 52 88)">
+      <rect x="46" y="85" width="17" height="5" rx="2.5" fill="#c98a2b"/>
+      <rect x="37" y="79.5" width="10" height="16" rx="3" fill="#9aa5b2"/>
+      <rect x="37" y="79.5" width="10" height="5.5" rx="2.75" fill="#c6ced8"/>
+    </g>
+    <!-- pattes qui tiennent le marteau -->
+    <ellipse cx="38" cy="88" rx="9" ry="7" fill="#4a3210" transform="rotate(-18 38 88)"/>
+    <ellipse cx="70" cy="80" rx="9" ry="7" fill="#4a3210" transform="rotate(22 70 80)"/>
+    <!-- tête -->
+    <circle cx="62" cy="50" r="26" fill="url(#fur)"/>
+    <!-- oreilles -->
+    <circle cx="40" cy="28" r="9" fill="#4a3210"/>
+    <circle cx="40" cy="28" r="5.5" fill="#c98820" opacity="0.75"/>
+    <circle cx="84" cy="28" r="9" fill="#4a3210"/>
+    <circle cx="84" cy="28" r="5.5" fill="#c98820" opacity="0.75"/>
+    <!-- ombre sous le casque -->
+    <ellipse cx="62" cy="36" rx="20" ry="4.2" fill="#000" opacity="0.10"/>
+    <!-- casque de chantier -->
+    <path d="M45.5 35 a16.5 16.5 0 1 1 33 0 Z" fill="url(#hat)"/>
+    <ellipse cx="62" cy="35" rx="22" ry="5.4" fill="#e3a72f"/>
+    <circle cx="62" cy="17.8" r="2.6" fill="#d99a26"/>
+    <path d="M48 24 a14 14 0 0 1 28 0" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity="0.35"/>
+    <!-- yeux expressifs -->
+    <ellipse cx="50" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+    <ellipse cx="74" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+    <circle cx="51.6" cy="51" r="4.6" fill="#241303"/>
+    <circle cx="75.6" cy="51" r="4.6" fill="#241303"/>
+    <circle cx="53.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+    <circle cx="77.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+    <!-- nez -->
+    <ellipse cx="62" cy="60" rx="5.2" ry="4.2" fill="#241303"/>
+    <!-- sourire + grandes dents -->
+    <path d="M54.5 64 Q58 67.5 62 64 Q66 67.5 69.5 64" fill="none" stroke="#241303" stroke-width="1.7" stroke-linecap="round"/>
+    <rect x="57" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+    <rect x="62.6" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+    <!-- moustaches -->
+    <g stroke="#fffdf6" stroke-width="1.1" opacity="0.55" stroke-linecap="round">
+      <line x1="34" y1="55" x2="46" y2="57"/>
+      <line x1="33" y1="60" x2="46" y2="60"/>
+      <line x1="34" y1="65" x2="46" y2="63"/>
+      <line x1="78" y1="57" x2="90" y2="55"/>
+      <line x1="78" y1="60" x2="91" y2="60"/>
+      <line x1="78" y1="63" x2="90" y2="65"/>
+    </g>
+    <!-- joues -->
+    <circle cx="42" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
+    <circle cx="82" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
   </g>
-  
-  <!-- Cheek blush -->
-  <circle cx="42" cy="58" r="4" fill="#e2952a" opacity="0.35"/>
-  <circle cx="78" cy="58" r="4" fill="#e2952a" opacity="0.35"/>
 </svg>

@@ -17,7 +17,22 @@ function PlatformBadge({ os, icon }) {
 
 function ProductHero({ product, onDownload }) {
   const [copied, setCopied] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
   const navigate = useNavigate();
+
+  /* lightbox : Échap ou clic sur le fond pour fermer, scroll verrouillé */
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightbox(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [lightbox]);
 
   async function copyInstall() {
     try {
@@ -88,8 +103,43 @@ function ProductHero({ product, onDownload }) {
       )}
 
       <div className="mockup-wrap">
-        <Mockup variant={product.mockup} />
+        <button
+          type="button"
+          className="mockup-lightbox"
+          onClick={() => setLightbox(true)}
+          aria-label={`Agrandir l'aperçu de ${product.name}`}
+        >
+          <Mockup variant={product.mockup} />
+          <span className="mockup-zoom" aria-hidden="true">⌕ Agrandir</span>
+        </button>
       </div>
+
+      {lightbox && (
+        <div
+          className="lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Aperçu de ${product.name}`}
+          onClick={() => setLightbox(false)}
+        >
+          <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="lightbox__close"
+              onClick={() => setLightbox(false)}
+              aria-label="Fermer l'aperçu"
+            >
+              ×
+            </button>
+            <div className="lightbox__frame">
+              <Mockup variant={product.mockup} />
+            </div>
+            <p className="lightbox__caption">
+              {product.name} — aperçu agrandi
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -8,7 +8,9 @@ const PARTICLE_CHARS = ["🪵", "🪚", "🔩", "✨", "🪵", "⚙️", "🪵"]
 const PARTICLE_COUNT = 14;
 
 export default function HeroParticles() {
+  /* aucune particule si l'utilisateur préfère moins de mouvement */
   const particles = useMemo(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return [];
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => {
       const char = PARTICLE_CHARS[i % PARTICLE_CHARS.length];
       const left = 5 + Math.random() * 90;
@@ -19,6 +21,8 @@ export default function HeroParticles() {
       return { char, left, delay, duration, size, opacity, id: i };
     });
   }, []);
+
+  if (particles.length === 0) return null;
 
   return (
     <span className="hero__particles" aria-hidden="true">

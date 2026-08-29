@@ -90,7 +90,14 @@ export default function WebStudio() {
     };
   }, []);
 
-  const currentModel = models.find((m) => m.id === modelId);
+  /* modèle effectif : le choix de l'utilisateur, sinon le premier dispo,
+     sinon la valeur par défaut (le modèle par défaut peut avoir disparu
+     de la liste live des gratuits — sans ce repli, les appels IA partaient
+     vers un modèle inconnu et le sélecteur restait sur « Chargement… »). */
+  const effectiveModelId = models.some((m) => m.id === modelId)
+    ? modelId
+    : (models[0]?.id || modelId);
+  const currentModel = models.find((m) => m.id === effectiveModelId);
   const aiReady = Boolean(apiKey.trim()) && Boolean(modelId);
 
   function saveKey() {
@@ -109,7 +116,7 @@ export default function WebStudio() {
     setLogs((p) => [...p, `✔ appel OpenRouter · ${shortName(currentModel?.id, currentModel?.name)}`]);
     const html = await generateWithAI({
       prompt,
-      model: modelId,
+      model: effectiveModelId,
       apiKey: apiKey.trim(),
       themeName: theme,
       signal,
@@ -283,7 +290,7 @@ export default function WebStudio() {
 
             <ModelSelect
               models={models}
-              modelId={modelId}
+              modelId={effectiveModelId}
               onSelect={setModelId}
               aiReady={aiReady}
               emptyLabel="Gratuits OpenRouter indisponibles — gabarits locaux actifs."

@@ -1,7 +1,6 @@
-import { createContext, useContext } from "react";
+import { useContext } from "react";
 import { navigateTo } from "./useHistoryRoute.js";
-
-export const NavigationContext = createContext(null);
+import { NavigationContext } from "./navigationContext.js";
 
 /**
  * Fournit la fonction navigate() à tout le composant tree.
@@ -9,6 +8,8 @@ export const NavigationContext = createContext(null);
  *          navigate("/desktop");           // page Desktop
  *          navigate("/", "produits");      // Accueil → scroll #produits
  */
+/* Module infrastructure : le hook est lié au context, fast-refresh sans objet ici. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNavigate() {
   return useContext(NavigationContext);
 }

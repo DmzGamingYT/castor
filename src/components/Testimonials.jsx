@@ -76,9 +76,10 @@ export default function Testimonials() {
     setActive((i) => (i - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
   }, []);
 
-  // auto-advance
+  // auto-advance (désactivé si l'utilisateur préfère moins de mouvement)
   useEffect(() => {
     if (paused) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = setInterval(next, 4500);
     return () => clearInterval(id);
   }, [paused, next]);

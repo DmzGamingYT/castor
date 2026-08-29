@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "./Icon.jsx";
 import AnimatedHeading from "./AnimatedHeading.jsx";
 
@@ -39,7 +39,8 @@ function AgentsMockup() {
   ]);
 
   useEffect(() => {
-    const intervals = agents.map((a, i) => {
+    /* 3 agents — on ne dépend pas du state pour ne pas recréer les intervalles */
+    const intervals = [0, 1, 2].map((i) => {
       const speed = 0.8 + i * 0.4;
       return setInterval(() => {
         setAgents((prev) =>
@@ -191,14 +192,22 @@ function KeysMockup() {
 function SpeedMockup() {
   const [tokens, setTokens] = useState(0);
   const [latency, setLatency] = useState(42);
+  /* temps écoulé et cumul de tokens suivis par ref pour calculer le débit réel */
+  const elapsedRef = useRef(0);
+  const tokensRef = useRef(0);
 
   useEffect(() => {
     const iv = setInterval(() => {
-      setTokens((t) => t + Math.floor(Math.random() * 8 + 3));
+      elapsedRef.current += 0.1;
+      tokensRef.current += Math.floor(Math.random() * 8 + 3);
+      setTokens(tokensRef.current);
       setLatency((l) => Math.max(18, Math.min(80, l + (Math.random() - 0.5) * 6)));
     }, 100);
     return () => clearInterval(iv);
   }, []);
+
+  /* débit moyen : tokens générés / secondes écoulées (fluide, sans à-coups) */
+  const tokPerSec = Math.round(tokens / Math.max(1, elapsedRef.current));
 
   return (
     <div className="demo-mockup demo-mockup--speed">
@@ -222,7 +231,7 @@ function SpeedMockup() {
           </div>
           <div className="demo-speed__stat">
             <span className="demo-speed__label">Débit</span>
-            <strong className="demo-speed__value">{Math.round(tokens / ((Date.now() % 1000) / 1000 + 1))}</strong>
+            <strong className="demo-speed__value">{tokPerSec}</strong>
             <span className="demo-speed__unit">tok/s</span>
           </div>
         </div>

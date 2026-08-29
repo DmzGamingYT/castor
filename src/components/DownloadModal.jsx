@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icon, { BeaverMark } from "./Icon.jsx";
-import { PLATFORMS } from "./DownloadCompare.jsx";
-
-const RELEASE_BASE =
-  "https://github.com/DmzGamingYT/castor/releases/latest/download";
+import { PLATFORMS, RELEASE_BASE, buildFiles, detectOS } from "../data/platforms.js";
+import { useArch } from "../lib/useArch.js";
 
 const UNINSTALL = {
   mac: "scripts/uninstall-macos.sh du dépôt",
@@ -11,72 +9,12 @@ const UNINSTALL = {
   linux: "sudo apt remove castor-desktop (deb) — ou supprime l'AppImage + ~/.config/castor-desktop",
 };
 
-function detectOS() {
-  const ua = navigator.userAgent;
-  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
-  if (/Mac/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  if (/Linux|X11/i.test(ua)) return "linux";
-  return null;
-}
-
-/* fichiers liés à l'architecture détectée */
-function buildFiles(os, arch) {
-  const a = os === "win" && arch === "x86" ? "x64" : "arm64";
-  switch (os) {
-    case "mac":
-      return {
-        installer: { file: `Castor-macOS-arm64.dmg`, sub: "Apple Silicon", size: "~96 Mo" },
-        alts: [
-          { file: `Castor-macOS-arm64.zip`, label: "Portable (zip)" },
-          { file: `Castor-macOS-x64.dmg`, label: "Intel (x64)" },
-        ],
-      };
-    case "win":
-      return {
-        installer: { file: `Castor-Windows-${a}-setup.exe`, sub: a === "x64" ? "Intel/AMD (x64)" : "ARM64", size: "~115 Mo" },
-        alts: [
-          { file: `Castor-Windows-${a}-portable.zip`, label: "Portable (zip)" },
-          a === "arm64"
-            ? { file: `Castor-Windows-x64-setup.exe`, label: "Intel/AMD (x64)" }
-            : { file: `Castor-Windows-arm64-setup.exe`, label: "ARM64" },
-        ],
-      };
-    case "linux":
-      return {
-        installer: { file: `Castor-Linux-arm64.deb`, sub: "Debian / Ubuntu", size: "~95 Mo" },
-        alts: [
-          { file: `Castor-Linux-arm64.AppImage`, label: "AppImage (toutes distros)" },
-          { file: `Castor-Linux-arm64.tar.gz`, label: "Archive tar.gz" },
-        ],
-      };
-    default:
-      return null;
-  }
-}
-
 export default function DownloadModal({ open, onClose }) {
   const [started, setStarted] = useState(null);
-  const [arch, setArch] = useState(null);
+  const arch = useArch();
   const detected = detectOS();
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const uad = navigator.userAgentData;
-    if (!uad?.getHighEntropyValues) return;
-    let alive = true;
-    uad
-      .getHighEntropyValues(["architecture"])
-      .then((v) => {
-        if (!alive) return;
-        const a = String(v.architecture || "").toLowerCase();
-        setArch(a === "arm" ? "arm" : a === "x86" ? "x86" : null);
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [open]);
 
   /* focus trap + Échap + restauration du focus */
   useEffect(() => {

@@ -43,7 +43,11 @@ export default function ModelSelect({
         aria-label="Choisir un modèle"
       >
         <span className={`engine-dot ${aiReady ? "engine-dot--on" : ""}`} />
-        {current ? shortName(current.id, current.name) : loadingLabel}
+        {current
+          ? shortName(current.id, current.name)
+          : models.length > 0
+            ? "Choisir un modèle…"
+            : loadingLabel}
         <em>▾</em>
       </button>
       {open && (

@@ -155,6 +155,22 @@ const PATHS = {
   spark: (
     <path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2L5 10.5l5.2-1.8zM18.5 16l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
   ),
+  /* logo GitHub (marque — rempli, trait neutralisé) */
+  github: (
+    <path
+      d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.833 1.769 1.179 1.035 1.742 2.688 1.253 3.349.95.101-.747.402-1.253.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.978 0 1.955.129 2.875.388 2.2-1.495 3.163-1.179 3.163-1.179.632 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.153 0 .302.216.662.79.547a10.505 10.505 0 0 0 7.86-10.911C23.5 5.896 18.354.75 12.5.75Z"
+      fill="currentColor"
+      stroke="none"
+    />
+  ),
+  /* planifier : presse-papier + crayon */
+  tools: (
+    <>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="2.5" />
+      <path d="M9 4.5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.5" />
+      <path d="M18.9 6.9l1.6 1.6-5.1 5.1-2.3.7.7-2.3z" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 22, className = "" }) {
@@ -178,60 +194,84 @@ export default function Icon({ name, size = 22, className = "" }) {
   );
 }
 
-/* Marque castor raffinée (pour tuiles de logo et header) */
+/* Marque castor de chantier (casque, grandes dents, marteau) —
+   utilisée dans le logo, le footer, le bot et les studios. */
 export function BeaverMark({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 128 128" aria-hidden="true">
       <defs>
         <linearGradient id="bm-fur" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5c3d0e" />
+          <stop offset="0%" stopColor="#6b4a14" />
           <stop offset="100%" stopColor="#3d2808" />
         </linearGradient>
         <linearGradient id="bm-belly" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#fffdf6" />
-          <stop offset="100%" stopColor="#f5edd6" />
+          <stop offset="100%" stopColor="#f3e9cf" />
+        </linearGradient>
+        <linearGradient id="bm-hat" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffe071" />
+          <stop offset="100%" stopColor="#efb63a" />
         </linearGradient>
       </defs>
-      {/* queue */}
-      <ellipse cx="92" cy="88" rx="20" ry="9.5" fill="#4a3210" transform="rotate(-18 92 88)" />
-      {/* corps */}
-      <ellipse cx="62" cy="82" rx="28" ry="22" fill="url(#bm-fur)" />
-      <ellipse cx="58" cy="85" rx="16" ry="14" fill="url(#bm-belly)" opacity="0.9" />
-      {/* bras */}
-      <ellipse cx="38" cy="78" rx="8" ry="6" fill="#4a3210" transform="rotate(-15 38 78)" />
-      <ellipse cx="84" cy="72" rx="8" ry="6" fill="#4a3210" transform="rotate(25 84 72)" />
-      {/* tête */}
-      <circle cx="60" cy="52" r="24" fill="url(#bm-fur)" />
-      {/* oreilles */}
-      <circle cx="40" cy="34" r="8" fill="#4a3210" />
-      <circle cx="40" cy="34" r="5" fill="#c98820" opacity="0.6" />
-      <circle cx="78" cy="34" r="8" fill="#4a3210" />
-      <circle cx="78" cy="34" r="5" fill="#c98820" opacity="0.6" />
-      {/* yeux */}
-      <ellipse cx="50" cy="48" rx="6.5" ry="7" fill="#fffdf6" />
-      <ellipse cx="70" cy="48" rx="6.5" ry="7" fill="#fffdf6" />
-      <circle cx="51.5" cy="48.5" r="4" fill="#1a0f02" />
-      <circle cx="71.5" cy="48.5" r="4" fill="#1a0f02" />
-      <circle cx="53" cy="47" r="1.5" fill="#fff" opacity="0.9" />
-      <circle cx="73" cy="47" r="1.5" fill="#fff" opacity="0.9" />
-      {/* nez */}
-      <ellipse cx="60" cy="57" rx="4.5" ry="3.5" fill="#1a0f02" />
-      {/* bouche + dents */}
-      <path d="M55 61 Q60 65 65 61" fill="none" stroke="#1a0f02" strokeWidth="1.5" strokeLinecap="round" />
-      <rect x="56.5" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6" />
-      <rect x="61" y="61" width="4" height="5.5" rx="1.5" fill="#fffdf6" />
-      {/* moustaches */}
-      <g stroke="#fffdf6" strokeWidth="0.8" opacity="0.5" strokeLinecap="round">
-        <line x1="36" y1="54" x2="48" y2="56" />
-        <line x1="35" y1="58" x2="48" y2="58" />
-        <line x1="36" y1="62" x2="48" y2="60" />
-        <line x1="72" y1="56" x2="84" y2="54" />
-        <line x1="72" y1="58" x2="84" y2="58" />
-        <line x1="72" y1="60" x2="84" y2="62" />
+      {/* queue plate (pagaie) + stries */}
+      <g transform="rotate(-22 96 92)">
+        <ellipse cx="96" cy="92" rx="23" ry="12" fill="#4a3210" />
+        <g stroke="#33220a" strokeWidth="1.6" strokeLinecap="round" opacity="0.55">
+          <line x1="80" y1="90" x2="112" y2="90" />
+          <line x1="80" y1="94" x2="112" y2="94" />
+        </g>
       </g>
-      {/* joues roses */}
-      <circle cx="42" cy="58" r="4" fill="#e2952a" opacity="0.35" />
-      <circle cx="78" cy="58" r="4" fill="#e2952a" opacity="0.35" />
+      {/* corps + ventre */}
+      <ellipse cx="62" cy="86" rx="30" ry="24" fill="url(#bm-fur)" />
+      <ellipse cx="57" cy="90" rx="18" ry="15" fill="url(#bm-belly)" opacity="0.95" />
+      {/* petit marteau tenu devant le ventre */}
+      <g transform="rotate(-28 52 88)">
+        <rect x="46" y="85" width="17" height="5" rx="2.5" fill="#c98a2b" />
+        <rect x="37" y="79.5" width="10" height="16" rx="3" fill="#9aa5b2" />
+        <rect x="37" y="79.5" width="10" height="5.5" rx="2.75" fill="#c6ced8" />
+      </g>
+      {/* pattes qui tiennent le marteau */}
+      <ellipse cx="38" cy="88" rx="9" ry="7" fill="#4a3210" transform="rotate(-18 38 88)" />
+      <ellipse cx="70" cy="80" rx="9" ry="7" fill="#4a3210" transform="rotate(22 70 80)" />
+      {/* tête */}
+      <circle cx="62" cy="50" r="26" fill="url(#bm-fur)" />
+      {/* oreilles */}
+      <circle cx="40" cy="28" r="9" fill="#4a3210" />
+      <circle cx="40" cy="28" r="5.5" fill="#c98820" opacity="0.75" />
+      <circle cx="84" cy="28" r="9" fill="#4a3210" />
+      <circle cx="84" cy="28" r="5.5" fill="#c98820" opacity="0.75" />
+      {/* ombre sous le casque */}
+      <ellipse cx="62" cy="36" rx="20" ry="4.2" fill="#000" opacity="0.10" />
+      {/* casque de chantier */}
+      <path d="M45.5 35 a16.5 16.5 0 1 1 33 0 Z" fill="url(#bm-hat)" />
+      <ellipse cx="62" cy="35" rx="22" ry="5.4" fill="#e3a72f" />
+      <circle cx="62" cy="17.8" r="2.6" fill="#d99a26" />
+      <path d="M48 24 a14 14 0 0 1 28 0" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" opacity="0.35" />
+      {/* yeux expressifs */}
+      <ellipse cx="50" cy="50" rx="7.5" ry="8.5" fill="#fffdf6" />
+      <ellipse cx="74" cy="50" rx="7.5" ry="8.5" fill="#fffdf6" />
+      <circle cx="51.6" cy="51" r="4.6" fill="#241303" />
+      <circle cx="75.6" cy="51" r="4.6" fill="#241303" />
+      <circle cx="53.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95" />
+      <circle cx="77.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95" />
+      {/* nez */}
+      <ellipse cx="62" cy="60" rx="5.2" ry="4.2" fill="#241303" />
+      {/* sourire + grandes dents de castor */}
+      <path d="M54.5 64 Q58 67.5 62 64 Q66 67.5 69.5 64" fill="none" stroke="#241303" strokeWidth="1.7" strokeLinecap="round" />
+      <rect x="57" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6" />
+      <rect x="62.6" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6" />
+      {/* moustaches */}
+      <g stroke="#fffdf6" strokeWidth="1.1" opacity="0.55" strokeLinecap="round">
+        <line x1="34" y1="55" x2="46" y2="57" />
+        <line x1="33" y1="60" x2="46" y2="60" />
+        <line x1="34" y1="65" x2="46" y2="63" />
+        <line x1="78" y1="57" x2="90" y2="55" />
+        <line x1="78" y1="60" x2="91" y2="60" />
+        <line x1="78" y1="63" x2="90" y2="65" />
+      </g>
+      {/* joues */}
+      <circle cx="42" cy="64" r="4.6" fill="#e2952a" opacity="0.4" />
+      <circle cx="82" cy="64" r="4.6" fill="#e2952a" opacity="0.4" />
     </svg>
   );
 }

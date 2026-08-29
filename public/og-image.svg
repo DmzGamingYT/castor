@@ -2,7 +2,7 @@
   <defs>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;display=swap');
-      .display { font-family: "Space Grotesk", Helvetica, Arial, sans-serif; }
+      .display { font-family: "Space Grotesk", "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
     </style>
     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f0bc63"/>
@@ -21,6 +21,22 @@
       <stop offset="0" stop-color="#58b8d6" stop-opacity="0.18"/>
       <stop offset="1" stop-color="#58b8d6" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="heroGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e8a13c" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#e8a13c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4a14"/>
+      <stop offset="1" stop-color="#3d2808"/>
+    </linearGradient>
+    <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf6"/>
+      <stop offset="1" stop-color="#f3e9cf"/>
+    </linearGradient>
+    <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe071"/>
+      <stop offset="1" stop-color="#efb63a"/>
+    </linearGradient>
   </defs>
 
   <!-- fond -->
@@ -34,19 +50,114 @@
     <path d="M110,0 V630 M220,0 V630 M330,0 V630 M440,0 V630 M550,0 V630 M660,0 V630 M770,0 V630 M880,0 V630 M990,0 V630 M1100,0 V630"/>
   </g>
 
-  <!-- coin castor : tuile ambre + castor -->
+  <!-- halo derrière le castor héros -->
+  <circle cx="955" cy="322" r="235" fill="url(#heroGlow)"/>
+
+  <!-- grand castor de chantier (héros, à droite) -->
+  <g transform="translate(788,152) scale(2.6)">
+    <!-- queue plate (pagaie) + stries -->
+    <g transform="rotate(-22 96 92)">
+      <ellipse cx="96" cy="92" rx="23" ry="12" fill="#4a3210"/>
+      <g stroke="#33220a" stroke-width="1.6" stroke-linecap="round" opacity="0.55">
+        <line x1="80" y1="90" x2="112" y2="90"/>
+        <line x1="80" y1="94" x2="112" y2="94"/>
+      </g>
+    </g>
+    <!-- corps + ventre -->
+    <ellipse cx="62" cy="86" rx="30" ry="24" fill="url(#fur)"/>
+    <ellipse cx="57" cy="90" rx="18" ry="15" fill="url(#belly)" opacity="0.95"/>
+    <!-- petit marteau tenu devant le ventre -->
+    <g transform="rotate(-28 52 88)">
+      <rect x="46" y="85" width="17" height="5" rx="2.5" fill="#c98a2b"/>
+      <rect x="37" y="79.5" width="10" height="16" rx="3" fill="#9aa5b2"/>
+      <rect x="37" y="79.5" width="10" height="5.5" rx="2.75" fill="#c6ced8"/>
+    </g>
+    <!-- pattes qui tiennent le marteau -->
+    <ellipse cx="38" cy="88" rx="9" ry="7" fill="#4a3210" transform="rotate(-18 38 88)"/>
+    <ellipse cx="70" cy="80" rx="9" ry="7" fill="#4a3210" transform="rotate(22 70 80)"/>
+    <!-- tête -->
+    <circle cx="62" cy="50" r="26" fill="url(#fur)"/>
+    <!-- oreilles -->
+    <circle cx="40" cy="28" r="9" fill="#4a3210"/>
+    <circle cx="40" cy="28" r="5.5" fill="#c98820" opacity="0.75"/>
+    <circle cx="84" cy="28" r="9" fill="#4a3210"/>
+    <circle cx="84" cy="28" r="5.5" fill="#c98820" opacity="0.75"/>
+    <!-- ombre sous le casque -->
+    <ellipse cx="62" cy="36" rx="20" ry="4.2" fill="#000" opacity="0.10"/>
+    <!-- casque de chantier -->
+    <path d="M45.5 35 a16.5 16.5 0 1 1 33 0 Z" fill="url(#hat)"/>
+    <ellipse cx="62" cy="35" rx="22" ry="5.4" fill="#e3a72f"/>
+    <circle cx="62" cy="17.8" r="2.6" fill="#d99a26"/>
+    <path d="M48 24 a14 14 0 0 1 28 0" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity="0.35"/>
+    <!-- yeux expressifs -->
+    <ellipse cx="50" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+    <ellipse cx="74" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+    <circle cx="51.6" cy="51" r="4.6" fill="#241303"/>
+    <circle cx="75.6" cy="51" r="4.6" fill="#241303"/>
+    <circle cx="53.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+    <circle cx="77.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+    <!-- nez -->
+    <ellipse cx="62" cy="60" rx="5.2" ry="4.2" fill="#241303"/>
+    <!-- sourire + grandes dents -->
+    <path d="M54.5 64 Q58 67.5 62 64 Q66 67.5 69.5 64" fill="none" stroke="#241303" stroke-width="1.7" stroke-linecap="round"/>
+    <rect x="57" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+    <rect x="62.6" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+    <!-- moustaches -->
+    <g stroke="#fffdf6" stroke-width="1.1" opacity="0.55" stroke-linecap="round">
+      <line x1="34" y1="55" x2="46" y2="57"/>
+      <line x1="33" y1="60" x2="46" y2="60"/>
+      <line x1="34" y1="65" x2="46" y2="63"/>
+      <line x1="78" y1="57" x2="90" y2="55"/>
+      <line x1="78" y1="60" x2="91" y2="60"/>
+      <line x1="78" y1="63" x2="90" y2="65"/>
+    </g>
+    <!-- joues -->
+    <circle cx="42" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
+    <circle cx="82" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
+  </g>
+
+  <!-- petites croix de plan (ambiance chantier) -->
+  <g stroke="#e8a13c" stroke-width="5" stroke-linecap="round" opacity="0.55">
+    <path d="M740 96 v18 M731 105 h18"/>
+    <path d="M730 452 v14 M723 459 h14"/>
+  </g>
+
+  <!-- coin castor : tuile ambre + castor de chantier -->
   <g transform="translate(72,58)">
     <rect width="96" height="96" rx="24" fill="url(#tile)"/>
-    <g transform="translate(16,16)">
-      <g fill="#33260a">
-        <ellipse cx="45" cy="42" rx="15" ry="8" transform="rotate(-20 45 42)"/>
-        <circle cx="27" cy="30" r="17"/>
-        <circle cx="14.5" cy="15" r="5.5"/>
-        <circle cx="34.5" cy="11" r="5.5"/>
+    <rect x="0.5" y="0.5" width="95" height="95" rx="23.5" fill="none" stroke="#8a5a12" stroke-opacity="0.35" stroke-width="1"/>
+    <g transform="translate(16,20) scale(0.5)">
+      <ellipse cx="96" cy="92" rx="23" ry="12" fill="#4a3210" transform="rotate(-22 96 92)"/>
+      <ellipse cx="62" cy="86" rx="30" ry="24" fill="url(#fur)"/>
+      <ellipse cx="57" cy="90" rx="18" ry="15" fill="url(#belly)" opacity="0.95"/>
+      <circle cx="62" cy="50" r="26" fill="url(#fur)"/>
+      <circle cx="40" cy="28" r="9" fill="#4a3210"/>
+      <circle cx="84" cy="28" r="9" fill="#4a3210"/>
+      <ellipse cx="62" cy="36" rx="20" ry="4.2" fill="#000" opacity="0.10"/>
+      <path d="M45.5 35 a16.5 16.5 0 1 1 33 0 Z" fill="url(#hat)"/>
+      <ellipse cx="62" cy="35" rx="22" ry="5.4" fill="#e3a72f"/>
+      <circle cx="62" cy="17.8" r="2.6" fill="#d99a26"/>
+      <path d="M48 24 a14 14 0 0 1 28 0" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity="0.35"/>
+      <ellipse cx="50" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+      <ellipse cx="74" cy="50" rx="7.5" ry="8.5" fill="#fffdf6"/>
+      <circle cx="51.6" cy="51" r="4.6" fill="#241303"/>
+      <circle cx="75.6" cy="51" r="4.6" fill="#241303"/>
+      <circle cx="53.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+      <circle cx="77.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
+      <ellipse cx="62" cy="60" rx="5.2" ry="4.2" fill="#241303"/>
+      <path d="M54.5 64 Q58 67.5 62 64 Q66 67.5 69.5 64" fill="none" stroke="#241303" stroke-width="1.7" stroke-linecap="round"/>
+      <rect x="57" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+      <rect x="62.6" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
+      <g stroke="#fffdf6" stroke-width="1.1" opacity="0.55" stroke-linecap="round">
+        <line x1="34" y1="55" x2="46" y2="57"/>
+        <line x1="33" y1="60" x2="46" y2="60"/>
+        <line x1="34" y1="65" x2="46" y2="63"/>
+        <line x1="78" y1="57" x2="90" y2="55"/>
+        <line x1="78" y1="60" x2="91" y2="60"/>
+        <line x1="78" y1="63" x2="90" y2="65"/>
       </g>
-      <rect x="23.5" y="38" width="5" height="10" rx="2" fill="#fffdf6"/>
-      <circle cx="21" cy="27" r="2.4" fill="#fffdf6"/>
-      <circle cx="32.5" cy="25" r="2.4" fill="#fffdf6"/>
+      <circle cx="42" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
+      <circle cx="82" cy="64" r="4.6" fill="#e2952a" opacity="0.4"/>
     </g>
   </g>
   <text class="display" x="192" y="126" font-weight="700" font-size="42" fill="#e8e4d2">castor</text>

@@ -102,6 +102,11 @@ export default function ChatStudio() {
   useEffect(() => store(ACTIVE_STORE, activeId), [activeId]);
   useEffect(() => store(MODEL_STORE, modelId), [modelId]);
 
+  /* modèle effectif : celui enregistré, sinon le premier dispo (le modèle
+     mémorisé peut avoir disparu de la liste live des gratuits). */
+  const effectiveModelId = models.some((m) => m.id === modelId)
+    ? modelId
+    : (models[0]?.id || modelId);
   const activeChat = chats.find((c) => c.id === activeId) || null;
   const aiReady = Boolean(apiKey.trim());
   const streaming = streamingId !== null;
@@ -218,7 +223,7 @@ export default function ChatStudio() {
       if (aiReady) {
         await streamChat({
           apiKey: apiKey.trim(),
-          model: modelId,
+          model: effectiveModelId,
           messages: history,
           onDelta,
           signal: ctrl.signal,
@@ -283,7 +288,7 @@ export default function ChatStudio() {
     onClearKey: clearKey,
     hasKey: aiReady,
     models,
-    modelId,
+    modelId: effectiveModelId,
     setModelId,
     aiReady,
   };

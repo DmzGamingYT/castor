@@ -21,3 +21,5 @@ desktop/build/
 .env.*
 cli/output.txt
 cli/deep/
+.preview-build/
+.preview-tmp/

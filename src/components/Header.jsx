@@ -66,7 +66,7 @@ export default function Header({ route, onDownload }) {
       <div className="header__actions">
         <a
           className="header__discord"
-          href="https://discord.gg/castor"
+          href="https://discord.gg/9J5xmp8fz"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Rejoindre le Discord"

@@ -1,5 +1,6 @@
 import Hills from "./Hills.jsx";
 import { BeaverMark } from "./Icon.jsx";
+import { APP_VERSION } from "../lib/version.js";
 
 export default function Footer({ onDownload }) {
   return (
@@ -27,6 +28,14 @@ export default function Footer({ onDownload }) {
         </span>
 
         <span className="footer__copy">© 2026 Castor. Créé par <strong>Alessio Innangi</strong>.</span>
+        <a
+          className="footer__version"
+          href="https://github.com/DmzGamingYT/castor/releases"
+          target="_blank"
+          rel="noreferrer"
+        >
+          v{APP_VERSION} · Open source MIT
+        </a>
       </div>
     </footer>
   );

@@ -29,7 +29,7 @@
     <!-- Content Security Policy -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://openrouter.ai; frame-src 'self' blob:; object-src 'none'; base-uri 'self'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://openrouter.ai https://api.github.com https://raw.githubusercontent.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'"
     />
 
     <!-- applique le thème avant le premier rendu pour éviter le flash -->
@@ -40,6 +40,9 @@
           t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         }
         document.documentElement.dataset.theme = t;
+        /* barre du navigateur mobile alignée sur le thème */
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.content = t === "dark" ? "#171b10" : "#faf6ec";
       } catch (e) {}
     </script>
 
@@ -55,7 +58,8 @@
           "url": "https://dmzgamingyt.github.io/castor/",
           "applicationCategory": "DeveloperApplication",
           "operatingSystem": "macOS, Windows, Linux",
-          "softwareVersion": "0.1.0",
+          /* version du site — à synchroniser avec src/lib/version.js */
+          "softwareVersion": "0.2.0",
           "license": "https://opensource.org/licenses/MIT",
           "author": {
             "@type": "Person",

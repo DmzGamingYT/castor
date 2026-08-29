@@ -7,6 +7,7 @@ import { PRODUCTS } from "./data/products.jsx";
 import useHistoryRoute from "./lib/useHistoryRoute.js";
 import { NavigationProvider } from "./lib/NavigationContext.jsx";
 import { LanguageProvider } from "./lib/LanguageContext.jsx";
+import { useTheme } from "./lib/useTheme.js";
 import { BeaverMark } from "./components/Icon.jsx";
 
 /* les studios et pages secondaires sont chargés à la demande */
@@ -36,6 +37,7 @@ function PageFallback() {
 
 export default function App() {
   const path = useHistoryRoute();
+  useTheme(); // thème automatique selon l'heure
   const [downloadOpen, setDownloadOpen] = useState(false);
   const openDownload = () => setDownloadOpen(true);
 
