@@ -11,7 +11,9 @@
   },
   "homepage": "https://github.com/DmzGamingYT/castor#readme",
   "bugs": "https://github.com/DmzGamingYT/castor/issues",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "discord.js": "^14.27.0",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
