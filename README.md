@@ -6,7 +6,7 @@
 
 **Le castor qui code pour toi. Gratuit pour toujours.**
 
-Site vitrine · studio de création web · app Desktop multi-providers
+Site vitrine · studio de création web · app Desktop multi-providers · CLI
 
 [![React](https://img.shields.io/badge/React-18-2e3320?style=flat-square&logo=react&logoColor=white)](https://react.dev)
 [![Electron](https://img.shields.io/badge/Electron-33-2e3320?style=flat-square&logo=electron&logoColor=white)](https://electronjs.org)
@@ -24,11 +24,14 @@ Site vitrine · studio de création web · app Desktop multi-providers
 
 **Castor** est un projet complet autour d'un agent de code gratuit :
 
-- un **site vitrine** au thème « papier & encre » avec un hero interactif où le castor bâtit une app sous tes yeux,
-- une **page Modèles** qui recense les modèles IA **gratuits** de chaque provider (type, contexte, actualisation live),
-- un **studio Web fonctionnel** : tu décris une app, elle est générée, prévisualisée, téléchargeable — avec les modèles gratuits d'OpenRouter ou des gabarits 100 % locaux,
+- un **site vitrine** bilingue (FR/EN) au thème « papier & encre » avec un hero interactif où le castor bâtit une app sous tes yeux,
+- une **section Avancement** : la roadmap vivante du projet — anneaux de progression, kanban par catégorie, suivi temps réel des chantiers livrés,
+- un **Castor Bot 24/7** : assistant embarqué sur le site (et dans l'app Desktop) qui connaît la roadmap par cœur — mode local même sans clé,
+- une **page Espace Cloud** : sandbox essayable dans le navigateur — branche un repo GitHub réel ou génère un projet sur mesure,
+- une **page Templates** : points de départ générés par Castor (blog, portfolio, dashboard, landing, e-commerce, SaaS),
+- une **page CLI interactive** : essaie l'agent dans un terminal en ligne, avec historique et autocomplétion,
 - une **CLI zéro dépendance** : l'agent dans ton terminal — streaming, compétences `/`, mémoire persistante, plans de tâches,
-- une **app Desktop** (Windows / macOS / Linux) qui branche OpenRouter, Groq, OpenCode Zen et tes modèles locaux, avec compétences `/`, mémoire persistante, suivi d'usage et plan de tâches en direct.
+- une **app Desktop** (Windows / macOS / Linux) qui branche OpenRouter, Groq, OpenCode Zen et tes modèles locaux — agents parallèles, diff côte à côte, serveurs MCP, thèmes personnalisables.
 
 ---
 
@@ -36,7 +39,7 @@ Site vitrine · studio de création web · app Desktop multi-providers
 
 - [Aperçus](#aperçus)
 - [Fonctionnalités](#fonctionnalités)
-  - [Site & studio Web](#site--studio-web)
+  - [Site vitrine](#site-vitrine)
   - [App Desktop](#app-desktop)
   - [CLI](#cli)
 - [Démarrage rapide](#démarrage-rapide)
@@ -63,15 +66,17 @@ Site vitrine · studio de création web · app Desktop multi-providers
 ## Fonctionnalités
 
 <details>
-<summary><strong>🌐 Site & studio Web</strong></summary>
+<summary><strong>🌐 Site vitrine</strong></summary>
 
 <br>
 
 - **Hero « Le Chantier »** : écris un chantier, regarde l'app se construire bloc par bloc avec son journal de bord
-- **Page `/models`** : modèles gratuits par provider, filtres par type (multimodal, vision, raisonnement, code, rapide, outils), fenêtre de contexte, **actualisation live** depuis l'API publique d'OpenRouter
-- **Studio `/web`** : composeur + sélection de modèle (Ox Alpha, Nemotron, Laguna…) :
-  - **sans clé** → gabarits locaux instantanés (quiz jouable, todo interactif, dashboard, blog, portfolio, landing)
-  - **avec une clé OpenRouter gratuite** → génération de code sur mesure par le modèle choisi, aperçu iframe, export `.html`, projets sauvegardés dans le navigateur
+- **Bilingue FR/EN** : tout le site, les studios et le Castor Bot sont traduits — détection de langue automatique
+- **Section Avancement** : anneaux de progression animés, kanban par catégorie (livré / en cours / bientôt / exploration), répartition visuelle, panneau temps réel des chantiers livrés
+- **Castor Bot 24/7** : assistant discret sur toutes les pages — roadmap, aide, astuces ; moteur hybride (base de connaissances locale + LLM via OpenRouter si tu branches une clé), il répond **même hors ligne**
+- **Page Espace Cloud** : sandbox essayable — vérifie un repo GitHub réel via l'API publique, ou décris un projet et regarde l'agent le construire étape par étape
+- **Page Templates** : points de départ générés (blog, portfolio, dashboard, landing, e-commerce, SaaS) — un clic remplit le composeur
+- **Page CLI interactive** : terminal en ligne avec historique (↑/↓), autocomplétion (Tab), palette de commandes et stats de session
 - Thème clair « papier & encre », icônes SVG dessinées main, zéro framework CSS
 
 </details>
@@ -82,12 +87,20 @@ Site vitrine · studio de création web · app Desktop multi-providers
 <br>
 
 - **Multi-providers** via le protocole OpenAI-compatible : OpenRouter · Groq · OpenCode Zen · Ollama · LM Studio
+- **Agents parallèles** : plusieurs agents en même temps, chacun dans son panneau isolé
 - **Streaming token par token**, arrêt à la volée (Échap), stats : latence, tok/s, premier token, ↑↓ tokens
+- **Agents planifiés** : lance un refactor chaque nuit à 2h — quotidien, horaire ou par intervalle, avec notifications et historique
+- **Diff côte à côte** : compare avant/après en split view, valide hunk par hunk, applique partiellement
+- **Serveurs MCP** : branche des outils externes (base de données, Figma, docs) via le protocole MCP
+- **Command palette `Cmd+K`**, onboarding en 3 étapes, undo avec backup sur chaque écriture, drag & drop de fichiers
 - **Compétences `/`** : tes prompts réutilisables (`/review`, `/tests`… ou les tiens), menu filtrable au clavier
 - **Mémoire persistante** : des faits injectés dans chaque requête, qui survivent aux redémarrages
 - **Plan de tâches live** : la checklist du modèle devient une todo avec barre de progression
 - **Jauge de contexte** : remplissage estimé de la fenêtre 128k en temps réel
-- **Onglet Files** : explorateur du chantier (filtre par nom, dossiers dépliables, aperçu lecture seule d'un fichier au clic)
+- **Onglet Files** : explorateur du chantier (filtre, dossiers dépliables, aperçu lecture seule)
+- **Markdown enrichi** : titres, listes, liens et coloration syntaxique maison dans les réponses
+- **Thèmes personnalisables** : 5 presets + color picker libre (variable CSS `--accent`)
+- **Synchronisation multi-postes** : export/import JSON de tes conversations, clés et réglages
 - **Fenêtre glissante** : sur les longues conversations, seuls les ~75 % récents de la fenêtre sont envoyés (les 2 derniers messages toujours conservés) — ça ne déborde jamais
 - Clés API **chiffrées** via `safeStorage` du système · icône et thème maison · packaging DMG / NSIS / AppImage
 
@@ -148,6 +161,7 @@ castor                 # session interactive · /demo pour essayer sans clé
 
 > Générer l'icône après modification : `npx electron scripts/make-icon.cjs`
 > Capturer les écrans du README : `npx electron scripts/capture.cjs` (dev server requis)
+> Tests site : `npm test` (Vitest) · Tests Desktop : `cd desktop && npm test` · Tests CLI : `cd cli && npm test`
 
 </details>
 
@@ -173,19 +187,22 @@ castor                 # session interactive · /demo pour essayer sans clé
 castor/
 ├── index.html               # site (Vite + React)
 ├── src/
-│   ├── pages/               # accueil, modèles, studio web, pages produits
-│   ├── components/          # UI (DamScene, Icon, DownloadModal…)
-│   ├── data/                # produits, catalogue de modèles
-│   └── lib/generator.js     # gabarits locaux + appel OpenRouter
+│   ├── pages/               # accueil, espace cloud, cli, templates, avancement, produits
+│   ├── components/          # UI (DamScene, ProjectProgress, CastorBot, DownloadModal…)
+│   ├── data/                # produits, roadmap, catalogue de modèles, plateformes
+│   └── lib/                 # generator, openrouter, translations (FR/EN), chatEngine
 ├── scripts/                 # capture.cjs (screenshots), audit
+├── tests/                   # tests Vitest du site
 ├── cli/                     # Castor CLI — zéro dépendance, Node 18+
 │   ├── bin/castor.js        # REPL, one-shot -p, commandes slash
-│   └── lib/                 # providers, store (~/.castor), rendu ANSI
+│   ├── lib/                 # providers, store (~/.castor), rendu ANSI, onboarding
+│   └── tests/               # tests node:test de la CLI
 └── desktop/
-    ├── main.js              # fenêtre, IPC, streaming SSE, coffre à clés
+    ├── main.js              # fenêtre, IPC, streaming SSE, coffre à clés, scheduler, MCP
     ├── preload.js           # pont sécurisé (contextIsolation)
     ├── src/providers.js     # registre des providers
     ├── scripts/make-icon.cjs# icône générée par rendu Chromium
+    ├── tests/               # tests node:test du Desktop
     └── renderer/            # UI Desktop (même DA que le site)
 ```
 
@@ -220,11 +237,24 @@ Builds **arm64 + x64** attachées automatiquement à la Release GitHub à chaque
 
 ## Roadmap
 
-- [ ] Mode agent Desktop : lecture/écriture de fichiers, exécution de tests
-- [ ] Connexion GitHub dans le studio Web
-- [ ] Carte du monde temps réel (retour du Live)
-- [ ] Builds x64 + signature & notarisation macOS
-- [ ] Version anglaise du site
+> La source de vérité est [`src/data/roadmap.js`](src/data/roadmap.js) — la page [Avancement](#aperçus) du site et le Castor Bot la lisent directement. Statuts : ✅ livré · 🔨 en cours · 🚀 bientôt · 🔬 exploration.
+
+**📱 App Desktop**
+- [x] Agents planifiés · Diff côte à côte · Assistant IA embarqué · Sync multi-postes · Serveurs MCP · Thèmes personnalisables
+- [ ] 🔨 Git intégré · Mise à jour automatique
+- [ ] 🚀 Recherche globale · Mode sandbox
+- [ ] 🔬 Version anglaise de l'app
+
+**🌐 Site**
+- [x] Page CLI dédiée
+- [ ] 🔨 Templates de projets · Version anglaise (i18n en place, complétion des traductions)
+- [ ] 🚀 Éditeur visuel du Studio Web · Galerie de créations
+- [ ] 🔬 PWA & installation mobile · Blog Castor
+
+**🧠 Modèles**
+- [ ] 🔨 Benchmarks hebdo
+- [ ] 🚀 Sélection auto du modèle · Vision dans Desktop
+- [ ] 🔬 Profils de contexte long
 
 ## Licence
 

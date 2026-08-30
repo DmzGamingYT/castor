@@ -4,11 +4,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const OUT = path.join(__dirname, "..", "docs", "screenshots");
+const BASE = "/castor"; // base du routing History API
 const SHOTS = [
-  ["accueil", "/#/", 4800],
-  ["modeles", "/#/models", 3000],
-  ["studio-web", "/#/web", 2500],
-  ["desktop", "/#/desktop", 2500],
+  ["accueil", "/", 4800],
+  ["modeles", "/desktop", 3000],
+  ["studio-web", "/espace", 3000],
+  ["desktop", "/desktop", 2500],
+  ["avancement", "/avancement", 3000],
+  ["cli", "/cli", 2500],
 ];
 
 app.whenReady().then(async () => {
@@ -21,7 +24,7 @@ app.whenReady().then(async () => {
   });
 
   for (const [name, route, wait] of SHOTS) {
-    await win.loadURL(`http://localhost:5173${route}`);
+    await win.loadURL(`http://localhost:5173${BASE}${route}`);
     await new Promise((r) => setTimeout(r, wait));
     const img = await win.webContents.capturePage();
     fs.writeFileSync(path.join(OUT, `${name}.png`), img.toPNG());
@@ -30,4 +33,4 @@ app.whenReady().then(async () => {
   app.exit(0);
 });
 
-setTimeout(() => { console.error("TIMEOUT"); app.exit(1); }, 45000);
+setTimeout(() => { console.error("TIMEOUT"); app.exit(1); }, 60000);
