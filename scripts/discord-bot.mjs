@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// discord-bot.mjs — Castor Discord Bot (unified: welcome + slash commands)
+// discord-bot.mjs — Castor Discord Bot (unified: welcome + slash commands + tickets)
 // Usage:
 //   export DISCORD_TOKEN=your_token_here
 //   node scripts/discord-bot.mjs
@@ -15,6 +15,8 @@ import {
   REST,
   Routes,
   SlashCommandBuilder,
+  ChannelType,
+  PermissionFlagsBits,
 } from "discord.js";
 import { execSync } from "child_process";
 
@@ -24,6 +26,7 @@ import { execSync } from "child_process";
 
 const SERVER_NAME = "Castor (Projet)";
 const WELCOME_CHANNEL = "bienvenue";
+const TICKET_CATEGORY = "🎫 TICKETS";
 const GITHUB_URL = "https://github.com/DmzGamingYT/castor";
 const SITE_URL = "https://dmzgamingyt.github.io/castor/";
 const DISCORD_INVITE = "https://discord.gg/9J5xmp8fz";
@@ -55,7 +58,24 @@ const commands = [
         .setMinValue(1)
         .setMaxValue(20)
     ),
+
+  new SlashCommandBuilder()
+    .setName("ticket")
+    .setDescription("Envoie le panneau de support avec bouton pour ouvrir un ticket")
+    .setDescriptionLocalization("en", "Send the support panel with ticket button")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Ticket Counter (in-memory, resets on restart)                      */
+/* ------------------------------------------------------------------ */
+
+let ticketCounter = 0;
+
+function getNextTicketId() {
+  ticketCounter += 1;
+  return String(ticketCounter).padStart(4, "0");
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -130,6 +150,11 @@ function buildHelpEmbed() {
         name: "/changelog",
         value: "Les derniers commits et mises à jour du projet",
         inline: false,
+      },
+      {
+        name: "/ticket",
+        value: "Envoie le panneau de support (admin uniquement)",
+        inline: false,
       }
     )
     .setFooter({ text: `${SERVER_NAME} — Le castor qui code pour toi 🦫` })
@@ -141,7 +166,7 @@ function buildStatusEmbed() {
   const { total, contributors } = getGitStats();
 
   return new EmbedBuilder()
-    .setColor(0x10B981) // green
+    .setColor(0x10B981)
     .setTitle("📊 Statut du projet Castor")
     .addFields(
       {
@@ -183,12 +208,105 @@ function buildChangelogEmbed(count = 5) {
   });
 
   return new EmbedBuilder()
-    .setColor(0x3B82F6) // blue
+    .setColor(0x3B82F6)
     .setTitle(`📋 Changelog — ${count} derniers commits`)
     .setDescription(formatted.join("\n\n"))
     .setFooter({ text: `${SERVER_NAME} — Le castor qui code pour toi 🦫` })
     .setTimestamp();
 }
+
+/* --- Ticket Embeds --- */
+
+function buildTicketPanelEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xD97706)
+    .setTitle("🎫 Support Castor")
+    .setDescription(
+      "Besoin d'aide ? Un problème à signaler ?\n\n" +
+      "Clique sur le bouton ci-dessous pour **ouvrir un ticket privé** avec l'équipe Castor.\n\n" +
+      "📋 **Types de tickets supportés :**\n" +
+      "• 🐛 Bug ou problème technique\n" +
+      "• 💡 Suggestion ou feature request\n" +
+      "• ❓ Question sur le projet\n" +
+      "• 🔒 Signalement confidentiel\n\n" +
+      "⏱ Un membre de l'équipe te répondra dès que possible."
+    )
+    .setFooter({ text: `${SERVER_NAME} — Le castor qui code pour toi 🦫` })
+    .setTimestamp();
+}
+
+function buildTicketOpenButton() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("ticket_open")
+      .setLabel("🎫 Ouvrir un ticket")
+      .setStyle(ButtonStyle.Primary)
+  );
+}
+
+function buildTicketCreatedEmbed(ticketId, user) {
+  return new EmbedBuilder()
+    .setColor(0x10B981)
+    .setTitle(`🎫 Ticket #${ticketId}`)
+    .setDescription(
+      `Bonjour ${user}, bienvenue dans ton ticket de support !\n\n` +
+      "Décris ton problème ou ta demande en détail.\n" +
+      "Un membre de l'équipe te répondra bientôt.\n\n" +
+      "⚠️ **Rappel :** Ce salon est privé. Ne partage pas de token ou d'infos sensibles."
+    )
+    .addFields(
+      {
+        name: "📋 Informations",
+        value: [
+          `• **Ticket :** #${ticketId}`,
+          `• **Utilisateur :** ${user.tag}`,
+          `• **Créé le :** <t:${Math.floor(Date.now() / 1000)}:F>`,
+        ].join("\n"),
+        inline: false,
+      }
+    )
+    .setThumbnail(user.displayAvatarURL({ size: 128 }))
+    .setFooter({ text: `${SERVER_NAME} — Le castor qui code pour toi 🦫` })
+    .setTimestamp();
+}
+
+function buildTicketCloseButtons() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("ticket_close")
+      .setLabel("🔒 Fermer le ticket")
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId("ticket_claim")
+      .setLabel("👋 Prendre en charge")
+      .setStyle(ButtonStyle.Success)
+  );
+}
+
+function buildTicketClosedEmbed(closedBy) {
+  return new EmbedBuilder()
+    .setColor(0xEF4444) // red
+    .setTitle("🔒 Ticket fermé")
+    .setDescription(
+      `Ce ticket a été fermé par **${closedBy}**.\n\n` +
+      "Le salon sera supprimé dans **10 secondes**.\n" +
+      "Merci d'avoir utilisé le support Castor ! 🦫"
+    )
+    .setTimestamp();
+}
+
+function buildTicketClaimedEmbed(claimedBy) {
+  return new EmbedBuilder()
+    .setColor(0x10B981)
+    .setTitle("👋 Ticket pris en charge")
+    .setDescription(
+      `**${claimedBy}** a pris en charge ce ticket.\n` +
+      "L'équipe va te répondre bientôt !"
+    )
+    .setTimestamp();
+}
+
+/* --- Welcome Embeds --- */
 
 function buildWelcomeEmbed(member) {
   const memberCount = member.guild.memberCount;
@@ -296,54 +414,194 @@ client.once(Events.ClientReady, async (c) => {
   console.log(`✅  Bot connected as ${c.user.tag}`);
   console.log(`📌  Servers: ${c.guilds.cache.map((g) => g.name).join(", ")}`);
 
-  // Register slash commands for the first guild
   const guild = c.guilds.cache.first();
   if (guild) {
     await registerCommands(c.user.id, guild.id, token);
   }
 
-  console.log("🔍  Listening for commands and new members...\n");
+  console.log("🔍  Listening for commands, tickets, and new members...\n");
 });
 
-/* --- Slash Command Handler --- */
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+/* ------------------------------------------------------------------ */
+/*  Interaction Handler                                                */
+/* ------------------------------------------------------------------ */
 
-  const { commandName } = interaction;
+client.on(Events.InteractionCreate, async (interaction) => {
+  /* --- Slash Commands --- */
+  if (interaction.isChatInputCommand()) {
+    const { commandName } = interaction;
+
+    try {
+      if (commandName === "help") {
+        const embed = buildHelpEmbed();
+        await interaction.reply({ embeds: [embed], ephemeral: false });
+      }
+
+      else if (commandName === "status") {
+        await interaction.deferReply();
+        const embed = buildStatusEmbed();
+        await interaction.editReply({ embeds: [embed] });
+      }
+
+      else if (commandName === "changelog") {
+        await interaction.deferReply();
+        const count = interaction.options.getInteger("count") || 5;
+        const embed = buildChangelogEmbed(count);
+        await interaction.editReply({ embeds: [embed] });
+      }
+
+      else if (commandName === "ticket") {
+        // Send the ticket panel embed in the current channel
+        const embed = buildTicketPanelEmbed();
+        const buttons = buildTicketOpenButton();
+        await interaction.reply({ embeds: [embed], components: [buttons] });
+        console.log(`🎫  Ticket panel deployed by ${interaction.user.tag}`);
+      }
+    } catch (err) {
+      console.error(`❌  Error handling /${commandName}:`, err);
+      const reply = {
+        content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
+        ephemeral: true,
+      };
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(reply);
+      } else {
+        await interaction.reply(reply);
+      }
+    }
+    return;
+  }
+
+  /* --- Button Interactions --- */
+  if (!interaction.isButton()) return;
 
   try {
-    if (commandName === "help") {
-      const embed = buildHelpEmbed();
-      await interaction.reply({ embeds: [embed], ephemeral: false });
+    /* ===== TICKET OPEN ===== */
+    if (interaction.customId === "ticket_open") {
+      await interaction.deferReply({ ephemeral: true });
+
+      const guild = interaction.guild;
+      if (!guild) {
+        await interaction.editReply({ content: "❌ Cette commande ne fonctionne que dans un serveur." });
+        return;
+      }
+
+      const ticketId = getNextTicketId();
+      const channelName = `ticket-${ticketId}-${interaction.user.username}`;
+
+      // Find or create the tickets category
+      let category = guild.channels.cache.find(
+        (c) => c.name === TICKET_CATEGORY && c.type === ChannelType.GuildCategory
+      );
+      if (!category) {
+        category = await guild.channels.create({
+          name: TICKET_CATEGORY,
+          type: ChannelType.GuildCategory,
+          reason: "Ticket system",
+        });
+      }
+
+      // Create the private ticket channel
+      const ticketChannel = await guild.channels.create({
+        name: channelName,
+        type: ChannelType.GuildText,
+        parent: category.id,
+        permissionOverwrites: [
+          {
+            id: guild.id, // @everyone
+            deny: [PermissionFlagsBits.ViewChannel],
+          },
+          {
+            id: interaction.user.id, // ticket opener
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.ReadMessageHistory,
+            ],
+          },
+          {
+            id: client.user.id, // bot itself
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.ReadMessageHistory,
+            ],
+          },
+        ],
+        reason: `Ticket #${ticketId} by ${interaction.user.tag}`,
+      });
+
+      // Send the ticket created embed + close button
+      const embed = buildTicketCreatedEmbed(ticketId, interaction.user);
+      const closeButtons = buildTicketCloseButtons();
+      await ticketChannel.send({
+        content: `${interaction.user} — Décris ton problème ci-dessous ! 👇`,
+        embeds: [embed],
+        components: [closeButtons],
+      });
+
+      // Confirm to the user
+      await interaction.editReply({
+        content: `✅ Ticket **#${ticketId}** créé ! Va dans <#${ticketChannel.id}> pour continuer.`,
+      });
+
+      console.log(`🎫  Ticket #${ticketId} opened by ${interaction.user.tag} → #${channelName}`);
     }
 
-    else if (commandName === "status") {
+    /* ===== TICKET CLOSE ===== */
+    else if (interaction.customId === "ticket_close") {
       await interaction.deferReply();
-      const embed = buildStatusEmbed();
+
+      const embed = buildTicketClosedEmbed(interaction.user);
       await interaction.editReply({ embeds: [embed] });
+      console.log(`🔒  Ticket closed by ${interaction.user.tag} in #${interaction.channel?.name}`);
+
+      // Delete the channel after 10 seconds
+      setTimeout(async () => {
+        try {
+          await interaction.channel?.delete("Ticket closed");
+        } catch {
+          // channel might already be deleted
+        }
+      }, 10_000);
     }
 
-    else if (commandName === "changelog") {
+    /* ===== TICKET CLAIM ===== */
+    else if (interaction.customId === "ticket_claim") {
       await interaction.deferReply();
-      const count = interaction.options.getInteger("count") || 5;
-      const embed = buildChangelogEmbed(count);
+
+      const embed = buildTicketClaimedEmbed(interaction.user);
       await interaction.editReply({ embeds: [embed] });
+      console.log(`👋  Ticket claimed by ${interaction.user.tag} in #${interaction.channel?.name}`);
+
+      // Disable the claim button (already claimed)
+      const disabledRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("ticket_close")
+          .setLabel("🔒 Fermer le ticket")
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId("ticket_claim")
+          .setLabel(`✅ Pris en charge par ${interaction.user.username}`)
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(true)
+      );
+
+      // Update the original message buttons
+      const msg = interaction.message;
+      if (msg) {
+        await msg.edit({ components: [disabledRow] }).catch(() => {});
+      }
     }
   } catch (err) {
-    console.error(`❌  Error handling /${commandName}:`, err);
-    const reply = {
-      content: "❌ Une erreur est survenue lors de l'exécution de la commande.",
-      ephemeral: true,
-    };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(reply);
-    } else {
-      await interaction.reply(reply);
-    }
+    console.error("❌  Error handling button interaction:", err);
   }
 });
 
-/* --- Welcome Handler --- */
+/* ------------------------------------------------------------------ */
+/*  Welcome Handler                                                    */
+/* ------------------------------------------------------------------ */
+
 client.on(Events.GuildMemberAdd, async (member) => {
   try {
     const channel = member.guild.channels.cache.find(
@@ -355,13 +613,11 @@ client.on(Events.GuildMemberAdd, async (member) => {
       return;
     }
 
-    // Welcome message in channel
     const embed = buildWelcomeEmbed(member);
     const buttons = buildWelcomeButtons();
     await channel.send({ embeds: [embed], components: [buttons] });
     console.log(`📨  Welcome sent for ${member.user.tag} in #${WELCOME_CHANNEL}`);
 
-    // DM to new member
     try {
       const dmEmbed = buildDMEmbed(member);
       await member.send({ embeds: [dmEmbed] });
