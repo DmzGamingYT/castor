@@ -94,6 +94,26 @@ export const ROADMAP = {
         title: "Version anglaise",
         desc: "i18n complet du site et des studios.",
       },
+      {
+        status: "bientôt",
+        title: "Éditeur visuel du Studio Web",
+        desc: "Glisser-déposer, réordonner les sections et affiner chaque bloc sans repasser par le prompt.",
+      },
+      {
+        status: "bientôt",
+        title: "Galerie de créations",
+        desc: "Les sites générés par la communauté, triés par style et par stack — source d'inspiration.",
+      },
+      {
+        status: "exploration",
+        title: "PWA & installation mobile",
+        desc: "Installe Castor comme une vraie app sur ton téléphone, avec lancement hors ligne.",
+      },
+      {
+        status: "exploration",
+        title: "Blog Castor",
+        desc: "Annonces, astuces et coulisses du chantier — un fil direct avec la communauté.",
+      },
     ],
   },
   models: {

@@ -4,6 +4,7 @@ import { useApiKey } from "../lib/useApiKey.js";
 import { streamChat } from "../lib/chatEngine.js";
 import { DEFAULT_MODEL } from "../lib/utils.js";
 import { ROADMAP, STATUS_META, PRODUCT_NOTES, SITE_HINTS } from "../data/roadmap.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 import "./CastorBot.css";
 
 const HISTORY_STORE = "castor-bot-history";
@@ -16,16 +17,23 @@ const OPEN_EVENT = "castor-bot:open";
 
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-function roadmapText(cat) {
+const STATUS_LABELS = {
+  "livré": "kb_status_done",
+  "en cours": "kb_status_wip",
+  "bientôt": "kb_status_soon",
+  "exploration": "kb_status_explore",
+};
+
+function roadmapText(cat, t) {
   const block = ROADMAP[cat];
   const lines = block.items.map(
-    (it) => `${STATUS_META[it.status].emoji} **${it.title}** (${STATUS_META[it.status].label}) — ${it.desc}`
+    (it) => `${STATUS_META[it.status].emoji} **${it.title}** (${t(STATUS_LABELS[it.status] || "kb_status_done")}) — ${it.desc}`
   );
-  return `**${block.label} — les chantiers à venir :**\n\n${lines.join("\n\n")}`;
+  return `**${block.label} — ${t("kb_roadmap_intro").replace("🔨", "")}:**\n\n${lines.join("\n\n")}`;
 }
 
 /* liste exclusive des chantiers déjà livrés, par catégorie */
-function deliveredText() {
+function deliveredText(t) {
   const parts = Object.keys(ROADMAP).map((k) => {
     const block = ROADMAP[k];
     const done = block.items.filter((it) => it.status === "livré");
@@ -34,108 +42,109 @@ function deliveredText() {
     return `**${block.label}**\n${lines.join("\n")}`;
   });
   const visible = parts.filter(Boolean);
-  if (!visible.length) return "Aucun chantier livré pour l'instant.";
-  return `Voici ce qui est **déjà livré** chez Castor ✅\n\n${visible.join("\n\n")}`;
+  if (!visible.length) return t("kb_delivered_empty");
+  return `${t("kb_delivered_intro")}\n\n${visible.join("\n\n")}`;
 }
 
-const KB = [
-  {
-    keys: ["livre", "livres", "deja fait", "deja realise", "deja livre", "termine", "fait ici", "delivered"],
-    reply: () => deliveredText(),
-    chips: ["🚀 Roadmap", "📱 App Desktop"],
-  },
-  {
-    keys: ["roadmap", "a venir", "avenir", "bientot", "nouveaute", "nouveautes", "prochain", "futur", "planning", "avancement"],
-    reply: () =>
-      `Voici les chantiers en cours chez Castor 🔨\n\n` +
-      Object.keys(ROADMAP)
-        .map(
-          (k) =>
-            `**${ROADMAP[k].label}** : ${ROADMAP[k].items
-              .filter((i) => i.status !== "livré")
-              .slice(0, 2)
-              .map((i) => i.title)
-              .join(" · ")}`
-        )
-        .join("\n\n") +
-      `\n\nDemande-moi **app**, **site** ou **modèles** pour le détail — ou explore la section « Avancement » du site !`,
-    chips: ["📱 App Desktop", "🌐 Site", "🧠 Modèles"],
-  },
-  {
-    keys: ["\\bapp\\b", "desktop", "application"],
-    reply: () => roadmapText("app"),
-    chips: ["📥 Télécharger", "🧠 Modèles"],
-  },
-  {
-    keys: ["\\bsite\\b", "\\bweb(?!studio)\\b", "\\bpage\\b"],
-    reply: () => roadmapText("site"),
-    chips: ["📱 App Desktop", "🧠 Modèles"],
-  },
-  {
-    keys: ["modele", "modeles", "model", "models", "cerveau", "llm", "ia gratuite"],
-    reply: () => roadmapText("models") + `\n\n📄 ${SITE_HINTS.models}`,
-    chips: ["📥 Télécharger", "🔒 Vie privée"],
-  },
-  {
-    keys: ["telecharger", "telechargement", "installer", "installation", "download", "install"],
-    reply: () =>
-      `📥 **C'est par ici :**\n\n${SITE_HINTS.install}\n\nSur la page **Desktop** tu trouveras les 3 installateurs avec la détection de ton OS.`,
-    chips: ["📱 App Desktop", "💰 Prix"],
-  },
-  {
-    keys: ["prix", "gratuit", "abonnement", "payant", "cout", "argent", "tarif"],
-    reply: () =>
-      `💰 **0 €, pour toujours.**\n\nOpen source (MIT), sans compte, sans limite. Les studios passent par le tier gratuit d'OpenRouter avec ta propre clé — aucun serveur à financer, donc aucun abonnement.`,
-    chips: ["🔒 Vie privée", "🧠 Modèles"],
-  },
-  {
-    keys: ["provider", "providers", "openrouter", "groq", "ollama", "lm studio", "opencode", "\\bcle\\b", "\\bapi\\b"],
-    reply: () =>
-      `🔌 **Branche le cerveau que tu veux :**\n\n• **OpenRouter** — des dizaines de modèles gratuits\n• **Groq** — inférence ultra-rapide\n• **Ollama / LM Studio** — 100% local, même hors ligne\n• **OpenCode Zen** — spécialisé code\n\nTa clé se crée en 30 s sur openrouter.ai et reste dans ton navigateur.`,
-    chips: ["🧠 Modèles", "🔒 Vie privée"],
-  },
-  {
-    keys: ["vie privee", "privee", "prive", "donnee", "donnees", "securite", "confidentialite", "tracking"],
-    reply: () => `🔒 **Zéro collecte.**\n\n${SITE_HINTS.privacy}\n\nConversations et projets : localStorage uniquement. Pas de serveur, pas de pub, pas de revente.`,
-    chips: ["🔌 Providers", "💰 Prix"],
-  },
-  {
-    keys: ["\\bchat(?!bot)\\b", "studio"],
-    reply: () => `💬 ${PRODUCT_NOTES.chat}\n\nPose ta question ici même — je suis le chat intégré du site !`,
-    chips: ["📥 Télécharger", "🚀 Roadmap"],
-  },
-  {
-    keys: ["\\bcloud\\b"],
-    reply: () => `☁️ ${PRODUCT_NOTES.cloud}\n\nTu peux suivre l'avancement sur GitHub — lien en bas de page !`,
-    chips: ["🚀 Roadmap", "📥 Télécharger"],
-  },
-  {
-    keys: ["\\bcli\\b", "terminal", "commande"],
-    reply: () => `⌨️ ${PRODUCT_NOTES.cli}`,
-    chips: ["📥 Télécharger", "🚀 Roadmap"],
-  },
-  {
-    keys: ["bonjour", "salut", "hello", "\\bhi\\b", "coucou", "\\byo\\b", "hey", "\\bcc\\b"],
-    reply: () =>
-      `🦫 Salut ! Je suis **Castor Bot** — en ligne 24/7.\n\nJe connais les **choses à venir** de Castor sur le bout des pattes. Que veux-tu savoir ?`,
-    chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles"],
-  },
-  {
-    keys: ["merci", "super", "genial", "top", "cool", "parfait"],
-    reply: () => `🦫 Avec plaisir ! Je reste ici 24/7 — bon chantier ! ⚒️`,
-    chips: ["🚀 Roadmap"],
-  },
-  {
-    keys: ["qui es tu", "tu es qui", "castor bot", "t'es quoi", "helper", "assistant"],
-    reply: () =>
-      `🦫 Je suis **Castor Bot** — un script local (et un LLM si tu branches ta clé OpenRouter). Je connais la roadmap par cœur et je ne quitte jamais le chantier : **24/7, même hors ligne**.`,
-    chips: ["🚀 Roadmap", "🔌 Providers"],
-  },
-];
+function buildKB(t) {
+  return [
+    {
+      keys: ["livre", "livres", "deja fait", "deja realise", "deja livre", "termine", "fait ici", "delivered"],
+      reply: () => deliveredText(t),
+      chips: ["🚀 Roadmap", "📱 App Desktop"],
+    },
+    {
+      keys: ["roadmap", "a venir", "avenir", "bientot", "nouveaute", "nouveautes", "prochain", "futur", "planning", "avancement"],
+      reply: () =>
+        `${t("kb_roadmap_intro")}\n\n` +
+        Object.keys(ROADMAP)
+          .map(
+            (k) =>
+              `**${ROADMAP[k].label}** : ${ROADMAP[k].items
+                .filter((i) => i.status !== "livré")
+                .slice(0, 2)
+                .map((i) => i.title)
+                .join(" · ")}`
+          )
+          .join("\n\n") +
+        `\n\n${t("kb_roadmap_hint")}`,
+      chips: ["📱 App Desktop", "🌐 Site", "🧠 Modèles"],
+    },
+    {
+      keys: ["\\bapp\\b", "desktop", "application"],
+      reply: () => roadmapText("app", t),
+      chips: ["📥 Télécharger", "🧠 Modèles"],
+    },
+    {
+      keys: ["\\bsite\\b", "\\bweb(?!studio)\\b", "\\bpage\\b"],
+      reply: () => roadmapText("site", t),
+      chips: ["📱 App Desktop", "🧠 Modèles"],
+    },
+    {
+      keys: ["modele", "modeles", "model", "models", "cerveau", "llm", "ia gratuite"],
+      reply: () => roadmapText("models", t) + `\n\n📄 ${SITE_HINTS.models}`,
+      chips: ["📥 Télécharger", "🔒 Vie privée"],
+    },
+    {
+      keys: ["telecharger", "telechargement", "installer", "installation", "download", "install"],
+      reply: () =>
+        `${t("kb_download")}\n\n${SITE_HINTS.install}\n\n${t("kb_download_hint")}`,
+      chips: ["📱 App Desktop", "💰 Prix"],
+    },
+    {
+      keys: ["prix", "gratuit", "abonnement", "payant", "cout", "argent", "tarif"],
+      reply: () =>
+        `${t("kb_price")}\n\n${t("kb_price_desc")}`,
+      chips: ["🔒 Vie privée", "🧠 Modèles"],
+    },
+    {
+      keys: ["provider", "providers", "openrouter", "groq", "ollama", "lm studio", "opencode", "\\bcle\\b", "\\bapi\\b"],
+      reply: () =>
+        `${t("kb_providers")}\n\n${t("kb_providers_desc")}`,
+      chips: ["🧠 Modèles", "🔒 Vie privée"],
+    },
+    {
+      keys: ["vie privee", "privee", "prive", "donnee", "donnees", "securite", "confidentialite", "tracking"],
+      reply: () => `${t("kb_privacy")}\n\n${SITE_HINTS.privacy}\n\n${t("kb_privacy_desc")}`,
+      chips: ["🔌 Providers", "💰 Prix"],
+    },
+    {
+      keys: ["\\bchat(?!bot)\\b", "studio"],
+      reply: () => `💬 ${PRODUCT_NOTES.chat}\n\n${t("kb_chat")}`,
+      chips: ["📥 Télécharger", "🚀 Roadmap"],
+    },
+    {
+      keys: ["\\bcloud\\b"],
+      reply: () => `☁️ ${PRODUCT_NOTES.cloud}\n\n${t("kb_cloud")}`,
+      chips: ["🚀 Roadmap", "📥 Télécharger"],
+    },
+    {
+      keys: ["\\bcli\\b", "terminal", "commande"],
+      reply: () => `⌨️ ${PRODUCT_NOTES.cli}`,
+      chips: ["📥 Télécharger", "🚀 Roadmap"],
+    },
+    {
+      keys: ["bonjour", "salut", "hello", "\\bhi\\b", "coucou", "\\byo\\b", "hey", "\\bcc\\b"],
+      reply: () => t("kb_greeting"),
+      chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles"],
+    },
+    {
+      keys: ["merci", "super", "genial", "top", "cool", "parfait"],
+      reply: () => t("kb_thanks"),
+      chips: ["🚀 Roadmap"],
+    },
+    {
+      keys: ["qui es tu", "tu es qui", "castor bot", "t'es quoi", "helper", "assistant"],
+      reply: () => t("kb_who"),
+      chips: ["🚀 Roadmap", "🔌 Providers"],
+    },
+  ];
+}
 
-function answerLocal(text) {
+function answerLocal(text, t) {
   const n = norm(text);
-  for (const entry of KB) {
+  const kb = buildKB(t);
+  for (const entry of kb) {
     for (const key of entry.keys) {
       if (new RegExp(key).test(n)) return { text: entry.reply(), chips: entry.chips };
     }
@@ -143,16 +152,20 @@ function answerLocal(text) {
   return null;
 }
 
-const FALLBACK = {
-  text: `🦫 Celle-là n'est pas dans ma tête de castor.\n\nEssaie une suggestion — ou active le **mode IA** pour une vraie conversation !`,
-  chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles", "💰 Prix"],
-};
+function getFallback(t) {
+  return {
+    text: t("kb_fallback"),
+    chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles", "💰 Prix"],
+  };
+}
 
-const WELCOME = {
-  role: "bot",
-  text: `🦫 Salut ! **Castor Bot** à ton service.\n\nJe te garde au courant des **choses à venir** : app, site, modèles. Clique sur une suggestion 👇`,
-  chips: ["🚀 Roadmap", "📱 App Desktop", "🧠 Modèles", "📥 Télécharger"],
-};
+function getWelcome(t) {
+  return {
+    role: "bot",
+    text: t("kb_welcome"),
+    chips: ["🚀 Roadmap", "📱 App Desktop", "🧠 Modèles", "📥 Télécharger"],
+  };
+}
 
 function systemPrompt() {
   const rm = Object.keys(ROADMAP)
@@ -200,6 +213,7 @@ function RichText({ text }) {
    ============================================================ */
 
 export default function CastorBot() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [apiKey] = useApiKey();
   const [aiMode, setAiMode] = useState(() => {
@@ -213,7 +227,7 @@ export default function CastorBot() {
         if (Array.isArray(parsed) && parsed.length) return parsed.slice(-40);
       }
     } catch { /* history corrompue — welcome */ }
-    return [WELCOME];
+    return [getWelcome(t)];
   });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -254,11 +268,11 @@ export default function CastorBot() {
       const useAI = aiMode && apiKey;
 
       if (!useAI) {
-        const local = answerLocal(text);
+        const local = answerLocal(text, t);
         await new Promise((r) => setTimeout(r, 400 + Math.random() * 350));
         setMessages((m) => {
           const copy = [...m];
-          copy[copy.length - 1] = { role: "bot", ...(local || FALLBACK) };
+          copy[copy.length - 1] = { role: "bot", ...(local || getFallback(t)) };
           return copy;
         });
         setBusy(false);
@@ -287,13 +301,14 @@ export default function CastorBot() {
         });
       } catch (e) {
         if (e.name !== "AbortError") {
-          const local = answerLocal(text);
+          const local = answerLocal(text, t);
+          const fb = getFallback(t);
           setMessages((m) => {
             const copy = [...m];
             copy[copy.length - 1] = {
               role: "bot",
-              text: `⚠️ Modèle indisponible — je repasse en mode local.\n\n` + (local?.text || FALLBACK.text),
-              chips: local?.chips || FALLBACK.chips,
+              text: t("kb_ai_error") + (local?.text || fb.text),
+              chips: local?.chips || fb.chips,
             };
             return copy;
           });
@@ -303,7 +318,7 @@ export default function CastorBot() {
         abortRef.current = null;
       }
     },
-    [aiMode, apiKey, busy, input, messages]
+    [aiMode, apiKey, busy, input, messages, t]
   );
 
   const toggleAi = () => {
@@ -319,30 +334,30 @@ export default function CastorBot() {
   return (
     <div className={`cbot ${open ? "cbot--open" : ""}`}>
       {/* ── Panneau ── */}
-      <section className="cbot-panel" role="dialog" aria-label="Castor Bot — assistant 24/7" aria-hidden={!open}>
+      <section className="cbot-panel" role="dialog" aria-label={t("bot_aria")} aria-hidden={!open}>
         <header className="cbot-panel__head">
           <span className="cbot-panel__avatar" aria-hidden="true"><BeaverMark size={24} /></span>
           <div className="cbot-panel__id">
-            <strong>Castor Bot</strong>
-            <span className="cbot-panel__status"><i aria-hidden="true" /> En ligne · 24/7</span>
+            <strong>{t("bot_name")}</strong>
+            <span className="cbot-panel__status"><i aria-hidden="true" /> {t("bot_online")}</span>
           </div>
           <button
             type="button"
             className={`cbot-switch ${aiMode ? "cbot-switch--on" : ""} ${!hasKey ? "cbot-switch--off-dis" : ""}`}
             onClick={toggleAi}
             disabled={!hasKey}
-            title={hasKey ? "Basculer entre mode local et mode IA (OpenRouter)" : "Ajoute ta clé OpenRouter dans le Castor Bot pour activer l'IA"}
+            title={hasKey ? t("bot_switch_title") : t("bot_switch_nokey")}
             aria-pressed={aiMode}
           >
             <span className="cbot-switch__track"><span className="cbot-switch__thumb" /></span>
             <span className="cbot-switch__label">IA</span>
           </button>
-          <button type="button" className="cbot-panel__close" onClick={() => setOpen(false)} aria-label="Fermer l'assistant">×</button>
+          <button type="button" className="cbot-panel__close" onClick={() => setOpen(false)} aria-label={t("bot_close")}>×</button>
         </header>
 
         {!hasKey && (
           <p className="cbot-panel__hint">
-            💡 Colle ta clé OpenRouter gratuite ici pour débloquer le mode IA.
+            {t("bot_hint")}
           </p>
         )}
 
@@ -359,7 +374,7 @@ export default function CastorBot() {
                   </div>
                 )}
                 {lastIsBotTyping && i === messages.length - 1 && (
-                  <div className="cbot-msg__bubble cbot-msg__bubble--typing" aria-label="Castor Bot écrit">
+                  <div className="cbot-msg__bubble cbot-msg__bubble--typing" aria-label={t("bot_typing")}>
                     <span /><span /><span />
                   </div>
                 )}
@@ -381,11 +396,11 @@ export default function CastorBot() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Pose ta question…"
-            aria-label="Message pour Castor Bot"
+            placeholder={t("bot_placeholder")}
+            aria-label={t("bot_msg_aria")}
             spellCheck="false"
           />
-          <button type="submit" className="cbot-panel__send" disabled={busy || !input.trim()} aria-label="Envoyer">
+          <button type="submit" className="cbot-panel__send" disabled={busy || !input.trim()} aria-label={t("bot_send")}>
             ➤
           </button>
         </form>
@@ -396,7 +411,7 @@ export default function CastorBot() {
         type="button"
         className="cbot-bubble"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Fermer Castor Bot" : "Ouvrir Castor Bot — assistant 24/7"}
+        aria-label={open ? t("bot_close") : t("bot_bubble")}
       >
         <span className="cbot-bubble__face" aria-hidden="true">
           {open ? "×" : <BeaverMark size={26} />}

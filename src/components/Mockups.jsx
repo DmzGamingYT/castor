@@ -41,30 +41,30 @@ function DesktopMock() {
   );
 }
 
-function CliMock() {
+function CliMock({ t }) {
   return (
     <WindowChrome title="castor — zsh">
       <pre className="mk-term">
 <span className="t-accent">◆ castor</span><span className="t-dim"> · Qwenn Max · ~/api</span>
 
-<span className="t-dim">›</span> ajoute du rate limiting sur /checkout
+<span className="t-dim">›</span> {t("mk_cli_cmd")}
 
-<span className="t-dim">✔</span> Lit 34 fichiers · mappe les routes API
-<span className="t-ok">✔</span> Écrit src/middleware/rateLimit.ts
-<span className="t-ok">✔</span> Tests : 18 passés, 0 échoué
+<span className="t-dim">✔</span> {t("mk_cli_l1")}
+<span className="t-ok">✔</span> {t("mk_cli_l2")}
+<span className="t-ok">✔</span> {t("mk_cli_l3")}
 
-<span className="t-dim">Fait · 3 fichiers ·</span> <span className="t-accent">0 €</span><span className="cursor">▊</span></pre>
+<span className="t-dim">{t("mk_cli_done")}</span> <span className="t-accent">0 €</span><span className="cursor">▊</span></pre>
     </WindowChrome>
   );
 }
 
-function WebMock() {
+function WebMock({ t }) {
   return (
     <WindowChrome title="castor web — constructeur">
       <div className="mk-split">
         <div className="mk-prompt">
-          <span className="t-dim">›</span> un site de recettes végé avec recherche
-          <div className="mk-btn">Construire</div>
+          <span className="t-dim">›</span> {t("mk_web_prompt")}
+          <div className="mk-btn">{t("mk_web_btn")}</div>
         </div>
         <div className="mk-browser">
           <div className="mk-browser__bar"><span /><span /><span /></div>
@@ -82,12 +82,12 @@ function WebMock() {
   );
 }
 
-function CloudMock() {
+function CloudMock({ t }) {
   return (
     <WindowChrome title="castor cloud — acme/storefront">
       <div className="mk-repo">
         <span className="mk-branch">⎇ fix/checkout-limit</span>
-        <span className="mk-status">sandbox · dev server sur :3000</span>
+        <span className="mk-status">{t("mk_cloud_status")}</span>
       </div>
       <div className="mk-diff">
         <span className="ln ln--add">+ import {"{ rateLimit }"} from "./rateLimit"</span>
@@ -103,13 +103,13 @@ function CloudMock() {
   );
 }
 
-function ChatMock() {
+function ChatMock({ t }) {
   return (
     <WindowChrome title="castor chat">
       <div className="mk-chat">
-        <p className="mk-q">Pourquoi mon useEffect tourne deux fois ?</p>
+        <p className="mk-q">{t("mk_chat_q")}</p>
         <p className="mk-a">
-          En mode strict, React monte volontairement tes composants deux fois en dev…
+          {t("mk_chat_a")}
         </p>
         <div className="mk-sources">
           <span>react.dev</span><span>stackoverflow</span><span>github issue #24830</span>
@@ -118,6 +118,8 @@ function ChatMock() {
     </WindowChrome>
   );
 }
+
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 const MAP = {
   desktop: DesktopMock,
@@ -128,6 +130,7 @@ const MAP = {
 };
 
 export default function Mockup({ variant }) {
+  const { t } = useLanguage();
   const Cmp = MAP[variant];
-  return Cmp ? <Cmp /> : null;
+  return Cmp ? <Cmp t={t} /> : null;
 }

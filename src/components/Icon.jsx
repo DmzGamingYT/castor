@@ -34,7 +34,8 @@ const PATHS = {
   terminal: (
     <>
       <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
-      <path d="M7 9.5l3.5 3L7 15.5M12.8 16H17" />
+      <path d="M7 9.5l3.5 3L7 15.5" />
+      <path className="ic-cursor" d="M12.8 16H17" />
     </>
   ),
   globe: (

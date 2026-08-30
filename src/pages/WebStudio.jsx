@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Hills from "../components/Hills.jsx";
 import ModelSelect from "../components/ModelSelect.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 import {
   generateSite,
   generateWithAI,
@@ -45,6 +46,7 @@ function loadProjects() {
 
 export default function WebStudio() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [prompt, setPrompt] = useState("");
   const [theme, setTheme] = useState(null);
   const [phase, setPhase] = useState("idle");
@@ -163,7 +165,7 @@ export default function WebStudio() {
       setProjects(next);
       localStorage.setItem(STORE_KEY, JSON.stringify(next));
       setPhase("done");
-      if (replaced) flash("Un projet au même nom existait — il a été remplacé");
+      if (replaced) flash(t("ws_flash_duplicate"));
       later(
         () => document.getElementById("preview")?.scrollIntoView({ behavior: "smooth" }),
         80
@@ -244,11 +246,11 @@ export default function WebStudio() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) build();
             }}
-            placeholder="Décris l'app à construire… ex : un tracker d'habitudes avec streak"
+            placeholder={t("ws_aria_describe")}
             rows={3}
             disabled={phase === "building"}
             spellCheck="false"
-            aria-label="Décris l'app à construire"
+            aria-label={t("ws_aria_describe")}
           />
 
           {keyOpen && (
@@ -258,10 +260,10 @@ export default function WebStudio() {
                 value={keyDraft}
                 onChange={(e) => setKeyDraft(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveKey()}
-                placeholder="sk-or-v1-… (reste dans ton navigateur)"
+                placeholder="sk-or-v1-… (stays in your browser)"
                 spellCheck="false"
                 autoFocus
-                aria-label="Clé API OpenRouter"
+                aria-label={t("ws_aria_key")}
               />
               <button className="mini-btn mini-btn--primary" onClick={saveKey}>
                 Enregistrer
@@ -275,7 +277,7 @@ export default function WebStudio() {
           )}
 
           <div className="composer-card__row">
-            <div className="theme-dots" title="Thème du site généré">
+            <div className="theme-dots" title={t("ws_title_theme")}>
               {THEME_LIST.map((name) => (
                 <button
                   key={name}
@@ -293,14 +295,12 @@ export default function WebStudio() {
               modelId={effectiveModelId}
               onSelect={setModelId}
               aiReady={aiReady}
-              emptyLabel="Gratuits OpenRouter indisponibles — gabarits locaux actifs."
-              loadingLabel="Chargement…"
             />
 
             <button
               className={`mini-btn ${apiKey ? "mini-btn--ok" : ""}`}
               onClick={() => setKeyOpen(!keyOpen)}
-              title="Clé OpenRouter — requise même pour les modèles gratuits"
+              title={t("ws_title_key")}
             >
               {apiKey ? "clé ✓" : "clé ?"}
             </button>
@@ -309,7 +309,7 @@ export default function WebStudio() {
               className="send-btn"
               onClick={build}
               disabled={phase === "building" || !prompt.trim()}
-              aria-label="Construire"
+              aria-label={t("ws_aria_build")}
             >
               {phase === "building" ? "…" : "⬆"}
             </button>

@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import Icon, { BeaverMark } from "./Icon.jsx";
 import { PLATFORMS, RELEASE_BASE, buildFiles, detectOS } from "../data/platforms.js";
 import { useArch } from "../lib/useArch.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
-const UNINSTALL = {
-  mac: "scripts/uninstall-macos.sh du dépôt",
-  win: "Paramètres → Applications → « Castor Desktop » → Désinstaller",
-  linux: "sudo apt remove castor-desktop (deb) — ou supprime l'AppImage + ~/.config/castor-desktop",
+const UNINSTALL_KEYS = {
+  mac: "dlm_un_mac",
+  win: "dlm_un_win",
+  linux: "dlm_un_linux",
 };
 
 export default function DownloadModal({ open, onClose }) {
+  const { t } = useLanguage();
   const [started, setStarted] = useState(null);
   const arch = useArch();
   const detected = detectOS();
@@ -45,19 +47,19 @@ export default function DownloadModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="dl-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Télécharger Castor">
+    <div className="dl-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={t("dlm_aria")}>
       <div className="dl-modal" onClick={(e) => e.stopPropagation()} ref={panelRef} tabIndex={-1}>
-        <button className="dl-close" onClick={onClose} aria-label="Fermer">×</button>
+        <button className="dl-close" onClick={onClose} aria-label={t("dlm_close")}>×</button>
 
         <div className="dl-modal__header">
           <span className="dl-modal__logo"><BeaverMark size={36} /></span>
-          <h3>Télécharger Castor Desktop</h3>
+          <h3>{t("dlm_title")}</h3>
           <p className="dl-sub">
             {detected && detected !== "ios"
-              ? "Ton OS est détecté — un clic et c'est parti."
+              ? t("dlm_detected")
               : detected === "ios"
-                ? "Castor Desktop n'existe pas sur iOS — ouvre-le depuis Safari sur Mac."
-                : "Choisis ton habitat :"}
+                ? t("dlm_ios")
+                : t("dlm_choose")}
           </p>
         </div>
 
@@ -72,7 +74,7 @@ export default function DownloadModal({ open, onClose }) {
                   key={p.os}
                   className={`dl-compare__card ${rec ? "dl-compare__card--detected" : ""}`}
                 >
-                  {rec && <span className="dl-compare__detected">Ton OS ✓</span>}
+                  {rec && <span className="dl-compare__detected">{t("dlc_your_os")}</span>}
 
                   <div className="dl-compare__header">
                     <span
@@ -88,12 +90,15 @@ export default function DownloadModal({ open, onClose }) {
                   </div>
 
                   <ul className="dl-compare__features">
-                    {p.features.map((f) => (
-                      <li key={f}>
-                        <span className="dl-compare__check" style={{ color: p.color }}>✓</span>
-                        {f}
-                      </li>
-                    ))}
+                    {p.features.map((f, fi) => {
+                      const label = t(`pf_${p.os}_f${fi}`) || f;
+                      return (
+                        <li key={f}>
+                          <span className="dl-compare__check" style={{ color: p.color }}>✓</span>
+                          {label}
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   <div className="dl-compare__actions">
@@ -121,7 +126,7 @@ export default function DownloadModal({ open, onClose }) {
 
                   <p className="dl-compare__install">
                     <Icon name="terminal" size={13} />
-                    <code>{p.install}</code>
+                    <code>{t(`pf_${p.os}_install`) || p.install}</code>
                   </p>
                 </article>
               );
@@ -133,13 +138,13 @@ export default function DownloadModal({ open, onClose }) {
           <div className="dl-success" role="status">
             <span className="dl-success__icon">✓</span>
             <div>
-              <strong>Téléchargement lancé</strong>
-              <p>Pour désinstaller plus tard : {UNINSTALL[started]}</p>
+              <strong>{t("dlm_started")}</strong>
+              <p>{t("dlm_uninstall")} {t(UNINSTALL_KEYS[started] || "dlm_un_mac")}</p>
             </div>
           </div>
         )}
 
-        <p className="dl-footer-note">Gratuit · Open source · Multi-providers</p>
+        <p className="dl-footer-note">{t("dlc_note")}</p>
       </div>
     </div>
   );

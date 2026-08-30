@@ -6,7 +6,7 @@ import CastorBot from "./components/CastorBot.jsx";
 import { PRODUCTS } from "./data/products.jsx";
 import useHistoryRoute from "./lib/useHistoryRoute.js";
 import { NavigationProvider } from "./lib/NavigationContext.jsx";
-import { LanguageProvider } from "./lib/LanguageContext.jsx";
+import { LanguageProvider, useLanguage } from "./lib/LanguageContext.jsx";
 import { BeaverMark } from "./components/Icon.jsx";
 
 /* les studios et pages secondaires sont chargés à la demande */
@@ -21,8 +21,9 @@ const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const PRODUCT_SLUGS = new Set(PRODUCTS.map((p) => `/${p.slug}`));
 
 function PageFallback() {
+  const { t } = useLanguage();
   return (
-    <div className="route-loading" role="status" aria-label="Chargement de la page">
+    <div className="route-loading" role="status" aria-label={t("loading_page")}>
       <span className="route-loading__beaver">
         <BeaverMark size={36} />
       </span>
@@ -33,8 +34,9 @@ function PageFallback() {
   );
 }
 
-export default function App() {
-  const path = useHistoryRoute();
+function AppInner() {
+  const { t } = useLanguage();
+  const path = useHistoryRoute(t);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const openDownload = () => setDownloadOpen(true);
 
@@ -71,26 +73,32 @@ export default function App() {
     );
 
   return (
+    <div className="app">
+      <button
+        type="button"
+        className="skip-link"
+        onClick={() => document.getElementById("main")?.focus()}
+      >
+        Aller au contenu
+      </button>
+      <Header route={path} onDownload={openDownload} />
+      <main id="main" tabIndex={-1}>
+        <div className={`page-transition${animKey > 0 ? " page-transition--anim" : ""}`} key={animKey}>
+          <Suspense fallback={<PageFallback />}>{page}</Suspense>
+        </div>
+      </main>
+      <Footer onDownload={openDownload} />
+      <DownloadModal open={downloadOpen} onClose={() => setDownloadOpen(false)} />
+      <CastorBot />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <LanguageProvider>
     <NavigationProvider>
-      <div className="app">
-        <button
-          type="button"
-          className="skip-link"
-          onClick={() => document.getElementById("main")?.focus()}
-        >
-          Aller au contenu
-        </button>
-        <Header route={path} onDownload={openDownload} />
-        <main id="main" tabIndex={-1}>
-          <div className={`page-transition${animKey > 0 ? " page-transition--anim" : ""}`} key={animKey}>
-            <Suspense fallback={<PageFallback />}>{page}</Suspense>
-          </div>
-        </main>
-        <Footer onDownload={openDownload} />
-        <DownloadModal open={downloadOpen} onClose={() => setDownloadOpen(false)} />
-        <CastorBot />
-      </div>
+      <AppInner />
     </NavigationProvider>
     </LanguageProvider>
   );

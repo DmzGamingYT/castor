@@ -6,6 +6,8 @@ import DownloadCompare from "../components/DownloadCompare.jsx";
 import { StepVisual } from "../components/FeatureVisuals.jsx";
 import { bySlug } from "../data/products.jsx";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
+
 function PlatformBadge({ os, icon }) {
   return (
     <span className="platform-badge" title={os}>
@@ -16,6 +18,7 @@ function PlatformBadge({ os, icon }) {
 }
 
 function ProductHero({ product, onDownload }) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [lightbox, setLightbox] = useState(false);
   const navigate = useNavigate();
@@ -50,7 +53,7 @@ function ProductHero({ product, onDownload }) {
       <div className="hero__glow hero__glow--wood" aria-hidden="true" />
       <div className="hero__glow hero__glow--river" aria-hidden="true" />
       <Hills />
-      <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>← Tous les produits</a>
+      <a className="back" href="/castor/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>{t("pp_all_products")}</a>
       {product.tag && <span className="hero__badge">{product.tag}</span>}
       <h1>
         <Icon name={product.icon} size={38} className="h1-icon" />{" "}
@@ -62,7 +65,7 @@ function ProductHero({ product, onDownload }) {
         <div id="installer" className="install">
           <code>$ {product.installCmd}</code>
           <button className="install__copy" onClick={copyInstall}>
-            {copied ? "copié ✓" : "copier"}
+            {copied ? t("pp_copied") : t("pp_copy")}
           </button>
         </div>
       ) : null}
@@ -90,7 +93,7 @@ function ProductHero({ product, onDownload }) {
           href="/castor/#produits"
           onClick={(e) => { e.preventDefault(); navigate("/", "produits"); }}
         >
-          Tous les produits →
+          {t("pp_all_products2")}
         </a>
       </div>
 
@@ -107,10 +110,10 @@ function ProductHero({ product, onDownload }) {
           type="button"
           className="mockup-lightbox"
           onClick={() => setLightbox(true)}
-          aria-label={`Agrandir l'aperçu de ${product.name}`}
+          aria-label={t("pp_zoom_label").replace("{name}", product.name)}
         >
           <Mockup variant={product.mockup} />
-          <span className="mockup-zoom" aria-hidden="true">⌕ Agrandir</span>
+          <span className="mockup-zoom" aria-hidden="true">⌕ {t("pp_zoom")}</span>
         </button>
       </div>
 
@@ -119,7 +122,7 @@ function ProductHero({ product, onDownload }) {
           className="lightbox"
           role="dialog"
           aria-modal="true"
-          aria-label={`Aperçu de ${product.name}`}
+          aria-label={`${product.name} — ${t("pp_zoom")}`}
           onClick={() => setLightbox(false)}
         >
           <div className="lightbox__inner" onClick={(e) => e.stopPropagation()}>
@@ -127,7 +130,7 @@ function ProductHero({ product, onDownload }) {
               type="button"
               className="lightbox__close"
               onClick={() => setLightbox(false)}
-              aria-label="Fermer l'aperçu"
+              aria-label={t("pp_close_preview")}
             >
               ×
             </button>
@@ -135,7 +138,7 @@ function ProductHero({ product, onDownload }) {
               <Mockup variant={product.mockup} />
             </div>
             <p className="lightbox__caption">
-              {product.name} — aperçu agrandi
+              {t("pp_caption").replace("{name}", product.name)}
             </p>
           </div>
         </div>
@@ -145,23 +148,24 @@ function ProductHero({ product, onDownload }) {
 }
 
 function DesktopHowItWorks() {
+  const { t } = useLanguage();
   const steps = [
     {
       num: "01",
-      title: "Ouvre Castor Desktop",
-      desc: "Un seul clic. Pas de terminal, pas de config. L'app démarre en une seconde.",
+      title: t("how_s1_t"),
+      desc: t("how_s1_d"),
       color: "var(--accent)",
     },
     {
       num: "02",
-      title: "Crée un agent, choisis ton modèle",
-      desc: "OpenRouter, Groq, Ollama… branche le cerveau que tu veux. Chaque agent a son propre espace.",
+      title: t("how_s2_t"),
+      desc: t("how_s2_d"),
       color: "var(--wood)",
     },
     {
       num: "03",
-      title: "L'agent construit, tu valides",
-      desc: "Structure, styles, tests : tout est monté devant toi. Chaque fichier est lisible et modifiable.",
+      title: t("how_s3_t"),
+      desc: t("how_s3_d"),
       color: "var(--river)",
     },
   ];
@@ -169,10 +173,10 @@ function DesktopHowItWorks() {
   return (
     <section className="section desktop-how">
       <span className="dl-compare__badge">
-        <Icon name="zap" size={14} /> Simple et rapide
+        <Icon name="zap" size={14} /> {t("how_badge")}
       </span>
-      <h2>En trois étapes.</h2>
-      <p className="section-sub">Pas de tunnel magique : tu vois chaque étape.</p>
+      <h2>{t("how_heading")}</h2>
+      <p className="section-sub">{t("steps_sub")}</p>
       <div className="desktop-how__grid">
         {steps.map((s, i) => (
           <article key={s.num} className="desktop-how__step" style={{ "--step-color": s.color }}>
@@ -198,31 +202,32 @@ function DesktopHowItWorks() {
 }
 
 function DesktopComparison() {
+  const { t } = useLanguage();
   const products = [
     {
       name: "Desktop",
-      tag: "Recommandé",
-      desc: "App complète, agents parallèles, multi-providers, clés chiffrées.",
+      tag: t("dcomp_recommended"),
+      desc: t("dcomp_desc_d"),
       highlight: true,
       icon: "desktop",
       color: "var(--accent)",
-      perks: ["100% local", "Agents parallèles", "Clés chiffrées"],
+      perks: [t("dcomp_p1"), t("dcomp_p2"), t("dcomp_p3")],
     },
     {
       name: "Cloud",
-      tag: "Bientôt",
-      desc: "IDE cloud complet. Branché sur tes repos GitHub.",
+      tag: t("dcomp_soon"),
+      desc: t("dcomp_desc_c"),
       highlight: false,
       icon: "cloud",
       color: "var(--river)",
-      perks: ["Zéro installation", "GitHub sync", "Sandbox réel"],
+      perks: [t("dcomp_p4"), t("dcomp_p5"), t("dcomp_p6")],
     },
   ];
 
   return (
     <section className="section desktop-compare">
-      <h2>Pourquoi Desktop ?</h2>
-      <p className="section-sub">Trois produits, un seul cas d'usage : coder plus vite.</p>
+      <h2>{t("dcomp_heading")}</h2>
+      <p className="section-sub">{t("dcomp_sub")}</p>
       <div className="desktop-compare__grid">
         {products.map((p) => (
           <article
@@ -256,16 +261,16 @@ function DesktopComparison() {
                 className="desktop-compare__link desktop-compare__link--btn"
                 onClick={() => document.getElementById("telecharger")?.scrollIntoView({ behavior: "smooth" })}
               >
-                Découvrir →
+                {t("dcomp_discover")}
               </button>
-            ) : p.tag === "Bientôt" ? (
+            ) : p.tag === t("dcomp_soon") ? (
               <a
                 className="desktop-compare__link"
                 href="https://github.com/DmzGamingYT/castor"
                 target="_blank"
                 rel="noreferrer"
               >
-                Suivre le projet →
+                {t("dcomp_follow")}
               </a>
             ) : null}
           </article>
@@ -276,21 +281,23 @@ function DesktopComparison() {
 }
 
 function DesktopCta({ onDownload }) {
+  const { t } = useLanguage();
   return (
     <section className="section desktop-cta">
       <div className="desktop-cta__inner">
-        <h2>Prêt à construire ?</h2>
-        <p>Castor Desktop est gratuit. Pas d'abonnement, pas de limite.</p>
+        <h2>{t("dcta_heading")}</h2>
+        <p>{t("dcta_sub")}</p>
         <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
-          Télécharger Castor Desktop
+          {t("dl_cta")}
         </button>
-        <code className="desktop-cta__note">Gratuit · Open source · Multi-providers</code>
+        <code className="desktop-cta__note">{t("dcta_note")}</code>
       </div>
     </section>
   );
 }
 
 function CloudWorkflow() {
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -301,17 +308,18 @@ function CloudWorkflow() {
   }, []);
 
   const steps = [
-    { label: "Ouvre un repo GitHub", icon: "branch", color: "var(--accent)" },
-    { label: "Castor crée une branche", icon: "branch", color: "var(--wood)" },
-    { label: "L'agent code en sandbox", icon: "hammer", color: "var(--river)" },
-    { label: "Preview live + push", icon: "rocket", color: "var(--sage)" },
+    { label: t("cwf_s1"), icon: "branch", color: "var(--accent)" },
+    { label: t("cwf_s2"), icon: "branch", color: "var(--wood)" },
+    { label: t("cwf_s3"), icon: "hammer", color: "var(--river)" },
+    { label: t("cwf_s4"), icon: "rocket", color: "var(--sage)" },
   ];
+  const stepDetails = [t("cwf_d1"), t("cwf_d2"), t("cwf_d3"), t("cwf_d4")];
 
   return (
     <section className="section cloud-workflow">
-      <span className="dl-compare__badge"><Icon name="zap" size={14} /> Workflow automatisé</span>
-      <h2>De GitHub à la production.</h2>
-      <p className="section-sub">Ouvre un repo, Castor fait le reste.</p>
+      <span className="dl-compare__badge"><Icon name="zap" size={14} /> {t("cwf_badge")}</span>
+      <h2>{t("cwf_heading")}</h2>
+      <p className="section-sub">{t("cwf_sub")}</p>
 
       {/* ── étapes du pipeline, connectées par un rail ── */}
       <div className="cloud-flow">
@@ -326,7 +334,7 @@ function CloudWorkflow() {
               {i < step ? <Icon name="checkCircle" size={18} /> : <Icon name={s.icon} size={18} />}
             </span>
             <strong>{s.label}</strong>
-            <small>{["Choisis le repo à brancher", "Une branche propre, pas de conflit", "Dépendances + tests dans un bac à sable", "Aperçu en direct, push en un clic"][i]}</small>
+            <small>{stepDetails[i]}</small>
           </div>
         ))}
       </div>
@@ -352,7 +360,7 @@ function CloudWorkflow() {
             <div className="cloud-workflow__status">
               <span className="pulse-dot" style={{ background: steps[step].color }} />
               <strong>{steps[step].label}</strong>
-              <span className="cloud-workflow__status-time">il y a 2 s</span>
+              <span className="cloud-workflow__status-time">{t("cwf_ago")}</span>
             </div>
             <div className="cloud-workflow__code">
               <span className="ln ln--add">+ import {'{'} rateLimit {'}'} from "./rateLimit"</span>
@@ -362,10 +370,10 @@ function CloudWorkflow() {
               <span className="ln">{'}'}</span>
             </div>
             <div className="cloud-workflow__tabs">
-              <span className={step === 2 ? "on" : ""}>Preview</span>
-              <span>Code</span>
-              <span className={step === 3 ? "on" : ""}>Diff</span>
-              <span>Terminal</span>
+              <span className={step === 2 ? "on" : ""}>{t("cwf_tab_preview")}</span>
+              <span>{t("cwf_tab_code")}</span>
+              <span className={step === 3 ? "on" : ""}>{t("cwf_tab_diff")}</span>
+              <span>{t("cwf_tab_terminal")}</span>
             </div>
           </div>
         </div>
@@ -375,6 +383,7 @@ function CloudWorkflow() {
 }
 
 function CloudWaitlist() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -387,25 +396,25 @@ function CloudWaitlist() {
     <section className="section cloud-waitlist">
       <div className="cloud-waitlist__inner">
         <span className="cloud-waitlist__beaver" aria-hidden="true">🦫</span>
-        <span className="dl-compare__badge"><Icon name="spark" size={14} /> Bientôt disponible</span>
-        <h2>Rejoins la liste d'attente.</h2>
-        <p className="section-sub">Soyez les premiers à tester Castor Cloud dès sa sortie.</p>
+        <span className="dl-compare__badge"><Icon name="spark" size={14} /> {t("cwl_badge")}</span>
+        <h2>{t("cwl_heading")}</h2>
+        <p className="section-sub">{t("cwl_sub")}</p>
 
         <div className="cloud-waitlist__counter">
           <strong>482</strong>
-          <span>castors déjà inscrits</span>
+          <span>{t("cwl_count")}</span>
           <div className="cloud-waitlist__bar">
             <div className="cloud-waitlist__bar-fill" />
             <span className="cloud-waitlist__bar-dot" style={{ left: "64%" }} />
           </div>
-          <span className="cloud-waitlist__goal">Objectif : 750 pour l'alpha</span>
+          <span className="cloud-waitlist__goal">{t("cwl_goal")}</span>
         </div>
 
         {submitted ? (
           <div className="cloud-waitlist__done">
             <span className="cloud-waitlist__done-icon">✓</span>
-            <strong>Tu es sur la liste !</strong>
-            <p>On te prévient dès que Cloud est prêt.</p>
+            <strong>{t("cwl_done")}</strong>
+            <p>{t("cwl_done_sub")}</p>
           </div>
         ) : (
           <form className="cloud-waitlist__form" onSubmit={handleSubmit}>
@@ -415,9 +424,9 @@ function CloudWaitlist() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ton@email.com"
               required
-              aria-label="Adresse email"
+              aria-label={t("cwl_email_aria")}
             />
-            <button type="submit" className="btn btn--primary">Notifier-moi</button>
+            <button type="submit" className="btn btn--primary">{t("cwl_notify")}</button>
           </form>
         )}
       </div>
@@ -426,26 +435,33 @@ function CloudWaitlist() {
 }
 
 function CloudRoadmap() {
+  const { t } = useLanguage();
   const milestones = [
-    { date: "Q3 2026", title: "Alpha privée", desc: "Sandbox basique, éditeur, terminal.", status: "livré", emoji: "✅" },
-    { date: "Q4 2026", title: "Beta publique", desc: "Preview live, GitHub sync, multi-branche.", status: "en cours", emoji: "🔨" },
-    { date: "Q1 2027", title: "Agent intégré", desc: "L'agent code directement dans le sandbox cloud.", status: "bientôt", emoji: "🚀" },
-    { date: "2027", title: "Launch", desc: "Multi-collaborateur, CI/CD intégré, monitoring.", status: "exploration", emoji: "🔬" },
+    { date: "Q3 2026", title: t("cr_m1_t"), desc: t("cr_m1_d"), status: "done", emoji: "✅" },
+    { date: "Q4 2026", title: t("cr_m2_t"), desc: t("cr_m2_d"), status: "wip", emoji: "🔨" },
+    { date: "Q1 2027", title: t("cr_m3_t"), desc: t("cr_m3_d"), status: "soon", emoji: "🚀" },
+    { date: "2027", title: t("cr_m4_t"), desc: t("cr_m4_d"), status: "explore", emoji: "🔬" },
   ];
   const STATUS_STYLE = {
-    "livré": "cloud-milestone__pill--done",
-    "en cours": "cloud-milestone__pill--wip",
-    "bientôt": "cloud-milestone__pill--soon",
-    "exploration": "cloud-milestone__pill--explore",
+    done: "cloud-milestone__pill--done",
+    wip: "cloud-milestone__pill--wip",
+    soon: "cloud-milestone__pill--soon",
+    explore: "cloud-milestone__pill--explore",
+  };
+  const STATUS_KEY = {
+    done: "cr_status_done",
+    wip: "cr_status_wip",
+    soon: "cr_status_soon",
+    explore: "cr_status_explore",
   };
 
   return (
     <section className="section cloud-roadmap">
-      <h2>Roadmap.</h2>
-      <p className="section-sub">Un produit qui avance, pas un vaporware.</p>
+      <h2>{t("cr_heading")}</h2>
+      <p className="section-sub">{t("cr_sub")}</p>
       <div className="cloud-roadmap__track">
         {milestones.map((m, i) => (
-          <div key={i} className={`cloud-milestone ${m.status === "livré" ? "cloud-milestone--done" : ""}`}>
+          <div key={i} className={`cloud-milestone ${m.status === "done" ? "cloud-milestone--done" : ""}`}>
             <div className="cloud-milestone__marker">
               <span className="cloud-milestone__dot" />
               {i < milestones.length - 1 && <span className="cloud-milestone__line" />}
@@ -454,7 +470,7 @@ function CloudRoadmap() {
               <div className="cloud-milestone__head">
                 <span className="cloud-milestone__date">{m.date}</span>
                 <span className={`cloud-milestone__pill ${STATUS_STYLE[m.status]}`}>
-                  <span aria-hidden="true">{m.emoji}</span> {m.status}
+                  <span aria-hidden="true">{m.emoji}</span> {t(STATUS_KEY[m.status])}
                 </span>
               </div>
               <h3>{m.title}</h3>
@@ -468,34 +484,35 @@ function CloudRoadmap() {
 }
 
 function CloudArchitecture() {
+  const { t } = useLanguage();
   const layers = [
     {
       icon: "branch",
       title: "GitHub",
-      desc: "Ton repo, tes branches",
-      tags: ["Repo public", "Repo privé", "PRs"],
+      desc: t("ca_l1_d"),
+      tags: [t("ca_l1_t1"), t("ca_l1_t2"), t("ca_l1_t3")],
       main: false,
     },
     {
       icon: "cloud",
       title: "Castor Cloud",
-      desc: "Sandbox isolé · Agent IA · Dev server",
-      tags: ["Docker", "Dev server :3000", "Agent parallèle"],
+      desc: t("ca_l2_d"),
+      tags: [t("ca_l2_t1"), t("ca_l2_t2"), t("ca_l2_t3")],
       main: true,
     },
     {
       icon: "globe",
       title: "Preview live",
-      desc: "Résultat instantané",
-      tags: ["URL dédiée", "Hot reload", "Multi-appareils"],
+      desc: t("ca_l3_d"),
+      tags: [t("ca_l3_t1"), t("ca_l3_t2"), t("ca_l3_t3")],
       main: false,
     },
   ];
 
   return (
     <section className="section cloud-arch">
-      <h2>Comment ça marche.</h2>
-      <p className="section-sub">De ton GitHub à ton navigateur, en 3 couches.</p>
+      <h2>{t("ca_heading")}</h2>
+      <p className="section-sub">{t("ca_sub")}</p>
       <div className="cloud-arch__stack">
         {layers.map((l, i) => (
           <div key={l.title} className="cloud-arch__layer-wrap" style={{ "--d": `${i * 140}ms` }}>
@@ -505,12 +522,12 @@ function CloudArchitecture() {
                 <strong>{l.title}</strong>
                 <span className="cloud-arch__desc">{l.desc}</span>
                 <div className="cloud-arch__tags">
-                  {l.tags.map((t) => (
-                    <span key={t} className="cloud-arch__tag">{t}</span>
+                  {l.tags.map((tag) => (
+                    <span key={tag} className="cloud-arch__tag">{tag}</span>
                   ))}
                 </div>
               </div>
-              {l.main && <span className="cloud-arch__core">LE CŒUR</span>}
+              {l.main && <span className="cloud-arch__core">{t("ca_core")}</span>}
             </article>
             {i < layers.length - 1 && (
               <div className="cloud-arch__connector" aria-hidden="true">
@@ -527,29 +544,30 @@ function CloudArchitecture() {
 }
 
 function CloudComparison() {
+  const { t } = useLanguage();
   const items = [
-    { feature: "Installation", desktop: { t: "Requise", ok: false }, cloud: { t: "Aucune", ok: true } },
-    { feature: "Espace de travail", desktop: { t: "Local", ok: true }, cloud: { t: "Cloud isolé", ok: true } },
-    { feature: "GitHub sync", desktop: { t: "Manuel", ok: false }, cloud: { t: "Automatique", ok: true } },
-    { feature: "Multi-collaborateur", desktop: { t: "Non", ok: false }, cloud: { t: "Oui (bientôt)", ok: true } },
-    { feature: "Offline", desktop: { t: "Oui", ok: true }, cloud: { t: "Non", ok: false } },
-    { feature: "Gratuit", desktop: { t: "Oui", ok: true }, cloud: { t: "Oui", ok: true } },
+    { feature: t("cc_f1"), desktop: { v: t("cc_v_required"), ok: false }, cloud: { v: t("cc_v_none"), ok: true } },
+    { feature: t("cc_f2"), desktop: { v: t("cc_v_local"), ok: true }, cloud: { v: t("cc_v_iso"), ok: true } },
+    { feature: t("cc_f3"), desktop: { v: t("cc_v_manual"), ok: false }, cloud: { v: t("cc_v_auto"), ok: true } },
+    { feature: t("cc_f4"), desktop: { v: t("cc_v_no"), ok: false }, cloud: { v: t("cc_v_yes_soon"), ok: true } },
+    { feature: t("cc_f5"), desktop: { v: t("cc_v_yes"), ok: true }, cloud: { v: t("cc_v_no"), ok: false } },
+    { feature: t("cc_f6"), desktop: { v: t("cc_v_yes"), ok: true }, cloud: { v: t("cc_v_yes"), ok: true } },
   ];
 
   function Cell({ v, cloud }) {
     if (v.ok) {
-      return <span className={`cloud-compare__val cloud-compare__val--yes${cloud ? " cloud-compare__val--hl" : ""}`}><Icon name="checkCircle" size={15} /> {v.t}</span>;
+      return <span className={`cloud-compare__val cloud-compare__val--yes${cloud ? " cloud-compare__val--hl" : ""}`}><Icon name="checkCircle" size={15} /> {v.v}</span>;
     }
-    return <span className={`cloud-compare__val cloud-compare__val--no${cloud ? " cloud-compare__val--hl" : ""}`}><i aria-hidden="true">✕</i> {v.t}</span>;
+    return <span className={`cloud-compare__val cloud-compare__val--no${cloud ? " cloud-compare__val--hl" : ""}`}><i aria-hidden="true">✕</i> {v.v}</span>;
   }
 
   return (
     <section className="section cloud-compare">
-      <h2>Desktop vs Cloud.</h2>
-      <p className="section-sub">Deux façons de coder, même philosophie : gratuit et open source.</p>
+      <h2>{t("cc_heading")}</h2>
+      <p className="section-sub">{t("cc_sub")}</p>
       <div className="cloud-compare__table">
         <div className="cloud-compare__header">
-          <span className="cloud-compare__feat">Fonctionnalité</span>
+          <span className="cloud-compare__feat">{t("cc_feature")}</span>
           <span className="cloud-compare__prod"><Icon name="desktop" size={16} /> Desktop</span>
           <span className="cloud-compare__prod cloud-compare__prod--highlight"><Icon name="cloud" size={16} /> Cloud</span>
         </div>
@@ -566,6 +584,7 @@ function CloudComparison() {
 }
 
 export default function ProductPage({ slug, onDownload }) {
+  const { t } = useLanguage();
   // hook toujours appelé, avant tout retour anticipé
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -574,11 +593,25 @@ export default function ProductPage({ slug, onDownload }) {
   const product = bySlug(slug);
   if (!product) return null;
 
+  /* produit traduit : champs localisés remplacés depuis le dictionnaire */
+  const tr = {
+    ...product,
+    tag: t(`pp_${slug}_tag`),
+    tagline: t(`pp_${slug}_tagline`),
+    desc: t(`pp_${slug}_desc`),
+    cta: t(`pp_${slug}_cta`),
+    features: product.features.map((f, i) => ({
+      ...f,
+      title: t(`pp_${slug}_f${i}_t`),
+      desc: t(`pp_${slug}_f${i}_d`),
+    })),
+  };
+
   const isDesktop = slug === "desktop";
 
   return (
     <>
-      <ProductHero product={product} onDownload={onDownload} />
+      <ProductHero product={tr} onDownload={onDownload} />
 
       {isDesktop && <DownloadCompare onDownload={onDownload} />}
       {isDesktop && <DesktopHowItWorks />}
@@ -586,10 +619,10 @@ export default function ProductPage({ slug, onDownload }) {
       {slug === "cloud" && <CloudArchitecture />}
 
       <section className="section">
-        <h2>{product.desc.split(".")[0]}.</h2>
-        <p className="section-sub">{product.desc}</p>
+        <h2>{tr.desc.split(".")[0]}.</h2>
+        <p className="section-sub">{tr.desc}</p>
         <div className="features-grid">
-          {product.features.map((f) => (
+          {tr.features.map((f) => (
             <article key={f.title} className="feature-card">
               <div className="feature-card__top">
                 <span className="feature-card__icon" aria-hidden="true">

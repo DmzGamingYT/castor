@@ -1,24 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { slugify } from "../lib/utils.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
-const SUGGESTIONS = [
-  "un blog de recettes végé",
-  "une app de notes minimaliste",
-  "le portfolio d'un illustrateur",
-];
+const SUGGESTIONS = ["dam_s0", "dam_s1", "dam_s2"];
 
-const LOG_LINES = [
-  "✔ carte du chantier lue",
-  "✔ structure générée",
-  "✔ styles appliqués",
-  "✔ tests passés",
-];
+const LOG_LINES = ["dam_l0", "dam_l1", "dam_l2", "dam_l3"];
 
 const BLOCK_COUNT = 5;
 
 export default function DamScene() {
+  const { t } = useLanguage();
   const [phase, setPhase] = useState("idle"); // idle | work | done
-  const [project, setProject] = useState(SUGGESTIONS[0]);
+  const [project, setProject] = useState(() => t(SUGGESTIONS[0]));
   const [built, setBuilt] = useState(0);
   const [logs, setLogs] = useState([]);
   const timers = useRef([]);
@@ -42,7 +35,7 @@ export default function DamScene() {
     }
     // le journal défile pendant le chantier
     LOG_LINES.forEach((line, i) => {
-      later(() => setLogs((prev) => [...prev, line]), 700 + (i + 1) * 520);
+      later(() => setLogs((prev) => [...prev, t(line)]), 700 + (i + 1) * 520);
     });
     // fin du chantier
     later(() => setPhase("done"), 500 + (BLOCK_COUNT + 1) * 380);
@@ -102,18 +95,18 @@ export default function DamScene() {
           <input
             value={project}
             onChange={(e) => setProject(e.target.value)}
-            placeholder="Décris ton chantier…"
-            aria-label="Décris ton chantier"
+            placeholder={t("dam_placeholder")}
+            aria-label={t("dam_aria")}
             spellCheck="false"
           />
         </div>
         {phase === "done" ? (
           <button type="button" className="btn btn--ghost" onClick={() => start(project)}>
-            Nouveau chantier ↺
+            {t("dam_new")}
           </button>
         ) : (
           <button type="submit" className="btn btn--primary" disabled={working}>
-            {working ? "Chantier en cours…" : "Construire ⚒️"}
+            {working ? t("dam_working") : t("dam_build")}
           </button>
         )}
       </form>
@@ -125,9 +118,9 @@ export default function DamScene() {
               type="button"
               className="dam__chip"
               disabled={working}
-              onClick={() => start(s)}
+              onClick={() => start(t(s))}
             >
-              {s}
+              {t(s)}
             </button>
           </li>
         ))}
@@ -138,7 +131,7 @@ export default function DamScene() {
           <div className="dam__browser-bar">
             <span /> <span /> <span />
             <em className={`dam__url ${phase === "done" ? "dam__url--on" : ""}`}>
-              {phase === "done" ? url : working ? "en construction…" : "\u00A0"}
+              {phase === "done" ? url : working ? t("dam_under_construction") : "\u00A0"}
             </em>
           </div>
           <div className="dam__site">
@@ -166,8 +159,8 @@ export default function DamScene() {
             </span>
           ))}
           {working && <span className="cursor">▊</span>}
-          {phase === "done" && <span className="t-dim">{"\nFait · prêt à exporter · "}</span>}
-          {phase === "done" && <span className="t-accent">0 € facturés</span>}
+          {phase === "done" && <span className="t-dim">{"\n"}{t("dam_done")}</span>}
+          {phase === "done" && <span className="t-accent">{t("dam_billed")}</span>}
         </pre>
       </div>
     </div>

@@ -1,9 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#f7c666"/>
       <stop offset="100%" stop-color="#e2952a"/>
     </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="42%" r="78%">
+      <stop offset="55%" stop-color="#5c3a08" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#5c3a08" stop-opacity="0.30"/>
+    </radialGradient>
     <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#6b4a14"/>
       <stop offset="100%" stop-color="#3d2808"/>
@@ -16,19 +20,15 @@
       <stop offset="0%" stop-color="#ffe071"/>
       <stop offset="100%" stop-color="#efb63a"/>
     </linearGradient>
-    <radialGradient id="vignette" cx="50%" cy="42%" r="78%">
-      <stop offset="55%" stop-color="#5c3a08" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#5c3a08" stop-opacity="0.30"/>
-    </radialGradient>
   </defs>
 
   <!-- Tuile ambre arrondie + ombre interne (aspect embossé) -->
-  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  <rect width="128" height="128" rx="28" fill="url(#vignette)"/>
-  <rect x="0.75" y="0.75" width="126.5" height="126.5" rx="27.25" fill="none" stroke="#8a5a12" stroke-opacity="0.35" stroke-width="1.5"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#vignette)"/>
+  <rect x="6" y="6" width="1012" height="1012" rx="218" fill="none" stroke="#8a5a12" stroke-opacity="0.35" stroke-width="12"/>
 
-  <!-- Castor de chantier (même dessin que la marque du site) -->
-  <g transform="translate(0,4)">
+  <!-- Castor de chantier (même dessin que la marque du site, ×8) -->
+  <g transform="translate(0,32) scale(8)">
     <!-- queue plate (pagaie) + stries -->
     <g transform="rotate(-22 96 92)">
       <ellipse cx="96" cy="92" rx="23" ry="12" fill="#4a3210"/>
@@ -72,7 +72,7 @@
     <circle cx="77.2" cy="49.4" r="1.7" fill="#fff" opacity="0.95"/>
     <!-- nez -->
     <ellipse cx="62" cy="60" rx="5.2" ry="4.2" fill="#241303"/>
-    <!-- sourire + grandes dents -->
+    <!-- sourire + grandes dents de castor -->
     <path d="M54.5 64 Q58 67.5 62 64 Q66 67.5 69.5 64" fill="none" stroke="#241303" stroke-width="1.7" stroke-linecap="round"/>
     <rect x="57" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>
     <rect x="62.6" y="64.5" width="4.4" height="6.5" rx="1.4" fill="#fffdf6"/>

@@ -14,6 +14,7 @@ import {
   sortModelsByPreference,
 } from "../lib/utils.js";
 import { useNavigate } from "../lib/NavigationContext.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 /* ------------------------------------------------------------------
    Espace Cloud — le sandbox cloud essayable, 100 % dans le navigateur.
@@ -29,36 +30,19 @@ import { useNavigate } from "../lib/NavigationContext.jsx";
 const GH = "https://api.github.com";
 
 const DEMO_REPOS = [
-  { repo: "acme/storefront", prompt: "une landing page moderne pour une boutique" },
-  { repo: "castor/recettes-vege", prompt: "un blog de recettes végé de saison" },
-  { repo: "notes/minimalistes", prompt: "une app de notes minimaliste" },
-  { repo: "atelier/illustrateur", prompt: "le portfolio d'un illustrateur" },
-  { repo: "stats/dashboard", prompt: "un tableau de bord météo minimaliste" },
-  { repo: "ecole/planetes", prompt: "un quiz de révision sur les planètes" },
+  { repo: "acme/storefront", promptKey: "cs_demo_p0" },
+  { repo: "castor/recettes-vege", promptKey: "cs_demo_p1" },
+  { repo: "notes/minimalistes", promptKey: "cs_demo_p2" },
+  { repo: "atelier/illustrateur", promptKey: "cs_demo_p3" },
+  { repo: "stats/dashboard", promptKey: "cs_demo_p4" },
+  { repo: "ecole/planetes", promptKey: "cs_demo_p5" },
 ];
 
-const PLAN_CHIPS = [
-  "un tracker d'habitudes avec streak",
-  "le portfolio d'un photographe animalier",
-  "un quiz de révision sur les planètes",
-  "un blog de recettes végé de saison",
-];
+const PLAN_CHIPS = ["cs_chip_0", "cs_chip_1", "cs_chip_2", "cs_chip_3"];
 
-const AGENT_STEPS = [
-  "carte du chantier lue",
-  "structure générée",
-  "styles appliqués",
-  "contenu monté",
-  "tests passés",
-];
+const AGENT_STEPS = ["cs_step_0", "cs_step_1", "cs_step_2", "cs_step_3", "cs_step_4"];
 
-const GITHUB_STEPS = [
-  "repo vérifié",
-  "fichiers cartographiés",
-  "README analysé",
-  "preview branchée",
-  "chantier prêt",
-];
+const GITHUB_STEPS = ["cs_gstep_0", "cs_gstep_1", "cs_gstep_2", "cs_gstep_3", "cs_gstep_4"];
 
 /* fichiers révélés au fil des étapes (gabarits locaux) */
 const FILE_STEPS = [
@@ -124,6 +108,7 @@ async function fetchJson(url) {
 
 export default function CloudSpace() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [mode, setMode] = useState("landing"); // landing | connect | plan | sandbox
   const [repoDraft, setRepoDraft] = useState("");
   const [repoError, setRepoError] = useState("");
@@ -248,60 +233,60 @@ export default function CloudSpace() {
   }
 
   /* ---------- le moteur du sandbox ---------- */
-  function startSandbox(t) {
+  function startSandbox(job) {
     let site = null;
     let htmlLines = [];
     let fileSteps = FILE_STEPS;
     let bootLogs = [];
     let st = AGENT_STEPS;
 
-    if (t.kind === "github") {
-      const g = t.gh;
+    if (job.kind === "github") {
+      const g = job.gh;
       st = g.readme
         ? GITHUB_STEPS
-        : GITHUB_STEPS.map((s) => (s === "README analysé" ? "structure lue" : s));
+        : GITHUB_STEPS.map((s) => (s === "cs_gstep_2" ? "cs_gh_no_readme" : s));
       const mk = (p) => ({ path: p, depth: p.includes("/") ? 1 : 0 });
       const per = Math.max(1, Math.ceil(g.files.length / st.length));
       fileSteps = Array.from({ length: st.length }, (_, i) =>
         g.files.slice(i * per, (i + 1) * per).map(mk)
       );
       const doc = g.indexHtml || readmePreviewDoc(g);
-      site = { slug: g.name, title: g.name, html: doc, kindLabel: `GitHub · ${g.files.length} fichiers` };
+      site = { slug: g.name, title: g.name, html: doc, kindLabel: `GitHub · ${g.files.length} ${t("cs_log_files").replace("{count}", "").replace("✓ ", "").trim()}` };
       htmlLines = (g.readme || `# ${g.name}\n\n${g.desc || ""}`).split("\n");
       bootLogs = [
-        `$ castor cloud connect ${t.repo}`,
-        `✓ repo réel vérifié — ${g.stars} ⭐ · branche ${g.branch}`,
-        `✓ ${g.files.length} fichiers cartographiés`,
-        g.readme ? "✓ README analysé" : "✓ structure lue",
-        "✓ preview branchée",
+        t("cs_log_connect").replace("{repo}", job.repo),
+        t("cs_log_repo_ok").replace("{stars}", String(g.stars)).replace("{branch}", g.branch),
+        t("cs_log_files").replace("{count}", String(g.files.length)),
+        g.readme ? t("cs_log_readme") : t("cs_log_struct"),
+        t("cs_log_preview"),
       ];
     } else {
-      if (t.html) {
-        const title = titleFromHtml(t.html, t.prompt);
-        site = { title, slug: slugify(title), html: t.html, kindLabel: `IA · ${t.modelName}` };
+      if (job.html) {
+        const title = titleFromHtml(job.html, job.prompt);
+        site = { title, slug: slugify(title), html: job.html, kindLabel: `IA · ${job.modelName}` };
       } else {
-        site = generateSite(t.prompt, null);
+        site = generateSite(job.prompt, null);
       }
       htmlLines = site.html.split("\n");
       bootLogs = [
-        `$ castor cloud connect ${t.repo}`,
-        `✓ clone ok — 14 fichiers · branche castor/feat-${slugify(site.title).slice(0, 14)}`,
+        t("cs_log_connect").replace("{repo}", job.repo),
+        t("cs_log_clone").replace("{slug}", slugify(site.title).slice(0, 14)),
       ];
-      if (t.modelName) bootLogs.push(`✓ appel OpenRouter · ${t.modelName}`);
-      bootLogs.push("$ npm install", "✓ 186 paquets en 2.1 s", "$ npm run dev", "✓ dev server prêt — preview live sur :5173");
-      if (t.note) bootLogs.unshift(`⚠ ${t.note}`);
+      if (job.modelName) bootLogs.push(t("cs_log_or").replace("{model}", job.modelName));
+      bootLogs.push(t("cs_log_npm_install"), t("cs_log_pkgs"), t("cs_log_dev"), t("cs_log_server"));
+      if (job.note) bootLogs.unshift(`⚠ ${job.note}`);
     }
 
     const n = st.length;
     const reveal =
-      t.kind === "github"
+      job.kind === "github"
         ? Array.from({ length: n }, (_, i) =>
             Math.min(htmlLines.length, Math.ceil(((i + 1) * htmlLines.length) / n))
           )
         : [6, 10, 14, 18, htmlLines.length];
     const bootMs = bootLogs.length * 560 + 300;
 
-    setTask({ ...t, site });
+    setTask({ ...job, site });
     setSteps(st);
     setMode("sandbox");
     setBuildPhase("boot");
@@ -321,14 +306,14 @@ export default function CloudSpace() {
         setStepIdx(i);
         setFiles((p) => [...p, ...(fileSteps[i] || [])]);
         setCodeLines(htmlLines.slice(0, reveal[i]));
-        setLogs((p) => [...p, `▸ ${step}`]);
+        setLogs((p) => [...p, `▸ ${t(step)}`]);
       }, at);
     });
 
     later(() => {
       setBuildPhase("done");
       setStepIdx(n);
-      setLogs((p) => [...p, "✓ chantier terminé — 0 € facturés"]);
+      setLogs((p) => [...p, t("cs_log_done")]);
       setTab("preview");
     }, bootMs + n * STEP_MS + 450);
   }
@@ -337,18 +322,18 @@ export default function CloudSpace() {
   function connectRepo(repoArg) {
     let repo = (repoArg || repoDraft).trim();
     if (!repo) {
-      setRepoError("Entre un repo au format owner/repo, ou choisis une démo.");
+      setRepoError(t("cs_err_empty"));
       return;
     }
     repo = repo.replace(/^https?:\/\/[^/]+\//, "").replace(/\.git$/, "").replace(/\/+$/, "");
     if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) {
-      setRepoError("Format attendu : owner/repo (ex : acme/storefront).");
+      setRepoError(t("cs_err_format"));
       return;
     }
     setRepoError("");
     const demo = DEMO_REPOS.find((d) => d.repo === repo);
     if (demo) {
-      startSandbox({ repo: demo.repo, prompt: demo.prompt, kind: "repo" });
+      startSandbox({ repo: demo.repo, prompt: t(demo.promptKey), kind: "repo" });
       return;
     }
     connectGithub(repo);
@@ -387,7 +372,7 @@ export default function CloudSpace() {
 
       startSandbox({
         repo,
-        prompt: `le site du projet ${name}`,
+        prompt: t("cs_plan_prompt").replace("{name}", name),
         kind: "github",
         gh: {
           owner,
@@ -403,11 +388,11 @@ export default function CloudSpace() {
     } catch (err) {
       setGhState("err");
       if (err.status === 404) {
-        setRepoError("Repo introuvable sur GitHub. Vérifie l'orthographe (owner/repo) ou choisis une démo.");
+        setRepoError(t("cs_err_notfound"));
       } else if (err.status === 403 || err.status === 429) {
-        setRepoError("Limite de l'API GitHub atteinte (60 req/h sans clé). Reviens dans un moment ou choisis une démo.");
+        setRepoError(t("cs_err_rate"));
       } else {
-        setRepoError(`GitHub indisponible (${String(err.message || "erreur").slice(0, 60)}) — choisis une démo.`);
+        setRepoError(t("cs_err_gh").replace("{msg}", String(err.message || "erreur").slice(0, 60)));
       }
     }
   }
@@ -422,8 +407,8 @@ export default function CloudSpace() {
       title: site.title,
       slug: site.slug,
       stack: aiReady
-        ? ["HTML5", "CSS3", "JavaScript natif", `IA · ${shortName(effectiveModelId, currentModel?.name)}`]
-        : ["HTML5", "CSS3", "JavaScript natif", "Gabarit Castor local"],
+        ? ["HTML5", "CSS3", "JavaScript natif", t("cs_ia_model").replace("{model}", shortName(effectiveModelId, currentModel?.name))]
+        : ["HTML5", "CSS3", "JavaScript natif", t("cs_local_template")],
       files: ["index.html", "src/styles.css", "src/app.js", "tests/app.test.js"],
       steps: [...AGENT_STEPS],
     });
@@ -519,17 +504,16 @@ export default function CloudSpace() {
             href="/castor/"
             onClick={(e) => { e.preventDefault(); navigate("/"); }}
           >
-            ← Accueil
+            {t("cs_home")}
           </a>
           <span className="hero__badge">
-            <Icon name="cloud" size={14} /> Espace Cloud · bêta
+            <Icon name="cloud" size={14} /> {t("cs_espace_badge")}
           </span>
           <h1>
-            Connecte un repo. <span className="hero__accent">Construis.</span>
+            {t("cs_h1_a")} <span className="hero__accent">{t("cs_h1_b")}</span>
           </h1>
           <p className="hero__sub">
-            Connecte n'importe quel repo GitHub, obtient un sandbox cloud avec
-            preview live, et construis avec des modèles gratuits.
+            {t("cs_sub")}
           </p>
 
           <div className="espace__cards">
@@ -541,11 +525,11 @@ export default function CloudSpace() {
               <span className="espace-card__icon" aria-hidden="true">
                 <Icon name="github" size={28} />
               </span>
-              <strong>Connecte ton premier repo</strong>
+              <strong>{t("cs_card1_t")}</strong>
               <span className="espace-card__desc">
-                Clone un projet GitHub existant dans le Cloud.
+                {t("cs_card1_d")}
               </span>
-              <em className="espace-card__cta">Connecter un repo →</em>
+              <em className="espace-card__cta">{t("cs_card1_cta")}</em>
             </button>
 
             <button
@@ -557,11 +541,11 @@ export default function CloudSpace() {
                 <Icon name="tools" size={28} />
               </span>
               <span className="espace-card__badge">BETA</span>
-              <strong>Planifie un projet sur mesure</strong>
+              <strong>{t("cs_card2_t")}</strong>
               <span className="espace-card__desc">
-                Décris ton idée, Castor planifie la stack avant d'écrire le code.
+                {t("cs_card2_d")}
               </span>
-              <em className="espace-card__cta">Planifier →</em>
+              <em className="espace-card__cta">{t("cs_card2_cta")}</em>
             </button>
           </div>
 
@@ -571,14 +555,14 @@ export default function CloudSpace() {
               className="espace__vision-link"
               onClick={() => navigate("/cloud")}
             >
-              Découvrir la vision Castor Cloud →
+              {t("cs_vision")}
             </button>
           </p>
         </section>
 
         {history.length > 0 && (
           <section className="section espace__history">
-            <h2>Projets récents</h2>
+            <h2>{t("cs_recent")}</h2>
             <div className="espace__history-grid">
               {history.map((h) => (
                 <button
@@ -607,8 +591,8 @@ export default function CloudSpace() {
 
         <section className="section espace__feedback">
           <div className="espace__feedback-text">
-            <h2>Façonne l'avenir de Castor Cloud</h2>
-            <p>On lit chaque retour. Ça prend moins d'une minute.</p>
+            <h2>{t("cs_feedback_h")}</h2>
+            <p>{t("cs_feedback_p")}</p>
           </div>
           <div className="espace__feedback-actions">
             <a
@@ -617,7 +601,7 @@ export default function CloudSpace() {
               target="_blank"
               rel="noreferrer"
             >
-              <Icon name="chat" size={15} /> Discussions
+              <Icon name="chat" size={15} /> {t("cs_discussions")}
             </a>
             <a
               className="btn btn--primary"
@@ -625,7 +609,7 @@ export default function CloudSpace() {
               target="_blank"
               rel="noreferrer"
             >
-              Partager un retour
+              {t("cs_share_feedback")}
             </a>
           </div>
         </section>
@@ -641,17 +625,16 @@ export default function CloudSpace() {
           <div className="hero__glow hero__glow--lime" aria-hidden="true" />
           <Hills />
           <button type="button" className="back" onClick={() => setMode("landing")}>
-            ← Espace Cloud
+            {t("cs_back")}
           </button>
           <span className="hero__badge">
-            <Icon name="github" size={14} /> Connecter un repo
+            <Icon name="github" size={14} /> {t("cs_connect_badge")}
           </span>
           <h1>
-            Quel repo <span className="hero__accent">ouvre-t-on ?</span>
+            {t("cs_h1_repo_a")} <span className="hero__accent">{t("cs_h1_repo_b")}</span>
           </h1>
           <p className="hero__sub">
-            Un repo tapé à la main est vérifié en réel sur GitHub. Castor
-            cartographie les fichiers et branche la preview.
+            {t("cs_repo_sub")}
           </p>
 
           <div className="espace__repo-form">
@@ -660,11 +643,11 @@ export default function CloudSpace() {
               value={repoDraft}
               onChange={(e) => { setRepoDraft(e.target.value); setRepoError(""); setGhState("idle"); }}
               onKeyDown={(e) => e.key === "Enter" && connectRepo()}
-              placeholder="owner/repo — ex : dmzgamingyt/castor"
+              placeholder={t("cs_repo_placeholder")}
               spellCheck="false"
               autoFocus
               disabled={ghState === "checking"}
-              aria-label="Nom du repo GitHub (owner/repo)"
+              aria-label={t("cs_repo_aria")}
             />
             <button
               type="button"
@@ -672,14 +655,14 @@ export default function CloudSpace() {
               onClick={() => connectRepo()}
               disabled={!repoDraft.trim() || ghState === "checking"}
             >
-              {ghState === "checking" ? "Vérification…" : "Connecter"}
+              {ghState === "checking" ? t("cs_checking") : t("cs_connect")}
             </button>
           </div>
 
           {ghState === "checking" && (
             <p className="espace__checking">
               <span className="espace__dots" aria-hidden="true"><span /><span /><span /></span>
-              Vérification de {repoDraft} sur GitHub…
+              {t("cs_checking_repo").replace("{repo}", repoDraft)}
             </p>
           )}
           {repoError && <p className="espace__error">{repoError}</p>}
@@ -699,8 +682,7 @@ export default function CloudSpace() {
           </ul>
 
           <p className="espace__hint">
-            Les démos restent simulées — un repo tapé à la main est vérifié en
-            réel via l'API publique GitHub.
+            {t("cs_demo_hint")}
           </p>
         </section>
       </div>
@@ -715,16 +697,16 @@ export default function CloudSpace() {
           <div className="hero__glow hero__glow--wood" aria-hidden="true" />
           <Hills />
           <button type="button" className="back" onClick={() => setMode("landing")}>
-            ← Espace Cloud
+            {t("cs_back")}
           </button>
           <span className="hero__badge">
-            <Icon name="tools" size={14} /> Planifier un projet · BETA
+            <Icon name="tools" size={14} /> {t("cs_plan_badge")}
           </span>
           <h1>
-            Décris ton <span className="hero__accent">idée.</span>
+            {t("cs_h1_idea_a")} <span className="hero__accent">{t("cs_h1_idea_b")}</span>
           </h1>
           <p className="hero__sub">
-            Castor planifie la stack et les étapes avant d'écrire la moindre ligne.
+            {t("cs_plan_sub")}
           </p>
 
           {!planned ? (
@@ -736,10 +718,10 @@ export default function CloudSpace() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) planProject();
                 }}
-                placeholder="ex : un tracker d'habitudes avec streak"
+                placeholder={t("cs_prompt_placeholder")}
                 rows={3}
                 spellCheck="false"
-                aria-label="Décris ton idée de projet"
+                aria-label={t("cs_idea_aria")}
               />
 
               <div className="composer-card__row espace__model-row">
@@ -748,16 +730,16 @@ export default function CloudSpace() {
                   modelId={effectiveModelId}
                   onSelect={setModelId}
                   aiReady={aiReady}
-                  emptyLabel="Gratuits OpenRouter indisponibles — gabarits locaux."
-                  loadingLabel="Chargement…"
+                  emptyLabel={t("cs_empty_models")}
+                  loadingLabel={t("cs_loading")}
                 />
                 <button
                   type="button"
                   className={`mini-btn ${apiKey ? "mini-btn--ok" : ""}`}
                   onClick={() => setKeyOpen(!keyOpen)}
-                  title="Clé OpenRouter — requise même pour les modèles gratuits"
+                  title={t("cs_key_title")}
                 >
-                  {apiKey ? "clé ✓" : "clé ?"}
+                  {apiKey ? t("cs_key_ok") : t("cs_key_ask")}
                 </button>
               </div>
 
@@ -768,17 +750,17 @@ export default function CloudSpace() {
                     value={keyDraft}
                     onChange={(e) => setKeyDraft(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && saveKey()}
-                    placeholder="sk-or-v1-… (reste dans ton navigateur)"
+                    placeholder={t("cs_key_placeholder")}
                     spellCheck="false"
                     autoFocus
-                    aria-label="Clé API OpenRouter"
+                    aria-label={t("cs_key_aria")}
                   />
                   <button type="button" className="mini-btn mini-btn--primary" onClick={saveKey}>
-                    Enregistrer
+                    {t("cs_save")}
                   </button>
                   {apiKey && (
                     <button type="button" className="mini-btn" onClick={() => saveKeyState("")}>
-                      Effacer
+                      {t("cs_clear")}
                     </button>
                   )}
                 </div>
@@ -791,7 +773,7 @@ export default function CloudSpace() {
                   onClick={planProject}
                   disabled={!promptDraft.trim()}
                 >
-                  Planifier →
+                  {t("cs_plan_btn")}
                 </button>
               </div>
 
@@ -801,9 +783,9 @@ export default function CloudSpace() {
                     <button
                       type="button"
                       className="dam__chip"
-                      onClick={() => setPromptDraft(s)}
+                      onClick={() => setPromptDraft(t(s))}
                     >
-                      {s}
+                      {t(s)}
                     </button>
                   </li>
                 ))}
@@ -811,19 +793,19 @@ export default function CloudSpace() {
 
               <p className="espace__hint">
                 {aiReady
-                  ? `IA prête — ${shortName(effectiveModelId, currentModel?.name)} générera le code.`
-                  : "Sans clé : gabarits locaux instantanés. Avec une clé OpenRouter gratuite : génération sur mesure."}
+                  ? t("cs_hint_ai").replace("{model}", shortName(effectiveModelId, currentModel?.name))
+                  : t("cs_hint_nokey")}
               </p>
             </>
           ) : (
             <div className="espace__plan">
               <div className="espace__plan-head">
                 <Icon name="tools" size={18} />
-                Plan du chantier — <em>{planned.title}</em>
+                {t("cs_plan_head")} <em>{planned.title}</em>
               </div>
               <div className="espace__plan-grid">
                 <div className="espace__plan-col">
-                  <h3>Stack</h3>
+                  <h3>{t("cs_stack")}</h3>
                   <ul>
                     {planned.stack.map((s) => (
                       <li key={s}>
@@ -833,7 +815,7 @@ export default function CloudSpace() {
                   </ul>
                 </div>
                 <div className="espace__plan-col">
-                  <h3>Fichiers</h3>
+                  <h3>{t("cs_files")}</h3>
                   <ul>
                     {planned.files.map((f) => (
                       <li key={f}>
@@ -843,11 +825,11 @@ export default function CloudSpace() {
                   </ul>
                 </div>
                 <div className="espace__plan-col">
-                  <h3>Étapes</h3>
+                  <h3>{t("cs_steps")}</h3>
                   <ol>
                     {planned.steps.map((s, i) => (
                       <li key={s}>
-                        <span className="espace__plan-num">{i + 1}</span> {s}
+                        <span className="espace__plan-num">{i + 1}</span> {t(s)}
                       </li>
                     ))}
                   </ol>
@@ -855,7 +837,7 @@ export default function CloudSpace() {
               </div>
               <div className="espace__plan-actions">
                 <button type="button" className="btn btn--ghost" onClick={() => setPlanned(null)}>
-                  Modifier
+                  {t("cs_edit")}
                 </button>
                 <button
                   type="button"
@@ -864,10 +846,10 @@ export default function CloudSpace() {
                   disabled={planning}
                 >
                   {planning
-                    ? "L'agent réfléchit…"
+                    ? t("cs_thinking")
                     : aiReady
-                      ? `Lancer la construction (${shortName(effectiveModelId, currentModel?.name)}) →`
-                      : "Lancer la construction →"}
+                      ? t("cs_launch_model").replace("{model}", shortName(effectiveModelId, currentModel?.name))
+                      : t("cs_launch")}
                 </button>
               </div>
             </div>
@@ -886,10 +868,10 @@ export default function CloudSpace() {
       <section className="hero hero--product espace__hero espace__hero--sandbox">
         <div className="hero__glow hero__glow--lime" aria-hidden="true" />
         <button type="button" className="back" onClick={resetAll}>
-          ← Espace Cloud
+          {t("cs_back")}
         </button>
         <span className="hero__badge">
-          <Icon name="cloud" size={14} /> Sandbox · {task.repo}
+          <Icon name="cloud" size={14} /> {t("cs_sandbox_badge").replace("{repo}", task.repo)}
         </span>
 
         <div className="espace__progress" aria-hidden="true">
@@ -906,14 +888,14 @@ export default function CloudSpace() {
               type="button"
               className="espace__new"
               onClick={resetAll}
-              aria-label="Nouveau chantier"
+              aria-label={t("cs_new_aria")}
             >
               ↻
             </button>
           </div>
 
           <div className="espace__sandbox-body">
-            <aside className="espace__tree" aria-label="Arborescence du chantier">
+            <aside className="espace__tree" aria-label={t("cs_tree_aria")}>
               <span className="espace__tree-repo">⎇ {isGithub ? task.gh.branch : "main"}</span>
               {files.map((f, i) => {
                 const isDir = f.depth === 0 && files.some((ff) => ff.path.startsWith(f.path + "/"));
@@ -946,7 +928,7 @@ export default function CloudSpace() {
                       className="mini-btn"
                       onClick={() => setViewFile(null)}
                     >
-                      Fermer
+                      {t("cs_close")}
                     </button>
                   </div>
                   <pre className="espace__code">
@@ -958,7 +940,7 @@ export default function CloudSpace() {
                   </pre>
                 </div>
               )}
-              <div className="espace__tabs" role="tablist" aria-label="Vues du sandbox">
+              <div className="espace__tabs" role="tablist" aria-label={t("cs_tabs_aria")}>
                 <button
                   type="button"
                   role="tab"
@@ -966,7 +948,7 @@ export default function CloudSpace() {
                   className={tab === "preview" ? "on" : ""}
                   onClick={() => setTab("preview")}
                 >
-                  Preview
+                  {t("cwf_tab_preview")}
                 </button>
                 <button
                   type="button"
@@ -975,7 +957,7 @@ export default function CloudSpace() {
                   className={tab === "code" ? "on" : ""}
                   onClick={() => setTab("code")}
                 >
-                  Code
+                  {t("cwf_tab_code")}
                 </button>
                 <button
                   type="button"
@@ -984,7 +966,7 @@ export default function CloudSpace() {
                   className={tab === "terminal" ? "on" : ""}
                   onClick={() => setTab("terminal")}
                 >
-                  Terminal
+                  {t("cwf_tab_terminal")}
                 </button>
               </div>
 
@@ -1000,7 +982,7 @@ export default function CloudSpace() {
                   ) : (
                     <div className="espace__preview-wait">
                       <BeaverMark size={44} />
-                      <span>{isGithub ? "Le castor cartographie…" : "Le castor construit…"}</span>
+                      <span>{isGithub ? t("cs_wait_map") : t("cs_wait_build")}</span>
                       <span className="espace__dots" aria-hidden="true">
                         <span /><span /><span />
                       </span>
@@ -1043,7 +1025,7 @@ export default function CloudSpace() {
               )}
               {buildPhase === "done" && logs.some((l) => l.startsWith("⚠")) && (
                 <div className="espace__retry">
-                  <span>La génération a échoué — veuillez réessayer.</span>
+                  <span>{t("cs_retry_msg")}</span>
                   <button
                     type="button"
                     className="mini-btn mini-btn--primary"
@@ -1058,25 +1040,25 @@ export default function CloudSpace() {
                       }
                     }}
                   >
-                    Réessayer ↻
+                    {t("cs_retry")}
                   </button>
                 </div>
               )}
             </div>
 
-            <aside className="espace__steps" aria-label="Avancement">
-              <strong className="espace__steps-title">{isGithub ? "Explorateur" : "Agent"}</strong>
+            <aside className="espace__steps" aria-label={t("cs_steps_aria")}>
+              <strong className="espace__steps-title">{isGithub ? t("cs_steps_explorer") : t("cs_steps_agent")}</strong>
               {steps.map((s, i) => (
                 <span
                   key={s}
                   className={`espace__step ${i < stepIdx || buildPhase === "done" ? "done" : ""} ${i === stepIdx && buildPhase !== "done" ? "now" : ""}`}
                 >
-                  {i < stepIdx || buildPhase === "done" ? "✓" : i === stepIdx && buildPhase !== "done" ? "▸" : "·"} {s}
+                  {i < stepIdx || buildPhase === "done" ? "✓" : i === stepIdx && buildPhase !== "done" ? "▸" : "·"} {t(s)}
                 </span>
               ))}
               {buildPhase === "done" && (
                 <span className="espace__done">
-                  Fait · prêt à exporter · 0 € facturés
+                  {t("cs_done")}
                 </span>
               )}
             </aside>
@@ -1084,7 +1066,7 @@ export default function CloudSpace() {
 
           <div className="espace__sandbox-foot">
             <span className="espace__price">
-              {task.modelName ? `0 € facturés · ${task.modelName}` : "0 € facturés"}
+              {task.modelName ? t("cs_price_model").replace("{model}", task.modelName) : t("cs_price")}
             </span>
             <div className="espace__sandbox-actions">
               <button
@@ -1093,25 +1075,25 @@ export default function CloudSpace() {
                 onClick={copyCode}
                 disabled={buildPhase !== "done"}
               >
-                {copied ? "copié ✓" : "Copier le code"}
+                {copied ? t("cs_copied") : t("cs_copy_code")}
               </button>
               <button
                 type="button"
                 className="mini-btn"
                 onClick={shareLink}
                 disabled={buildPhase !== "done"}
-                title="Copier le lien de preview"
+                title={t("cs_share_title")}
               >
-                Partager 🔗
+                {t("cs_share")}
               </button>
               <button
                 type="button"
                 className="mini-btn mini-btn--primary"
                 onClick={deployNetlify}
                 disabled={buildPhase !== "done"}
-                title="Déployer sur Netlify (gratuit)"
+                title={t("cs_deploy_title")}
               >
-                Deploy 🚀
+                {t("cs_deploy")}
               </button>
               <button
                 type="button"
@@ -1119,7 +1101,7 @@ export default function CloudSpace() {
                 onClick={downloadHtml}
                 disabled={buildPhase !== "done"}
               >
-                Télécharger .html ⬇
+                {t("cs_download")}
               </button>
             </div>
           </div>
@@ -1127,14 +1109,14 @@ export default function CloudSpace() {
 
         <p className="espace__hint">
           {isGithub
-            ? "Repo réel vérifié via l'API GitHub — preview du README (ou de index.html)."
+            ? t("cs_hint_github")
             : task.note
               ? task.note
               : task.modelName
-                ? `Généré par ${task.modelName} — repli gabarits locaux si l'IA échoue.`
+                ? t("cs_hint_gen").replace("{model}", task.modelName)
                 : task.kind === "repo"
-                  ? "Démo simulée — tape un vrai repo owner/repo pour le vérifier sur GitHub."
-                  : "Projet généré par le gabarit local — aucune clé, aucun coût."}
+                  ? t("cs_hint_demo")
+                  : t("cs_hint_local")}
         </p>
       </section>
     </div>

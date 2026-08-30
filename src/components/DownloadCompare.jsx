@@ -1,8 +1,10 @@
 import { PLATFORMS, RELEASE_BASE, buildFiles, detectOS } from "../data/platforms.js";
 import { useArch } from "../lib/useArch.js";
 import Icon from "./Icon.jsx";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 export default function DownloadCompare({ platformFiles, onDownload }) {
+  const { t } = useLanguage();
   const detected = detectOS();
   const arch = useArch();
   /* par défaut : détecte l'architecture automatiquement (build x64/ARM64 correct) */
@@ -11,11 +13,11 @@ export default function DownloadCompare({ platformFiles, onDownload }) {
   return (
     <section className="section dl-compare" id="telecharger">
       <span className="dl-compare__badge">
-        <Icon name="download" size={14} /> Téléchargement gratuit
+        <Icon name="download" size={14} /> {t("dlc_badge")}
       </span>
-      <h2>Disponible sur toutes tes machines</h2>
+      <h2>{t("dlc_heading")}</h2>
       <p className="section-sub">
-        Un seul castor, trois habitats. Choisis le tien.
+        {t("dlc_sub")}
       </p>
 
       <div className="dl-compare__grid">
@@ -29,7 +31,7 @@ export default function DownloadCompare({ platformFiles, onDownload }) {
               className={`dl-compare__card ${isDetected ? "dl-compare__card--detected" : ""}`}
             >
               {isDetected && (
-                <span className="dl-compare__detected">Ton OS ✓</span>
+                <span className="dl-compare__detected">{t("dlc_your_os")}</span>
               )}
 
               <div className="dl-compare__header">
@@ -46,12 +48,15 @@ export default function DownloadCompare({ platformFiles, onDownload }) {
               </div>
 
               <ul className="dl-compare__features">
-                {p.features.map((f) => (
-                  <li key={f}>
-                    <span className="dl-compare__check" style={{ color: p.color }}>✓</span>
-                    {f}
-                  </li>
-                ))}
+                {p.features.map((f, fi) => {
+                  const label = t(`pf_${p.os}_f${fi}`) || f;
+                  return (
+                    <li key={f}>
+                      <span className="dl-compare__check" style={{ color: p.color }}>✓</span>
+                      {label}
+                    </li>
+                  );
+                })}
               </ul>
 
               <div className="dl-compare__actions">
@@ -77,7 +82,7 @@ export default function DownloadCompare({ platformFiles, onDownload }) {
 
               <p className="dl-compare__install">
                 <Icon name="terminal" size={13} />
-                <code>{p.install}</code>
+                <code>{t(`pf_${p.os}_install`) || p.install}</code>
               </p>
             </article>
           );
@@ -88,30 +93,30 @@ export default function DownloadCompare({ platformFiles, onDownload }) {
         <div className="dl-compare__cta">
           <button type="button" className="btn btn--primary btn--lg" onClick={onDownload}>
             <Icon name="download" size={18} />
-            Télécharger maintenant
+            {t("dlc_now")}
           </button>
-          <span className="dl-compare__note">Gratuit · Open source · Multi-providers</span>
+          <span className="dl-compare__note">{t("dlc_note")}</span>
         </div>
       )}
 
       {/* Nouvelles fonctionnalités v0.3.0 */}
       <div className="dl-compare__new-features">
         <span className="dl-compare__badge">
-          <Icon name="zap" size={14} /> Nouveautés v0.3.0
+          <Icon name="zap" size={14} /> {t("dlc_new_badge")}
         </span>
         <div className="dl-compare__new-grid">
           {[
-            { icon: "clock", title: "Agents planifiés", desc: "Programme des agents pour qu'ils travaillent la nuit." },
-            { icon: "split", title: "Diff côte à côte", desc: "Compare avant/après, valide hunk par hunk." },
-            { icon: "chat", title: "Assistant IA embarqué", desc: "Castor Bot 24/7 dans l'app." },
-            { icon: "refresh", title: "Sync multi-postes", desc: "Export/import entre machines." },
-            { icon: "plug", title: "Serveurs MCP", desc: "Branche des outils externes à tes agents." },
-            { icon: "palette", title: "Thèmes personnalisables", desc: "Couleur d'accent libre." },
+            { icon: "clock", t: "dlc_nf0_t", d: "dlc_nf0_d" },
+            { icon: "split", t: "dlc_nf1_t", d: "dlc_nf1_d" },
+            { icon: "chat", t: "dlc_nf2_t", d: "dlc_nf2_d" },
+            { icon: "refresh", t: "dlc_nf3_t", d: "dlc_nf3_d" },
+            { icon: "plug", t: "dlc_nf4_t", d: "dlc_nf4_d" },
+            { icon: "palette", t: "dlc_nf5_t", d: "dlc_nf5_d" },
           ].map((f) => (
-            <article key={f.title} className="dl-compare__new-card">
+            <article key={f.t} className="dl-compare__new-card">
               <span className="dl-compare__new-icon"><Icon name={f.icon} size={20} /></span>
-              <h4>{f.title}</h4>
-              <p>{f.desc}</p>
+              <h4>{t(f.t)}</h4>
+              <p>{t(f.d)}</p>
             </article>
           ))}
         </div>

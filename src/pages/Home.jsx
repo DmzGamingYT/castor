@@ -195,7 +195,7 @@ function StepsMockup() {
       timers.add(t);
       return t;
     };
-    const prompt = "un blog de recettes végé";
+    const prompt = t("steps_typed_prompt");
 
     const runCycle = () => {
       setPhase(0);
@@ -219,10 +219,10 @@ function StepsMockup() {
       /* Phase 2 : construction */
       later(() => {
         const files = [
-          "> Structure index.html...",
-          "> Styles.css appliqués...",
-          "> Composants montés...",
-          "> Tests passés ✔",
+          t("sm_log1"),
+          t("sm_log2"),
+          t("sm_log3"),
+          t("sm_log4"),
         ];
         let f = 0;
         const build = every(() => {
@@ -242,7 +242,7 @@ function StepsMockup() {
 
     runCycle();
     return () => timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
-  }, []);
+  }, [t]);
 
   return (
     <div className="steps-mockup">
@@ -302,7 +302,7 @@ function StepsMockup() {
               <div className="steps-mockup__done">
                 <div className="steps-mockup__done-icon">✔</div>
                 <strong>{t("steps_done_title")}</strong>
-                <span className="steps-mockup__done-sub">Le blog de recettes végé est prêt à exporter.</span>
+                <span className="steps-mockup__done-sub">{t("steps_done_sub")}</span>
                 <div className="steps-mockup__done-files">
                   <span>📄 index.html</span>
                   <span>🎨 styles.css</span>

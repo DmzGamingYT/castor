@@ -9,24 +9,26 @@ function currentPath() {
   return p.replace(/\/+$/, "") || "/";
 }
 
-function titleFor(path) {
-  const titles = {
-    "/": "Castor — le castor qui code pour toi",
-    "/cli": "CLI en ligne — Castor",
-    "/templates": "Templates de projets — Castor",
-    "/desktop": "Castor Desktop — l'agent de code — Castor",
-    "/espace": "Espace Cloud — le sandbox cloud — Castor",
-    "/cloud": "Castor Cloud — l'IDE cloud — Castor",
-    "/avancement": "Avancement du projet — Castor",
-  };
-  return titles[path] || titles["/"];
+const TITLE_KEYS = {
+  "/": "title_home",
+  "/cli": "title_cli",
+  "/templates": "title_templates",
+  "/desktop": "title_desktop",
+  "/espace": "title_espace",
+  "/cloud": "title_cloud",
+  "/avancement": "title_avancement",
+};
+
+function titleFor(path, t) {
+  const key = TITLE_KEYS[path] || TITLE_KEYS["/"];
+  return t ? t(key) : "Castor";
 }
 
 /**
  * Routing basé sur l'History API (pushState / popstate).
  * Remplace le routing par hash (#/) pour un meilleur SEO.
  */
-export default function useHistoryRoute() {
+export default function useHistoryRoute(t) {
   const [path, setPath] = useState(currentPath);
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export default function useHistoryRoute() {
 
   /* Met à jour le titre de l'onglet et scrolle en haut à chaque changement de route */
   useEffect(() => {
-    document.title = titleFor(path);
+    document.title = titleFor(path, t);
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [path]);
+  }, [path, t]);
 
   return path;
 }

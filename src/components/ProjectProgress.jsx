@@ -1,7 +1,8 @@
 import { useEffect, useRef, useMemo } from "react";
 import AnimatedHeading from "./AnimatedHeading.jsx";
 import Icon from "./Icon.jsx";
-import { ROADMAP, STATUS_META } from "../data/roadmap.js";
+import { ROADMAP } from "../data/roadmap.js";
+import { useLanguage } from "../lib/LanguageContext.jsx";
 
 const BOT_OPEN_EVENT = "castor-bot:open";
 const REPO_URL = "https://github.com/DmzGamingYT/castor";
@@ -15,11 +16,34 @@ const STATUS_COLORS = {
   "exploration": "var(--sage)",
 };
 
-const CAT_META = {
-  app:  { label: "App Desktop", sub: "L'app et ses agents",  icon: "desktop", color: "var(--accent)" },
-  site: { label: "Site",        sub: "Le site web Castor",    icon: "globe",   color: "var(--river)" },
-  models: { label: "Modèles",   sub: "Cerveaux IA & outils",  icon: "brain",   color: "var(--sage)" },
+const STATUS_KEYS = {
+  "livré": "aev_st_done",
+  "en cours": "aev_st_wip",
+  "bientôt": "aev_st_soon",
+  "exploration": "aev_st_explore",
 };
+const STATUS_KEYS_CAP = {
+  "livré": "aev_st_done_cap",
+  "en cours": "aev_st_wip_cap",
+  "bientôt": "aev_st_soon_cap",
+  "exploration": "aev_st_explore_cap",
+};
+const CAT_KEYS = {
+  app: { label: "aev_cat_app", sub: "aev_cat_app_sub", icon: "desktop", color: "var(--accent)" },
+  site: { label: "aev_cat_site", sub: "aev_cat_site_sub", icon: "globe", color: "var(--river)" },
+  models: { label: "aev_cat_models", sub: "aev_cat_models_sub", icon: "brain", color: "var(--sage)" },
+};
+
+/* index des items roadmap : titre/desc traduits via rm_<cat>_<i>_t/_d */
+const ITEM_KEYS = {};
+Object.entries(ROADMAP).forEach(([cat, block]) => {
+  block.items.forEach((it, i) => {
+    ITEM_KEYS[`${cat}:${i}`] = { t: `rm_${cat}_${i}_t`, d: `rm_${cat}_${i}_d` };
+  });
+});
+function itemKeys(cat, i) {
+  return ITEM_KEYS[`${cat}:${i}`];
+}
 
 function allItems() { return Object.values(ROADMAP).flatMap((b) => b.items); }
 function catPct(items) {
@@ -111,8 +135,8 @@ function MiniBar({ pct, color }) {
 }
 
 /* ── Carte stat d'une catégorie ── */
-function StatCard({ catKey, index }) {
-  const meta = CAT_META[catKey];
+function StatCard({ t, catKey, index }) {
+  const meta = CAT_KEYS[catKey];
   const items = ROADMAP[catKey].items;
   const pct = catPct(items);
   const ref = useReveal();
@@ -132,8 +156,8 @@ function StatCard({ catKey, index }) {
         <Icon name={meta.icon} size={24} />
       </div>
       <div className="aev-stat__info">
-        <h3>{meta.label}</h3>
-        <p>{meta.sub}</p>
+        <h3>{t(meta.label)}</h3>
+        <p>{t(meta.sub)}</p>
       </div>
       <div className="aev-stat__pct">{pct}<span>%</span></div>
       <MiniBar pct={pct} color={meta.color} />
@@ -141,7 +165,7 @@ function StatCard({ catKey, index }) {
         {STATUS_ORDER.filter((s) => counts[s]).map((s) => (
           <span key={s} className={`aev-stat__chip aev-stat__chip--${s.replace(" ", "-")}`}>
             <i style={{ background: STATUS_COLORS[s] }} />
-            {counts[s]} {s === "livré" ? "livré" : s === "en cours" ? "en cours" : s === "bientôt" ? "bientôt" : "exo"}
+            {counts[s]} {t(STATUS_KEYS[s])}
           </span>
         ))}
       </div>
@@ -150,8 +174,8 @@ function StatCard({ catKey, index }) {
 }
 
 /* ── Liste détaillée d'une catégorie ── */
-function CategorySection({ catKey, index }) {
-  const meta = CAT_META[catKey];
+function CategorySection({ t, catKey, index }) {
+  const meta = CAT_KEYS[catKey];
   const items = ROADMAP[catKey].items;
   const pct = catPct(items);
   const ref = useReveal();
@@ -172,8 +196,8 @@ function CategorySection({ catKey, index }) {
           <Icon name={meta.icon} size={20} />
         </div>
         <div className="aev-cat__title">
-          <h3>{meta.label}</h3>
-          <p>{meta.sub}</p>
+          <h3>{t(meta.label)}</h3>
+          <p>{t(meta.sub)}</p>
         </div>
         <div className="aev-cat__pct">{pct}<span>%</span></div>
       </div>
@@ -185,16 +209,20 @@ function CategorySection({ catKey, index }) {
             <div key={s} className={`aev-col aev-col--${s.replace(" ", "-")}`}>
               <div className="aev-col__head">
                 <span className="aev-col__dot" style={{ background: STATUS_COLORS[s] }} />
-                <span>{STATUS_META[s].label}</span>
+                <span>{t(STATUS_KEYS_CAP[s])}</span>
                 <span className="aev-col__count">{grouped[s].length}</span>
               </div>
               <ul className="aev-col__list">
-                {grouped[s].map((it) => (
-                  <li key={it.title} className="aev-item">
-                    <span className="aev-item__title">{it.title}</span>
-                    <span className="aev-item__desc">{it.desc}</span>
-                  </li>
-                ))}
+                {grouped[s].map((it) => {
+                  /* index global de l'item dans la catégorie (pas dans la colonne) */
+                  const k = itemKeys(catKey, items.indexOf(it));
+                  return (
+                    <li key={it.title} className="aev-item">
+                      <span className="aev-item__title">{k ? t(k.t) : it.title}</span>
+                      <span className="aev-item__desc">{k ? t(k.d) : it.desc}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )
@@ -206,6 +234,7 @@ function CategorySection({ catKey, index }) {
 
 /* ── Composant principal ── */
 export default function ProjectProgress() {
+  const { t } = useLanguage();
   const headRef = useReveal();
   const items = allItems();
   const pct = Math.round((items.reduce((s, i) => s + (WEIGHT[i.status] ?? 0), 0) / items.length) * 100);
@@ -219,13 +248,13 @@ export default function ProjectProgress() {
   const askBot = () => window.dispatchEvent(new CustomEvent(BOT_OPEN_EVENT));
 
   return (
-    <section className="section aev" id="avancement" aria-label="Avancement du projet">
+    <section className="section aev" id="avancement" aria-label={t("aev_aria")}>
       {/* ── Hero ── */}
       <div className="aev-hero" ref={headRef}>
-        <span className="aev-hero__badge">🧱 Avancement du projet</span>
-        <AnimatedHeading variant="words">Le chantier avance, patte après patte</AnimatedHeading>
+        <span className="aev-hero__badge">{t("aev_badge")}</span>
+        <AnimatedHeading variant="words">{t("aev_heading")}</AnimatedHeading>
         <p className="section-sub">
-          Ce qui est livré, ce qu'on construit et ce qui arrive — sans fausse promesse ni date artificielle.
+          {t("aev_sub")}
         </p>
       </div>
 
@@ -233,13 +262,13 @@ export default function ProjectProgress() {
       <div className="aev-dashboard">
         <div className="aev-dash__ring">
           <ProgressRing pct={pct} size={200} stroke={16} />
-          <p className="aev-dash__label">avancement global</p>
-          <p className="aev-dash__total">{items.length} chantiers</p>
+          <p className="aev-dash__label">{t("aev_global")}</p>
+          <p className="aev-dash__total">{items.length} {t("aev_projects")}</p>
         </div>
 
         <div className="aev-dash__stats">
           {Object.keys(ROADMAP).map((k, i) => (
-            <StatCard key={k} catKey={k} index={i} />
+            <StatCard key={k} t={t} catKey={k} index={i} />
           ))}
         </div>
       </div>
@@ -262,7 +291,7 @@ export default function ProjectProgress() {
           {STATUS_ORDER.map((s) => (
             <li key={s} className="aev-dist__legend-item">
               <span className="aev-dist__dot" style={{ background: STATUS_COLORS[s] }} />
-              <strong>{counts[s]}</strong> {s === "livré" ? "livrés" : s === "en cours" ? "en cours" : s === "bientôt" ? "bientôt" : "explorations"}
+              <strong>{counts[s]}</strong> {s === "livré" ? t("aev_st_done_plural") : s === "en cours" ? t("aev_st_wip") : s === "bientôt" ? t("aev_st_soon") : t("aev_st_explore_plural")}
             </li>
           ))}
         </ul>
@@ -271,19 +300,19 @@ export default function ProjectProgress() {
       {/* ── Détail par catégorie ── */}
       <div className="aev-categories">
         {Object.keys(ROADMAP).map((k, i) => (
-          <CategorySection key={k} catKey={k} index={i} />
+          <CategorySection key={k} t={t} catKey={k} index={i} />
         ))}
       </div>
 
       {/* ── CTA ── */}
       <div className="aev-cta">
-        <p>Une question sur un chantier ?</p>
+        <p>{t("aev_question")}</p>
         <div className="aev-cta__actions">
           <button type="button" className="btn btn--primary" onClick={askBot}>
-            🦫 Demander au Castor Bot
+            {t("aev_ask_bot")}
           </button>
           <a className="btn btn--ghost" href={REPO_URL} target="_blank" rel="noreferrer">
-            ⭐ Suivre sur GitHub
+            {t("aev_follow")}
           </a>
         </div>
       </div>
