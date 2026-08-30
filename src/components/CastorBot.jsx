@@ -3,7 +3,7 @@ import { BeaverMark } from "./Icon.jsx";
 import { useApiKey } from "../lib/useApiKey.js";
 import { streamChat } from "../lib/chatEngine.js";
 import { DEFAULT_MODEL } from "../lib/utils.js";
-import { ROADMAP, STATUS_META, PRODUCT_NOTES, SITE_HINTS } from "../data/roadmap.js";
+import { ROADMAP, STATUS_META } from "../data/roadmap.js";
 import { useLanguage } from "../lib/LanguageContext.jsx";
 import "./CastorBot.css";
 
@@ -26,9 +26,13 @@ const STATUS_LABELS = {
 
 function roadmapText(cat, t) {
   const block = ROADMAP[cat];
-  const lines = block.items.map(
-    (it) => `${STATUS_META[it.status].emoji} **${it.title}** (${t(STATUS_LABELS[it.status] || "kb_status_done")}) — ${it.desc}`
-  );
+  const lines = block.items.map((it, i) => {
+    const titleKey = `rm_${cat}_${i}_t`;
+    const descKey = `rm_${cat}_${i}_d`;
+    const title = t(titleKey) !== titleKey ? t(titleKey) : it.title;
+    const desc = t(descKey) !== descKey ? t(descKey) : it.desc;
+    return `${STATUS_META[it.status].emoji} **${title}** (${t(STATUS_LABELS[it.status] || "kb_status_done")}) — ${desc}`;
+  });
   return `**${block.label} — ${t("kb_roadmap_intro").replace("🔨", "")}:**\n\n${lines.join("\n\n")}`;
 }
 
@@ -38,7 +42,13 @@ function deliveredText(t) {
     const block = ROADMAP[k];
     const done = block.items.filter((it) => it.status === "livré");
     if (!done.length) return null;
-    const lines = done.map((it) => `✅ **${it.title}** — ${it.desc}`);
+    const lines = done.map((it, i) => {
+      const titleKey = `rm_${k}_${i}_t`;
+      const descKey = `rm_${k}_${i}_d`;
+      const title = t(titleKey) !== titleKey ? t(titleKey) : it.title;
+      const desc = t(descKey) !== descKey ? t(descKey) : it.desc;
+      return `✅ **${title}** — ${desc}`;
+    });
     return `**${block.label}**\n${lines.join("\n")}`;
   });
   const visible = parts.filter(Boolean);
@@ -63,7 +73,11 @@ function buildKB(t) {
               `**${ROADMAP[k].label}** : ${ROADMAP[k].items
                 .filter((i) => i.status !== "livré")
                 .slice(0, 2)
-                .map((i) => i.title)
+                .map((i) => {
+                  const ti = ROADMAP[k].items.indexOf(i);
+                  const tk = `rm_${k}_${ti}_t`;
+                  return t(tk) !== tk ? t(tk) : i.title;
+                })
                 .join(" · ")}`
           )
           .join("\n\n") +
@@ -81,14 +95,14 @@ function buildKB(t) {
       chips: ["📱 App Desktop", "🧠 Modèles"],
     },
     {
-      keys: ["modele", "modeles", "model", "models", "cerveau", "llm", "ia gratuite"],
-      reply: () => roadmapText("models", t) + `\n\n📄 ${SITE_HINTS.models}`,
+      keys: ["modele", "modeles", "model", "models", "cerveau", "llm", "ia gratuite", "free models"],
+      reply: () => roadmapText("models", t) + `\n\n📄 ${t("bot_hint_models")}`,
       chips: ["📥 Télécharger", "🔒 Vie privée"],
     },
     {
       keys: ["telecharger", "telechargement", "installer", "installation", "download", "install"],
       reply: () =>
-        `${t("kb_download")}\n\n${SITE_HINTS.install}\n\n${t("kb_download_hint")}`,
+        `${t("kb_download")}\n\n${t("bot_hint_install")}\n\n${t("kb_download_hint")}`,
       chips: ["📱 App Desktop", "💰 Prix"],
     },
     {
@@ -104,27 +118,27 @@ function buildKB(t) {
       chips: ["🧠 Modèles", "🔒 Vie privée"],
     },
     {
-      keys: ["vie privee", "privee", "prive", "donnee", "donnees", "securite", "confidentialite", "tracking"],
-      reply: () => `${t("kb_privacy")}\n\n${SITE_HINTS.privacy}\n\n${t("kb_privacy_desc")}`,
+      keys: ["vie privee", "privee", "prive", "donnee", "donnees", "securite", "confidentialite", "tracking", "privacy", "data"],
+      reply: () => `${t("kb_privacy")}\n\n${t("bot_hint_privacy")}\n\n${t("kb_privacy_desc")}`,
       chips: ["🔌 Providers", "💰 Prix"],
     },
     {
       keys: ["\\bchat(?!bot)\\b", "studio"],
-      reply: () => `💬 ${PRODUCT_NOTES.chat}\n\n${t("kb_chat")}`,
+      reply: () => `💬 ${t("bot_note_chat")}\n\n${t("kb_chat")}`,
       chips: ["📥 Télécharger", "🚀 Roadmap"],
     },
     {
       keys: ["\\bcloud\\b"],
-      reply: () => `☁️ ${PRODUCT_NOTES.cloud}\n\n${t("kb_cloud")}`,
+      reply: () => `☁️ ${t("bot_note_cloud")}\n\n${t("kb_cloud")}`,
       chips: ["🚀 Roadmap", "📥 Télécharger"],
     },
     {
-      keys: ["\\bcli\\b", "terminal", "commande"],
-      reply: () => `⌨️ ${PRODUCT_NOTES.cli}`,
+      keys: ["\\bcli\\b", "terminal", "commande", "command line"],
+      reply: () => `⌨️ ${t("bot_note_cli")}`,
       chips: ["📥 Télécharger", "🚀 Roadmap"],
     },
     {
-      keys: ["bonjour", "salut", "hello", "\\bhi\\b", "coucou", "\\byo\\b", "hey", "\\bcc\\b"],
+      keys: ["bonjour", "salut", "hello", "\\bhi\\b", "coucou", "\\byo\\b", "hey", "\\bcc\\b", "greetings", "good morning"],
       reply: () => t("kb_greeting"),
       chips: ["🚀 Roadmap", "📥 Télécharger", "🧠 Modèles"],
     },
@@ -134,7 +148,7 @@ function buildKB(t) {
       chips: ["🚀 Roadmap"],
     },
     {
-      keys: ["qui es tu", "tu es qui", "castor bot", "t'es quoi", "helper", "assistant"],
+      keys: ["qui es tu", "tu es qui", "castor bot", "t'es quoi", "helper", "assistant", "who are you", "what are you"],
       reply: () => t("kb_who"),
       chips: ["🚀 Roadmap", "🔌 Providers"],
     },
@@ -167,20 +181,26 @@ function getWelcome(t) {
   };
 }
 
-function systemPrompt() {
+const BOT_NOTE_KEYS = { desktop: "bot_note_desktop", web: "bot_note_web", cloud: "bot_note_cloud", chat: "bot_note_chat", cli: "bot_note_cli" };
+
+function systemPrompt(t) {
   const rm = Object.keys(ROADMAP)
     .map((k) => {
       const b = ROADMAP[k];
-      return `${b.label}:\n${b.items.map((i) => `- [${i.status}] ${i.title} — ${i.desc}`).join("\n")}`;
+      const lines = b.items.map((it, i) => {
+        const tk = `rm_${k}_${i}_t`;
+        const dk = `rm_${k}_${i}_d`;
+        const title = t(tk) !== tk ? t(tk) : it.title;
+        const desc = t(dk) !== dk ? t(dk) : it.desc;
+        return `- [${it.status}] ${title} — ${desc}`;
+      });
+      return `${b.label}:\n${lines.join("\n")}`;
     })
     .join("\n\n");
-  const prod = Object.entries(PRODUCT_NOTES).map(([k, v]) => `- ${k}: ${v}`).join("\n");
+  const prod = Object.entries(BOT_NOTE_KEYS).map(([k, key]) => `- ${k}: ${t(key)}`).join("\n");
   return (
-    `Tu es Castor Bot, l'assistant discret du site de Castor (agent de code gratuit, open source MIT, par DmzGamingYT). ` +
-    `Réponds en français, amical et concis (max 120 mots). ` +
-    `Tu connais la roadmap officielle — présente-la comme les chantiers à venir, sans jamais promettre de dates précises. ` +
-    `Téléchargement : page Desktop du site, gratuit pour toujours, sans compte.\n\n` +
-    `ROADMAP OFFICIELLE :\n${rm}\n\nPRODUITS :\n${prod}\n\nVIE PRIVÉE : ${SITE_HINTS.privacy}`
+    `${t("bot_system_fr")}\n\n` +
+    `ROADMAP:\n${rm}\n\nPRODUCTS:\n${prod}\n\nPRIVACY: ${t("bot_hint_privacy")}`
   );
 }
 
@@ -289,7 +309,7 @@ export default function CastorBot() {
           apiKey,
           model: DEFAULT_MODEL,
           signal: controller.signal,
-          messages: [{ role: "system", content: systemPrompt() }, ...history],
+          messages: [{ role: "system", content: systemPrompt(t) }, ...history],
           onDelta: (delta) => {
             setMessages((m) => {
               const copy = [...m];
